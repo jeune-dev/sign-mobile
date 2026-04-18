@@ -15,6 +15,7 @@ class User extends Equatable {
   final String? rc;
   final String? ninea;
   final String? signature;
+  final String? token;
 
   // Champs entreprise
   final String? nomEntreprise;
@@ -41,6 +42,7 @@ class User extends Equatable {
     this.adresseEntreprise,
     this.telephoneEntreprise,
     this.emailEntreprise,
+    this.token,
   });
 
   Map<String, dynamic> toJson() => {
@@ -62,6 +64,7 @@ class User extends Equatable {
     'adresseEntreprise': adresseEntreprise,
     'telephoneEntreprise': telephoneEntreprise,
     'emailEntreprise': emailEntreprise,
+    'token': token,
   };
 
   @override
@@ -84,5 +87,6 @@ class User extends Equatable {
     adresseEntreprise,
     telephoneEntreprise,
     emailEntreprise,
+    token
   ];
 }
