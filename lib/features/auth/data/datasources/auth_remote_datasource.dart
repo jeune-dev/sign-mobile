@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sign_application/core/config/env.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthResponseModel> login(String identifiant, String motDePasse);
@@ -34,18 +34,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final String _registerPath;
 
   AuthRemoteDataSourceImpl({required this.dio})
-      : _loginPath = _normalisePath(
-    dotenv.get(
-      'AUTH_LOGIN_PATH',
-      fallback: '/auth/login',
-    ),
-  ),
-        _registerPath = _normalisePath(
-          dotenv.get(
-            'AUTH_REGISTER_PATH',
-            fallback: '/auth/register',
-          ),
-        );
+      : _loginPath = _normalisePath(Env.login),
+        _registerPath = _normalisePath(Env.register);
 
   static String _normalisePath(String value) {
     final trimmed = value.trim();
@@ -62,8 +52,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       String identifiant,
       String motDePasse,
       ) async {
-    print('--- Tentative de connexion ---');
-    print('Identifiant (email ou téléphone): $identifiant');
 
     try {
       final response = await dio.post(
@@ -73,10 +61,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           'mot_de_passe': motDePasse,
         },
       );
-
-      print('--- Réponse API login ---');
-      print('Status code: ${response.statusCode}');
-      print('Body: ${response.data}');
 
       if (response.statusCode == 200) {
         return AuthResponseModel.fromJson(response.data);

@@ -9,7 +9,7 @@ void showToast(BuildContext context, String title, String description,
       title: Text(title),
       description: Text(description),
       primaryColor: Colors.white,
-      autoCloseDuration: const Duration(seconds: 3),
+      autoCloseDuration: const Duration(seconds: 5),
       progressBarTheme: ProgressIndicatorThemeData(
         color: type == ToastificationType.success
             ? Colors.green

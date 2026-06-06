@@ -4,13 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flutter/gestures.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:intl_phone_field/phone_number.dart';
 
 import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/core/widgets/primary_text_button.dart';
-import 'package:sign_application/core/widgets/primary_text_formField.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
-import 'package:sign_application/features/auth/presentation/widgets/PasswordTextField.dart';
 import '../../../../core/theme/app_color.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
@@ -28,9 +25,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // Variables pour le téléphone
-  String? _phoneNumber; // numéro complet avec indicatif
-  bool _isEmail = true; // true = email, false = téléphone
+  String? _phoneNumber;
+  bool _isEmail = true;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -79,7 +76,7 @@ class _LoginPageState extends State<LoginPage> {
           showToast(
             context,
             'Connexion réussie',
-            'Bienvenue de retour !',
+            'Vous êtes maintenant connecté.',
             ToastificationType.success,
           );
         } else if (state is AuthFailure) {
@@ -96,36 +93,31 @@ class _LoginPageState extends State<LoginPage> {
 
         return Scaffold(
           backgroundColor: Colors.white,
-          body: Stack(
-            children: [
-              SafeArea(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeader(),
-                          const SizedBox(height: 10),
-                          _buildLoginCard(isLoading),
-                          const SizedBox(height: 32),
-                          _buildTermsAndPrivacy(),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                  ),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: 24),
+                    _buildLoginCard(isLoading),
+                    const SizedBox(height: 28),
+                    _buildTermsAndPrivacy(),
+                    const SizedBox(height: 24),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         );
       },
     );
   }
 
+  // ─────────────────────── HEADER ───────────────────────
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,8 +133,8 @@ class _LoginPageState extends State<LoginPage> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -158,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 20),
         RichText(
           text: TextSpan(
             children: [
@@ -182,22 +174,21 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: Text(
-            'Connectez-vous pour générer vos factures et signer des contrats en toute sécurité',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: AppColor.kGrayscale40,
-              height: 1.4,
-            ),
+        const SizedBox(height: 10),
+        Text(
+          'Connectez-vous pour générer vos factures et signer des contrats en toute sécurité',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+            color: AppColor.kGrayscale40,
+            height: 1.5,
           ),
         ),
       ],
     );
   }
 
+  // ─────────────────────── CARD ───────────────────────
   Widget _buildLoginCard(bool isLoading) {
     return Container(
       decoration: BoxDecoration(
@@ -205,333 +196,402 @@ class _LoginPageState extends State<LoginPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColor.kPrimary.withOpacity(0.1),
+            color: AppColor.kPrimary.withOpacity(0.08),
             blurRadius: 40,
             offset: const Offset(0, 8),
-            spreadRadius: 0,
           ),
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
-            spreadRadius: 0,
           ),
         ],
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Sélecteur Email / Téléphone
           _buildSelector(),
-          const SizedBox(height: 16),
-          // Champ conditionnel
-          _buildIdentifierField(),
-          const SizedBox(height: 24),
-          _buildPasswordField(),
           const SizedBox(height: 20),
-          _buildRememberForgotRow(),
-          const SizedBox(height: 32),
+          _buildIdentifierField(),
+          const SizedBox(height: 20),
+          _buildPasswordField(),
+          const SizedBox(height: 16),
+          _buildForgotRow(),
+          const SizedBox(height: 28),
           _buildLoginButton(isLoading),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           _buildRegisterLink(),
         ],
       ),
     );
   }
 
+  // ─────────────────────── SELECTOR ───────────────────────
   Widget _buildSelector() {
     return Container(
+      height: 48,
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColor.kBackground,
-        borderRadius: BorderRadius.circular(30),
+        color: const Color(0xFFF5F5F7),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: ChoiceChip(
-              label: Text(
-                'Email',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              selected: _isEmail,
-              onSelected: (selected) {
-                setState(() {
-                  _isEmail = true;
-                  _phoneNumber = null; // reset phone
-                });
-              },
-              selectedColor: AppColor.kPrimary,
-              backgroundColor: Colors.transparent,
-              labelStyle: TextStyle(
-                color: _isEmail ? Colors.white : AppColor.kGrayscale40,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
+          _selectorTab(
+            label: 'Email',
+            selected: _isEmail,
+            onTap: () {
+              setState(() {
+                _isEmail = true;
+                _phoneNumber = null;
+              });
+            },
           ),
-          Expanded(
-            child: ChoiceChip(
-              label: Text(
-                'Téléphone',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-              selected: !_isEmail,
-              onSelected: (selected) {
-                setState(() {
-                  _isEmail = false;
-                  _emailController.clear(); // reset email
-                });
-              },
-              selectedColor: AppColor.kPrimary,
-              backgroundColor: Colors.transparent,
-              labelStyle: TextStyle(
-                color: !_isEmail ? Colors.white : AppColor.kGrayscale40,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
+          _selectorTab(
+            label: 'Téléphone',
+            selected: !_isEmail,
+            onTap: () {
+              setState(() {
+                _isEmail = false;
+                _emailController.clear();
+              });
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildIdentifierField() {
-    if (_isEmail) {
-      return _buildEmailField();
-    } else {
-      return _buildPhoneField();
-    }
-  }
-
-  Widget _buildEmailField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Email',
-          style: GoogleFonts.plusJakartaSans(
-            color: AppColor.kGrayscaleDark100,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            letterSpacing: -0.2,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 52,
+  Widget _selectorTab({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColor.kLine, width: 1.5),
-          ),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Icon(Icons.email_outlined, color: AppColor.kPrimary, size: 20),
+            color: selected ? AppColor.kPrimary : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: selected
+                ? [
+              BoxShadow(
+                color: AppColor.kPrimary.withOpacity(0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: PrimaryTextFormField(
-                    controller: _emailController,
-                    hintText: 'exemple@email.com',
-                    height: 50,
-                    width: double.infinity,
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Ce champ est requis';
-                      }
-                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                        return 'Email invalide';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ),
-            ],
+            ]
+                : null,
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPhoneField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Téléphone',
-          style: GoogleFonts.plusJakartaSans(
-            color: AppColor.kGrayscaleDark100,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            letterSpacing: -0.2,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColor.kLine, width: 1.5),
-          ),
-          child: IntlPhoneField(
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              hintText: 'Votre numéro',
-              hintStyle: GoogleFonts.plusJakartaSans(
-                color: AppColor.kGrayscale40,
-                fontSize: 16,
-              ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : AppColor.kGrayscale40,
             ),
-            initialCountryCode: 'SN',
-            onChanged: (phone) {
-              setState(() {
-                _phoneNumber = phone.completeNumber;
-              });
-            },
-            validator: (phone) {
-              if (phone == null || phone.number.isEmpty) {
-                return 'Ce champ est requis';
-              }
-              if (!phone.isValidNumber()) {
-                return 'Numéro invalide pour le pays sélectionné';
-              }
-              return null;
-            },
           ),
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────── IDENTIFIER ───────────────────────
+  Widget _buildIdentifierField() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: _isEmail
+          ? _buildEmailField(key: const ValueKey('email'))
+          : _buildPhoneField(key: const ValueKey('phone')),
+    );
+  }
+
+  Widget _buildEmailField({Key? key}) {
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('Email'),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
+          ),
+          decoration: InputDecoration(
+            hintText: 'exemple@email.com',
+            hintStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              color: AppColor.kGrayscale40,
+            ),
+            prefixIcon: Icon(
+              Icons.email_outlined,
+              color: AppColor.kPrimary,
+              size: 20,
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8F8FA),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: AppColor.kPrimary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Ce champ est requis';
+            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+              return 'Email invalide';
+            }
+            return null;
+          },
         ),
       ],
     );
   }
 
+  Widget _buildPhoneField({Key? key}) {
+    return Column(
+      key: key,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('Téléphone'),
+        const SizedBox(height: 8),
+        IntlPhoneField(
+          initialCountryCode: 'SN',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
+          ),
+          dropdownTextStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Votre numéro',
+            hintStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              color: AppColor.kGrayscale40,
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8F8FA),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: AppColor.kPrimary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            counterText: '',
+          ),
+          onChanged: (phone) {
+            setState(() {
+              _phoneNumber = phone.completeNumber;
+            });
+          },
+          validator: (phone) {
+            if (phone == null || phone.number.isEmpty) {
+              return 'Ce champ est requis';
+            }
+            if (!phone.isValidNumber()) {
+              return 'Numéro invalide pour le pays sélectionné';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────── PASSWORD ───────────────────────
   Widget _buildPasswordField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Mot de passe',
-          style: GoogleFonts.plusJakartaSans(
-            color: AppColor.kGrayscaleDark100,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            letterSpacing: -0.2,
-          ),
-        ),
+        _fieldLabel('Mot de passe'),
         const SizedBox(height: 8),
-        Container(
-          height: 52,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColor.kLine, width: 1.5),
+        TextFormField(
+          controller: _passwordController,
+          obscureText: _obscurePassword,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
           ),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Icon(Icons.lock_outline, color: AppColor.kPrimary, size: 20),
+          decoration: InputDecoration(
+            hintText: 'Votre mot de passe',
+            hintStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              color: AppColor.kGrayscale40,
+            ),
+            prefixIcon: Icon(
+              Icons.lock_outline_rounded,
+              color: AppColor.kPrimary,
+              size: 20,
+            ),
+            suffixIcon: GestureDetector(
+              onTap: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+              child: Icon(
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: AppColor.kGrayscale40,
+                size: 20,
               ),
-              Expanded(
-                child: PasswordTextField(
-                  controller: _passwordController,
-                  hintText: 'Votre mot de passe',
-                  height: 50,
-                  width: double.infinity,
-                  borderRadius: BorderRadius.circular(12),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Ce champ est requis';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-            ],
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8F8FA),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: AppColor.kPrimary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
           ),
+          validator: (value) {
+            if (value == null || value.isEmpty) return 'Ce champ est requis';
+            return null;
+          },
         ),
       ],
     );
   }
 
-  Widget _buildRememberForgotRow() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        PrimaryTextButton(
-          onPressed: () => Navigator.of(context).pushNamed('/forgot-password'),
-          titre: 'Mot de passe oublié ?',
+  // ─────────────────────── HELPERS ───────────────────────
+  Widget _fieldLabel(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColor.kGrayscaleDark100,
+        letterSpacing: 0.1,
+      ),
+    );
+  }
+
+  Widget _buildForgotRow() {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: GestureDetector(
+        onTap: () => Navigator.of(context).pushNamed('/forgot-password'),
+        child: Text(
+          'Mot de passe oublié ?',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColor.kPrimary,
           ),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildLoginButton(bool isLoading) {
     return SizedBox(
       width: double.infinity,
+      height: 54,
       child: Material(
-        borderRadius: BorderRadius.circular(16),
-        elevation: 0,
-        color: AppColor.kPrimary,
+        color: Colors.transparent,
         child: InkWell(
           onTap: isLoading ? null : _onLoginPressed,
-          borderRadius: BorderRadius.circular(16),
-          splashColor: Colors.white.withOpacity(0.2),
-          highlightColor: Colors.white.withOpacity(0.1),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          borderRadius: BorderRadius.circular(14),
+          child: Ink(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              gradient: isLoading
-                  ? null
-                  : LinearGradient(
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
+              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
                 colors: [
                   AppColor.kPrimary,
-                  AppColor.kPrimary.withOpacity(0.8),
+                  AppColor.kPrimary.withOpacity(0.82),
                 ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
               ),
               boxShadow: isLoading
-                  ? null
+                  ? []
                   : [
                 BoxShadow(
-                  color: AppColor.kPrimary.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  color: AppColor.kPrimary.withOpacity(0.35),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
             child: Center(
               child: isLoading
                   ? const SizedBox(
-                width: 24,
-                height: 24,
+                width: 22,
+                height: 22,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: 2.5,
                   valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
               )
                   : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'Se connecter',
@@ -539,11 +599,14 @@ class _LoginPageState extends State<LoginPage> {
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
-                      letterSpacing: -0.2,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ],
               ),
             ),
@@ -554,39 +617,39 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _buildRegisterLink() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          'Nouveau chez nous ? ',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-            color: AppColor.kGrayscale40,
+    return Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          Text(
+            'Nouveau chez nous ? ',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: AppColor.kGrayscale40,
+            ),
           ),
-        ),
-        GestureDetector(
-          onTap: () => Navigator.of(context).pushNamed('/register'),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+          GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed('/register'),
             child: Text(
               'Créer un compte',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppColor.kPrimary,
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildTermsAndPrivacy() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Text.rich(
           TextSpan(
             children: [
@@ -598,9 +661,8 @@ class _LoginPageState extends State<LoginPage> {
                   color: AppColor.kPrimary,
                 ),
                 recognizer: TapGestureRecognizer()
-                  ..onTap = () => Navigator.of(context).pushNamed(
-                    AppRouter.contiditionUtilisationRoute,
-                  ),
+                  ..onTap = () => Navigator.of(context)
+                      .pushNamed(AppRouter.contiditionUtilisationRoute),
               ),
               const TextSpan(text: ' et notre '),
               TextSpan(
@@ -610,9 +672,8 @@ class _LoginPageState extends State<LoginPage> {
                   color: AppColor.kPrimary,
                 ),
                 recognizer: TapGestureRecognizer()
-                  ..onTap = () => Navigator.of(context).pushNamed(
-                    AppRouter.politiqueConfRoute,
-                  ),
+                  ..onTap = () => Navigator.of(context)
+                      .pushNamed(AppRouter.politiqueConfRoute),
               ),
             ],
           ),

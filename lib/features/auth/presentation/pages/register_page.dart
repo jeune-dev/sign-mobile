@@ -1,11 +1,7 @@
 import 'package:sign_application/core/routes/app_router.dart';
-import 'package:sign_application/core/widgets/primary_button.dart';
-import 'package:sign_application/core/widgets/primary_text_formField.dart';
-import 'package:sign_application/features/auth/presentation/widgets/PasswordTextField.dart';
-import 'package:sign_application/features/auth/presentation/widgets/TermsAndPrivacyText.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:toastification/toastification.dart';
@@ -13,17 +9,15 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:signature/signature.dart';
 import 'package:path_provider/path_provider.dart';
-
-// Package pour le téléphone
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:intl_phone_field/phone_number.dart'; // <-- Important pour le type PhoneNumber
+import 'package:intl_phone_field/phone_number.dart';
+import 'package:flutter/gestures.dart';
 
 import '../../../../core/theme/app_color.dart';
 import '../../../../core/widgets/toastNotif.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
-import 'package:flutter/gestures.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -33,48 +27,62 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  // Contrôleurs pour les champs
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
-  // Variables pour les téléphones (indicatif + numéro)
   String? _phoneNumber;
   String? _entreprisePhoneNumber;
-
+  final _phoneController = TextEditingController();
+  final _entreprisePhoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _cinController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  // Contrôleurs pour les champs professionnels
   final _rcController = TextEditingController();
   final _nineaController = TextEditingController();
   final _nomEntrepriseController = TextEditingController();
   final _adresseEntrepriseController = TextEditingController();
   final _emailEntrepriseController = TextEditingController();
 
-  // Variables pour les sélections
   String? _selectedRole;
   File? _profileImage;
   File? _logoImage;
-
-  // Signature pour les professionnels
   File? _signatureImage;
+  bool _obscurePassword = true;
 
-  // Gestion des étapes
+  // ── Critères mot de passe ──
+  bool _hasUpperCase = false;
+  bool _hasLowerCase = false;
+  bool _hasDigit = false;
+  bool _hasSpecialChar = false;
+  bool _hasMinLength = false;
+  bool _passwordFocused = false;
+
   int _currentStep = 0;
   final _formKeys = [
     GlobalKey<FormState>(),
     GlobalKey<FormState>(),
   ];
 
-  // Rôles disponibles
   final List<String> _roles = ['Particulier', 'Independant', 'Professionnel'];
 
-  // Sélection d'image (profil ou logo)
+  // ── Validation mot de passe en temps réel ──
+  void _checkPasswordStrength(String value) {
+    setState(() {
+      _hasUpperCase = value.contains(RegExp(r'[A-Z]'));
+      _hasLowerCase = value.contains(RegExp(r'[a-z]'));
+      _hasDigit = value.contains(RegExp(r'[0-9]'));
+      _hasSpecialChar =
+          value.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-+=\[\]\\\/~`]'));
+      _hasMinLength = value.length >= 8;
+    });
+  }
+
+  bool get _isPasswordValid =>
+      _hasUpperCase && _hasLowerCase && _hasDigit && _hasSpecialChar && _hasMinLength;
+
   Future<void> _pickImage({required bool isProfile}) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-
     if (pickedFile != null) {
       setState(() {
         if (isProfile) {
@@ -86,7 +94,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  // Ouverture du pad de signature
   Future<void> _openSignaturePad() async {
     final controller = SignatureController(
       penStrokeWidth: 3,
@@ -97,21 +104,25 @@ class _RegisterPageState extends State<RegisterPage> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Signez ici',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         ),
         content: Container(
           width: MediaQuery.of(context).size.width * 0.8,
           height: 200,
           decoration: BoxDecoration(
-            border: Border.all(color: AppColor.kLine, width: 1.5),
-            borderRadius: BorderRadius.circular(16),
+            color: const Color(0xFFF8F8FA),
+            borderRadius: BorderRadius.circular(14),
           ),
-          child: Signature(
-            controller: controller,
-            width: MediaQuery.of(context).size.width * 0.8,
-            height: 200,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Signature(
+              controller: controller,
+              width: MediaQuery.of(context).size.width * 0.8,
+              height: 200,
+            ),
           ),
         ),
         actions: [
@@ -135,9 +146,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   '${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png',
                 );
                 await file.writeAsBytes(data);
-                setState(() {
-                  _signatureImage = file;
-                });
+                setState(() => _signatureImage = file);
               }
               Navigator.pop(context);
             },
@@ -148,14 +157,16 @@ class _RegisterPageState extends State<RegisterPage> {
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: Text('Valider'),
+            child: Text(
+              'Valider',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // Validation et navigation
   void _goToNextStep() {
     if (_formKeys[_currentStep].currentState!.validate()) {
       if (_currentStep < 1) {
@@ -172,7 +183,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-  // Soumission
   void _submitRegistration() {
     if (_formKeys[1].currentState!.validate()) {
       context.read<AuthBloc>().add(
@@ -182,19 +192,26 @@ class _RegisterPageState extends State<RegisterPage> {
           email: _emailController.text.trim(),
           mot_de_passe: _passwordController.text,
           adresse: _addressController.text.trim(),
-          telephone: _phoneNumber ?? '', // Numéro complet avec indicatif
+          telephone: _phoneNumber ?? '',
           carte_identite_national_num: _cinController.text.trim(),
           role: _selectedRole ?? 'Particulier',
           photoProfil: _profileImage != null ? XFile(_profileImage!.path) : null,
-          // Données professionnelles
           logo: _logoImage != null ? XFile(_logoImage!.path) : null,
           rc: _rcController.text.trim().isNotEmpty ? _rcController.text.trim() : null,
-          ninea: _nineaController.text.trim().isNotEmpty ? _nineaController.text.trim() : null,
+          ninea: _nineaController.text.trim().isNotEmpty
+              ? _nineaController.text.trim()
+              : null,
           signature: _signatureImage != null ? XFile(_signatureImage!.path) : null,
-          nomEntreprise: _nomEntrepriseController.text.trim().isNotEmpty ? _nomEntrepriseController.text.trim() : null,
-          adresseEntreprise: _adresseEntrepriseController.text.trim().isNotEmpty ? _adresseEntrepriseController.text.trim() : null,
-          telephoneEntreprise: _entreprisePhoneNumber, // Numéro complet avec indicatif
-          emailEntreprise: _emailEntrepriseController.text.trim().isNotEmpty ? _emailEntrepriseController.text.trim() : null,
+          nomEntreprise: _nomEntrepriseController.text.trim().isNotEmpty
+              ? _nomEntrepriseController.text.trim()
+              : null,
+          adresseEntreprise: _adresseEntrepriseController.text.trim().isNotEmpty
+              ? _adresseEntrepriseController.text.trim()
+              : null,
+          telephoneEntreprise: _entreprisePhoneNumber,
+          emailEntreprise: _emailEntrepriseController.text.trim().isNotEmpty
+              ? _emailEntrepriseController.text.trim()
+              : null,
         ),
       );
     }
@@ -213,9 +230,12 @@ class _RegisterPageState extends State<RegisterPage> {
     _nomEntrepriseController.dispose();
     _adresseEntrepriseController.dispose();
     _emailEntrepriseController.dispose();
+    _phoneController.dispose();
+    _entreprisePhoneController.dispose();
     super.dispose();
   }
 
+  // ─────────────────────── BUILD ───────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -231,12 +251,10 @@ class _RegisterPageState extends State<RegisterPage> {
               'Vous pouvez maintenant vous connecter !',
               ToastificationType.success,
             );
-
             Navigator.of(context).pushNamedAndRemoveUntil(
               AppRouter.loginRoute,
                   (route) => false,
             );
-
             context.read<AuthBloc>().add(ResetAuthState());
           } else if (state is AuthFailure) {
             showToast(
@@ -249,81 +267,63 @@ class _RegisterPageState extends State<RegisterPage> {
         },
         builder: (context, state) {
           final isLoading = state is AuthLoading;
-
-          return Stack(
-            children: [
-              _buildBackground(),
-              Positioned(
-                top: 48,
-                left: 16,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    height: 44,
-                    width: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Bouton retour ──
+                  GestureDetector(
+                    onTap: () {
+                      if (_currentStep > 0) {
+                        _goToPreviousStep();
+                      } else {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    child: Container(
+                      height: 44,
+                      width: 44,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 18,
+                        color: Colors.black,
+                      ),
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new, size: 18, color: Colors.black),
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  _buildHeader(),
+                  const SizedBox(height: 24),
+                  _buildStepIndicator(),
+                  const SizedBox(height: 24),
+                  _buildRegisterForm(isLoading),
+                  const SizedBox(height: 24),
+                  _buildStepNavigation(isLoading),
+                  const SizedBox(height: 28),
+                  _buildTermsAndPrivacy(),
+                  const SizedBox(height: 24),
+                ],
               ),
-              SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 40),
-                      _buildHeader(),
-                      const SizedBox(height: 32),
-                      _buildStepIndicator(),
-                      const SizedBox(height: 32),
-                      _buildRegisterForm(isLoading),
-                      const SizedBox(height: 32),
-                      _buildStepNavigation(isLoading),
-                      const SizedBox(height: 40),
-                      _buildTermsAndPrivacy(),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           );
         },
       ),
     );
   }
 
-  Widget _buildBackground() {
-    return Column(
-      children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  AppColor.kPrimary.withOpacity(0.05),
-                  Colors.transparent,
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
+  // ─────────────────────── HEADER ───────────────────────
   Widget _buildHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,42 +333,48 @@ class _RegisterPageState extends State<RegisterPage> {
             tag: 'app-logo',
             child: Image.asset(
               'assets/images/logosignapk.jpeg',
-              width: 150,
+              width: 130,
               fit: BoxFit.contain,
             ),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         Text(
           _currentStep == 0 ? 'Commençons !' : 'Informations complémentaires',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 32,
+            fontSize: 28,
             fontWeight: FontWeight.w800,
             color: AppColor.kGrayscaleDark100,
             height: 1.2,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           _currentStep == 0
               ? 'Remplissez vos informations personnelles'
               : 'Complétez votre profil pour commencer à signer',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
             color: AppColor.kGrayscale40,
-            height: 1.4,
+            height: 1.5,
           ),
         ),
       ],
     );
   }
 
+  // ─────────────────────── STEP INDICATOR ───────────────────────
   Widget _buildStepIndicator() {
     return Row(
       children: [
         _buildStepCircle(1, 'Informations', _currentStep >= 0),
-        const Expanded(child: Divider(color: AppColor.kLine, thickness: 1.5)),
+        Expanded(
+          child: Container(
+            height: 2,
+            color: _currentStep >= 1 ? AppColor.kPrimary : AppColor.kLine,
+          ),
+        ),
         _buildStepCircle(2, 'Profil', _currentStep >= 1),
       ],
     );
@@ -381,8 +387,17 @@ class _RegisterPageState extends State<RegisterPage> {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: isActive ? AppColor.kPrimary : AppColor.kGrayscale40,
+            color: isActive ? AppColor.kPrimary : AppColor.kLine,
             shape: BoxShape.circle,
+            boxShadow: isActive
+                ? [
+              BoxShadow(
+                color: AppColor.kPrimary.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ]
+                : null,
           ),
           child: Center(
             child: Text(
@@ -395,11 +410,11 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w600,
             color: isActive ? AppColor.kPrimary : AppColor.kGrayscale40,
           ),
@@ -408,6 +423,7 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ─────────────────────── FORM CARD ───────────────────────
   Widget _buildRegisterForm(bool isLoading) {
     return Container(
       decoration: BoxDecoration(
@@ -415,7 +431,7 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColor.kPrimary.withOpacity(0.1),
+            color: AppColor.kPrimary.withOpacity(0.08),
             blurRadius: 40,
             offset: const Offset(0, 8),
           ),
@@ -426,7 +442,7 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Form(
         key: _formKeys[_currentStep],
         child: _currentStep == 0 ? _buildStep1Form() : _buildStep2Form(),
@@ -434,225 +450,259 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ─────────────────────── STEP 1 ───────────────────────
   Widget _buildStep1Form() {
     return Column(
       children: [
-        _buildTextFieldWithLabel(
+        // CORRECTION 2 : Prénom — lettres uniquement
+        _buildInputField(
           label: 'Prénom',
           hint: 'Ex: Jane',
           controller: _firstNameController,
-          prefixIcon: Icons.person_outline,
+          icon: Icons.person_outline,
           isRequired: true,
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Ce champ est obligatoire';
+            if (!RegExp(r"^[a-zA-ZÀ-ÿ\s\-']+$").hasMatch(v)) {
+              return 'Le prénom ne doit contenir que des lettres';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 16),
-        _buildTextFieldWithLabel(
+        // CORRECTION 2 : Nom — lettres uniquement
+        _buildInputField(
           label: 'Nom',
           hint: 'Ex: Doe',
           controller: _lastNameController,
-          prefixIcon: Icons.person_outline,
+          icon: Icons.person_outline,
           isRequired: true,
-        ),
-        const SizedBox(height: 16),
-        // Champ téléphone avec IntlPhoneField
-        _buildPhoneField(
-          label: 'Téléphone',
-          onChanged: (phone) {
-            setState(() {
-              _phoneNumber = phone.completeNumber; // stocke le numéro complet avec indicatif
-            });
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Ce champ est obligatoire';
+            if (!RegExp(r"^[a-zA-ZÀ-ÿ\s\-']+$").hasMatch(v)) {
+              return 'Le nom ne doit contenir que des lettres';
+            }
+            return null;
           },
-          isRequired: true,
         ),
         const SizedBox(height: 16),
-        _buildTextFieldWithLabel(
+        // CORRECTION 1 : Téléphone obligatoire
+        _buildPhoneInput(
+          label: 'Téléphone',
+          isRequired: true,
+          controller: _phoneController,
+          onChanged: (phone) => setState(() => _phoneNumber = phone.completeNumber),
+        ),
+        const SizedBox(height: 16),
+        _buildInputField(
           label: 'Adresse e-mail',
           hint: 'exemple@gmail.com',
           controller: _emailController,
-          prefixIcon: Icons.email_outlined,
+          icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
+          isRequired: true,
           validator: (value) {
-            if (value == null || value.isEmpty) return 'Ce champ est requis';
+            if (value == null || value.isEmpty) return 'Ce champ est obligatoire';
             if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
               return 'Email invalide';
             }
             return null;
           },
-          isRequired: false,
         ),
         const SizedBox(height: 16),
-        _buildPasswordField(),
+        // CORRECTION 3 : Mot de passe avec critères visuels
+        _buildPasswordInput(),
       ],
     );
   }
 
+  // ─────────────────────── STEP 2 ───────────────────────
   Widget _buildStep2Form() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildTextFieldWithLabel(
+        _buildInputField(
           label: 'Adresse complète',
           hint: 'Ex: Dakar, Sacré Coeur 3',
           controller: _addressController,
-          prefixIcon: Icons.location_on_outlined,
+          icon: Icons.location_on_outlined,
           isRequired: true,
+          validator: (v) => (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
         ),
         const SizedBox(height: 16),
-        _buildTextFieldWithLabel(
-          label: 'Numéro de carte d\'identité',
-          hint: 'Ex: 12345678',
-          controller: _cinController,
-          prefixIcon: Icons.badge_outlined,
-          isRequired: true,
-        ),
+        // CORRECTION 4 : CIN — chiffres uniquement
+        _buildCinInputField(),
         const SizedBox(height: 16),
         _buildRoleDropdown(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         _buildProfilePhotoSection(),
-        if (_selectedRole == 'Professionnel') ...[
-          const SizedBox(height: 24),
-          const Divider(color: AppColor.kLine, thickness: 1),
-          const SizedBox(height: 16),
 
-          // Nom de l'entreprise
-          _buildTextFieldWithLabel(
-            label: 'Nom de l’entreprise',
+        if (_selectedRole == 'Professionnel') ...[
+          const SizedBox(height: 20),
+          Container(height: 1, color: AppColor.kLine),
+          const SizedBox(height: 20),
+          _buildSectionTitle("Informations de l'entreprise"),
+          const SizedBox(height: 16),
+          _buildInputField(
+            label: "Nom de l'entreprise",
             hint: 'Ex: Mon Entreprise SARL',
             controller: _nomEntrepriseController,
-            prefixIcon: Icons.apartment_outlined,
+            icon: Icons.apartment_outlined,
             isRequired: true,
+            validator: (v) =>
+            (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
           ),
           const SizedBox(height: 16),
-
-          // Adresse de l'entreprise
-          _buildTextFieldWithLabel(
-            label: 'Adresse de l’entreprise',
+          _buildInputField(
+            label: "Adresse de l'entreprise",
             hint: 'Ex: Dakar, Sénégal',
             controller: _adresseEntrepriseController,
-            prefixIcon: Icons.location_on_outlined,
+            icon: Icons.location_on_outlined,
             isRequired: true,
+            validator: (v) =>
+            (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
           ),
           const SizedBox(height: 16),
-
-          // Téléphone de l'entreprise avec IntlPhoneField
-          _buildPhoneField(
-            label: 'Téléphone de l’entreprise',
-            onChanged: (phone) {
-              setState(() {
-                _entreprisePhoneNumber = phone.completeNumber;
-              });
-            },
+          _buildPhoneInput(
+            label: "Téléphone de l'entreprise",
             isRequired: true,
+            controller: _entreprisePhoneController,
+            onChanged: (phone) =>
+                setState(() => _entreprisePhoneNumber = phone.completeNumber),
           ),
           const SizedBox(height: 16),
-
-          // Email de l'entreprise
-          _buildTextFieldWithLabel(
-            label: 'Email de l’entreprise',
+          _buildInputField(
+            label: "Email de l'entreprise",
             hint: 'Ex: contact@monentreprise.sn',
             controller: _emailEntrepriseController,
-            prefixIcon: Icons.email_outlined,
+            icon: Icons.email_outlined,
+            keyboardType: TextInputType.emailAddress,
             isRequired: true,
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Ce champ est obligatoire';
+              if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                return 'Email invalide';
+              }
+              return null;
+            },
           ),
           const SizedBox(height: 16),
-
-          // Logo
-          _buildLogoSection(),
-          const SizedBox(height: 16),
-
-          // RC
-          _buildTextFieldWithLabel(
+          _buildInputField(
             label: 'Registre de Commerce (RC)',
             hint: 'Ex: RC 2023 B 12345',
             controller: _rcController,
-            prefixIcon: Icons.business_center_outlined,
+            icon: Icons.business_center_outlined,
             isRequired: true,
+            validator: (v) =>
+            (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
           ),
           const SizedBox(height: 16),
-
-          // NINEA
-          _buildTextFieldWithLabel(
+          _buildInputField(
             label: 'NINEA',
             hint: 'Ex: 123456789',
             controller: _nineaController,
-            prefixIcon: Icons.numbers_outlined,
+            icon: Icons.numbers_outlined,
             isRequired: true,
+            validator: (v) =>
+            (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
           ),
           const SizedBox(height: 16),
-
-          // Signature
+          _buildLogoSection(),
+          const SizedBox(height: 16),
           _buildSignatureSection(),
         ],
       ],
     );
   }
 
-  // Widget pour le champ téléphone avec IntlPhoneField
-  Widget _buildPhoneField({
-    required String label,
-    required void Function(PhoneNumber) onChanged, // PhoneNumber non nullable
-    bool isRequired = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  // ─────────────────────── COMPOSANTS INPUTS ───────────────────────
+
+  Widget _fieldLabel(String label, {bool isRequired = false}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: AppColor.kGrayscaleDark100,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+        Flexible(
+          child: Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              color: AppColor.kGrayscaleDark100,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
             ),
-            if (isRequired)
-              Text(
-                ' *',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColor.kLine, width: 1.5),
-          ),
-          child: IntlPhoneField(
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              hintText: 'Votre numéro',
-              hintStyle: GoogleFonts.plusJakartaSans(
-                color: AppColor.kGrayscale40,
-                fontSize: 16,
-              ),
-            ),
-            initialCountryCode: 'SN', // Sénégal par défaut
-            onChanged: onChanged,
-            validator: (phone) {
-              if (phone == null || phone.number.isEmpty) {
-                return 'Ce champ est requis';
-              }
-              if (!phone.isValidNumber()) {
-                return 'Numéro invalide pour le pays sélectionné';
-              }
-              return null;
-            },
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        if (isRequired)
+          Text(
+            ' *',
+            style: GoogleFonts.plusJakartaSans(
+              color: Colors.red,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
       ],
     );
   }
 
-  Widget _buildTextFieldWithLabel({
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: GoogleFonts.plusJakartaSans(
+        fontSize: 15,
+        fontWeight: FontWeight.w700,
+        color: AppColor.kGrayscaleDark100,
+      ),
+    );
+  }
+
+  InputDecoration _baseDecoration({
+    required String hint,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: GoogleFonts.plusJakartaSans(
+        fontSize: 14,
+        color: AppColor.kGrayscale40,
+      ),
+      prefixIcon: Icon(icon, color: AppColor.kPrimary, size: 20),
+      filled: true,
+      fillColor: const Color(0xFFF8F8FA),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: AppColor.kPrimary, width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+      ),
+      errorStyle: GoogleFonts.plusJakartaSans(
+        fontSize: 11,
+        color: Colors.redAccent,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
+
+  Widget _buildInputField({
     required String label,
     required String hint,
     required TextEditingController controller,
-    required IconData prefixIcon,
+    required IconData icon,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
     bool isRequired = false,
@@ -660,250 +710,385 @@ class _RegisterPageState extends State<RegisterPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.plusJakartaSans(
-                color: AppColor.kGrayscaleDark100,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            if (isRequired)
-              Text(
-                ' *',
-                style: GoogleFonts.plusJakartaSans(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-          ],
-        ),
+        _fieldLabel(label, isRequired: isRequired),
         const SizedBox(height: 8),
-        Container(
-          height: 52,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColor.kLine, width: 1.5),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
           ),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Icon(prefixIcon, color: AppColor.kPrimary, size: 20),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: PrimaryTextFormField(
-                    controller: controller,
-                    hintText: hint,
-                    height: 50,
-                    width: double.infinity,
-                    keyboardType: keyboardType,
-                    validator: validator,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          decoration: _baseDecoration(hint: hint, icon: icon),
+          validator: validator,
         ),
       ],
     );
   }
 
-  Widget _buildPasswordField() {
+  // ─────────────────────── CIN INPUT — chiffres uniquement (CORRECTION 4) ──
+  Widget _buildCinInputField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'Mot de passe',
-              style: GoogleFonts.plusJakartaSans(
-                color: AppColor.kGrayscaleDark100,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            Text(
-              ' *',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+        _fieldLabel("Numéro de carte d'identité", isRequired: true),
         const SizedBox(height: 8),
-        Container(
-          height: 52,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColor.kLine, width: 1.5),
+        TextFormField(
+          controller: _cinController,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
           ),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Icon(Icons.lock_outline, color: AppColor.kPrimary, size: 20),
-              ),
-              Expanded(
-                child: PasswordTextField(
-                  controller: _passwordController,
-                  hintText: 'Créez un mot de passe sécurisé',
-                  height: 50,
-                  width: double.infinity,
-                  borderRadius: BorderRadius.circular(12),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Ce champ est requis';
-                    if (value.length < 6) {
-                      return 'Le mot de passe doit contenir au moins 6 caractères';
-                    }
-                    return null;
-                  },
-                ),
-              ),
-            ],
-          ),
+          decoration: _baseDecoration(hint: 'Ex: 12345678', icon: Icons.badge_outlined),
+          validator: (v) {
+            if (v == null || v.isEmpty) return 'Ce champ est obligatoire';
+            if (!RegExp(r'^\d+$').hasMatch(v)) {
+              return 'Seuls les chiffres sont autorisés';
+            }
+            return null;
+          },
         ),
       ],
     );
   }
 
+  // ─────────────────────── PHONE INPUT (CORRECTION 1) ──────────────────────
+  Widget _buildPhoneInput({
+    required String label,
+    required void Function(PhoneNumber) onChanged,
+    required TextEditingController controller,
+    bool isRequired = false,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel(label, isRequired: isRequired),
+        const SizedBox(height: 8),
+        IntlPhoneField(
+          controller: controller,
+          initialCountryCode: 'SN',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
+          ),
+          dropdownTextStyle: GoogleFonts.plusJakartaSans(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
+          ),
+          decoration: InputDecoration(
+            hintText: 'Votre numéro',
+            hintStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              color: AppColor.kGrayscale40,
+            ),
+            filled: true,
+            fillColor: const Color(0xFFF8F8FA),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: AppColor.kPrimary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            counterText: '',
+            errorStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              color: Colors.redAccent,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          onChanged: onChanged,
+          validator: (phone) {
+            if (phone == null || phone.number.isEmpty) {
+              return 'Ce champ est obligatoire';
+            }
+            if (!phone.isValidNumber()) {
+              return 'Numéro de téléphone invalide';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────── PASSWORD INPUT (CORRECTION 3) ───────────────────
+  Widget _buildPasswordInput() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('Mot de passe', isRequired: true),
+        const SizedBox(height: 8),
+        Focus(
+          onFocusChange: (focused) => setState(() => _passwordFocused = focused),
+          child: TextFormField(
+            controller: _passwordController,
+            obscureText: _obscurePassword,
+            onChanged: _checkPasswordStrength,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppColor.kGrayscaleDark100,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Créez un mot de passe sécurisé',
+              hintStyle: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                color: AppColor.kGrayscale40,
+              ),
+              prefixIcon:
+              Icon(Icons.lock_outline_rounded, color: AppColor.kPrimary, size: 20),
+              suffixIcon: GestureDetector(
+                onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+                child: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: AppColor.kGrayscale40,
+                  size: 20,
+                ),
+              ),
+              filled: true,
+              fillColor: const Color(0xFFF8F8FA),
+              contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide.none,
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: AppColor.kPrimary, width: 1.5),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+              ),
+              errorStyle: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                color: Colors.redAccent,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Ce champ est obligatoire';
+              if (!_isPasswordValid) {
+                return 'Le mot de passe ne respecte pas tous les critères';
+              }
+              return null;
+            },
+          ),
+        ),
+        // Critères visibles dès la saisie ou le focus
+        if (_passwordController.text.isNotEmpty || _passwordFocused) ...[
+          const SizedBox(height: 10),
+          _buildPasswordCriteria(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPasswordCriteria() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F8FA),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Critères du mot de passe :',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColor.kGrayscaleDark100,
+            ),
+          ),
+          const SizedBox(height: 6),
+          _buildCriteriaRow('Au moins 8 caractères', _hasMinLength),
+          _buildCriteriaRow('Une lettre majuscule (A–Z)', _hasUpperCase),
+          _buildCriteriaRow('Une lettre minuscule (a–z)', _hasLowerCase),
+          _buildCriteriaRow('Un chiffre (0–9)', _hasDigit),
+          _buildCriteriaRow('Un caractère spécial (!@#\$%...)', _hasSpecialChar),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCriteriaRow(String text, bool isMet) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Icon(
+            isMet ? Icons.check_circle_rounded : Icons.cancel_rounded,
+            size: 14,
+            color: isMet ? const Color(0xFF22C55E) : Colors.redAccent,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: isMet ? const Color(0xFF22C55E) : Colors.redAccent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────── ROLE DROPDOWN ───────────────────────
   Widget _buildRoleDropdown() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(
-              'Rôle',
-              style: GoogleFonts.plusJakartaSans(
-                color: AppColor.kGrayscaleDark100,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            Text(
-              ' *',
-              style: GoogleFonts.plusJakartaSans(
-                color: Colors.red,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+        _fieldLabel('Rôle', isRequired: true),
         const SizedBox(height: 8),
-        Container(
-          height: 52,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColor.kLine, width: 1.5),
+        DropdownButtonFormField<String>(
+          value: _selectedRole,
+          isExpanded: true,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColor.kPrimary),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            color: AppColor.kGrayscaleDark100,
           ),
-          child: Row(
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Icon(Icons.work_outline, color: AppColor.kPrimary, size: 20),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: DropdownButtonFormField<String>(
-                    value: _selectedRole,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                    ),
-                    hint: Text(
-                      'Sélectionnez votre rôle',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: AppColor.kGrayscale40,
-                        fontSize: 16,
-                      ),
-                    ),
-                    items: _roles.map((role) {
-                      return DropdownMenuItem<String>(
-                        value: role,
-                        child: Text(
-                          role,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            color: AppColor.kGrayscaleDark100,
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) => setState(() => _selectedRole = value),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Veuillez sélectionner un rôle';
-                      }
-                      return null;
-                    },
-                  ),
+          decoration: InputDecoration(
+            hintText: 'Sélectionnez votre rôle',
+            hintStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              color: AppColor.kGrayscale40,
+            ),
+            prefixIcon: Icon(Icons.work_outline, color: AppColor.kPrimary, size: 20),
+            filled: true,
+            fillColor: const Color(0xFFF8F8FA),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: AppColor.kPrimary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+            ),
+            errorStyle: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              color: Colors.redAccent,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          items: _roles.map((role) {
+            return DropdownMenuItem<String>(
+              value: role,
+              child: Text(
+                role,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 15,
+                  color: AppColor.kGrayscaleDark100,
                 ),
               ),
-            ],
-          ),
+            );
+          }).toList(),
+          onChanged: (value) => setState(() => _selectedRole = value),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Veuillez sélectionner un rôle';
+            }
+            return null;
+          },
         ),
       ],
     );
   }
+
+  // ─────────────────────── PHOTO / LOGO / SIGNATURE ────────────────────────
 
   Widget _buildProfilePhotoSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Photo de profil',
-          style: GoogleFonts.plusJakartaSans(
-            color: AppColor.kGrayscaleDark100,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 12),
+        _fieldLabel('Photo de profil'),
+        const SizedBox(height: 10),
         GestureDetector(
           onTap: () => _pickImage(isProfile: true),
           child: Container(
-            height: 120,
+            height: 110,
+            width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _profileImage != null ? AppColor.kPrimary : AppColor.kLine,
-                width: _profileImage != null ? 2 : 1.5,
-              ),
-              color: AppColor.kBackground.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFFF8F8FA),
+              border: _profileImage != null
+                  ? Border.all(color: AppColor.kPrimary, width: 2)
+                  : null,
             ),
             child: _profileImage != null
                 ? ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.file(_profileImage!, fit: BoxFit.cover, width: double.infinity),
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(_profileImage!, fit: BoxFit.cover),
             )
                 : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.camera_alt_outlined, size: 32, color: AppColor.kPrimary),
+                Icon(Icons.camera_alt_outlined,
+                    size: 30, color: AppColor.kPrimary),
                 const SizedBox(height: 8),
                 Text(
                   'Ajouter une photo',
                   style: GoogleFonts.plusJakartaSans(
                     color: AppColor.kPrimary,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
                 Text(
-                  'Cliquez pour sélectionner',
+                  'Optionnel — cliquez pour sélectionner',
                   style: GoogleFonts.plusJakartaSans(
                     color: AppColor.kGrayscale40,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -918,50 +1103,46 @@ class _RegisterPageState extends State<RegisterPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Logo de l\'entreprise (optionnel)',
-          style: GoogleFonts.plusJakartaSans(
-            color: AppColor.kGrayscaleDark100,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 12),
+        _fieldLabel("Logo de l'entreprise"),
+        const SizedBox(height: 10),
         GestureDetector(
           onTap: () => _pickImage(isProfile: false),
           child: Container(
             height: 100,
+            width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _logoImage != null ? AppColor.kPrimary : AppColor.kLine,
-                width: _logoImage != null ? 2 : 1.5,
-              ),
-              color: AppColor.kBackground.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFFF8F8FA),
+              border: _logoImage != null
+                  ? Border.all(color: AppColor.kPrimary, width: 2)
+                  : null,
             ),
             child: _logoImage != null
                 ? ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.file(_logoImage!, fit: BoxFit.cover, width: double.infinity),
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(_logoImage!, fit: BoxFit.contain),
             )
                 : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.add_photo_alternate_outlined, size: 28, color: AppColor.kPrimary),
-                const SizedBox(height: 4),
+                Icon(Icons.add_photo_alternate_outlined,
+                    size: 28, color: AppColor.kPrimary),
+                const SizedBox(height: 6),
                 Text(
                   'Ajouter un logo',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     color: AppColor.kPrimary,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
                 Text(
                   'Optionnel',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     color: AppColor.kGrayscale40,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -972,55 +1153,49 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // Section signature
   Widget _buildSignatureSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Signature (optionnel)',
-          style: GoogleFonts.plusJakartaSans(
-            color: AppColor.kGrayscaleDark100,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 12),
+        _fieldLabel('Signature'),
+        const SizedBox(height: 10),
         GestureDetector(
           onTap: _openSignaturePad,
           child: Container(
             height: 100,
+            width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _signatureImage != null ? AppColor.kPrimary : AppColor.kLine,
-                width: _signatureImage != null ? 2 : 1.5,
-              ),
-              color: AppColor.kBackground.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFFF8F8FA),
+              border: _signatureImage != null
+                  ? Border.all(color: AppColor.kPrimary, width: 2)
+                  : null,
             ),
             child: _signatureImage != null
                 ? ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.file(_signatureImage!, fit: BoxFit.contain, width: double.infinity),
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(_signatureImage!, fit: BoxFit.contain),
             )
                 : Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.draw_outlined, size: 28, color: AppColor.kPrimary),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   'Signez ici',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     color: AppColor.kPrimary,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
                 Text(
-                  'Touchez pour signer',
+                  'Optionnel — touchez pour signer',
+                  textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     color: AppColor.kGrayscale40,
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ],
@@ -1031,111 +1206,93 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ─────────────────────── NAVIGATION BUTTONS ──────────────────────────────
   Widget _buildStepNavigation(bool isLoading) {
     return Row(
       children: [
-        if (_currentStep > 0)
+        if (_currentStep > 0) ...[
           Expanded(
-            child: Container(
-              height: 56,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColor.kPrimary, width: 1.5),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  onTap: _goToPreviousStep,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.arrow_back_rounded, color: AppColor.kPrimary, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Retour',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColor.kPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
+            child: SizedBox(
+              height: 54,
+              child: OutlinedButton.icon(
+                onPressed: _goToPreviousStep,
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: Text(
+                  'Retour',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColor.kPrimary,
+                  side: BorderSide(color: AppColor.kPrimary, width: 1.5),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
               ),
             ),
           ),
-        if (_currentStep > 0) const SizedBox(width: 16),
+          const SizedBox(width: 12),
+        ],
         Expanded(
-          flex: _currentStep == 0 ? 2 : 1,
           child: SizedBox(
-            height: 56,
+            height: 54,
             child: Material(
-              borderRadius: BorderRadius.circular(16),
-              elevation: 0,
-              color: AppColor.kPrimary,
+              color: Colors.transparent,
               child: InkWell(
                 onTap: isLoading ? null : _goToNextStep,
-                borderRadius: BorderRadius.circular(16),
-                splashColor: Colors.white.withOpacity(0.2),
-                highlightColor: Colors.white.withOpacity(0.1),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                borderRadius: BorderRadius.circular(14),
+                child: Ink(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: isLoading
-                        ? null
-                        : LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+                    borderRadius: BorderRadius.circular(14),
+                    gradient: LinearGradient(
                       colors: [
                         AppColor.kPrimary,
-                        AppColor.kPrimary.withOpacity(0.8),
+                        AppColor.kPrimary.withOpacity(0.82),
                       ],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
                     ),
                     boxShadow: isLoading
-                        ? null
+                        ? []
                         : [
                       BoxShadow(
-                        color: AppColor.kPrimary.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                        color: AppColor.kPrimary.withOpacity(0.35),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: Center(
                     child: isLoading
                         ? const SizedBox(
-                      width: 24,
-                      height: 24,
+                      width: 22,
+                      height: 22,
                       child: CircularProgressIndicator(
-                        strokeWidth: 2,
+                        strokeWidth: 2.5,
                         valueColor: AlwaysStoppedAnimation(Colors.white),
                       ),
                     )
                         : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _currentStep == 0 ? 'Suivant' : 'S\'inscrire',
+                          _currentStep == 0 ? 'Suivant' : "S'inscrire",
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Icon(
                           _currentStep == 0
                               ? Icons.arrow_forward_rounded
                               : Icons.check_circle_outline_rounded,
                           color: Colors.white,
-                          size: 20,
+                          size: 18,
                         ),
                       ],
                     ),
@@ -1149,24 +1306,24 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ─────────────────────── TERMS ───────────────────────────────────────────
   Widget _buildTermsAndPrivacy() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Text.rich(
           TextSpan(
             children: [
-              const TextSpan(text: 'En vous connectant, vous acceptez nos '),
+              const TextSpan(text: 'En vous inscrivant, vous acceptez nos '),
               TextSpan(
-                text: 'Conditions d\'utilisation',
+                text: "Conditions d'utilisation",
                 style: GoogleFonts.plusJakartaSans(
                   fontWeight: FontWeight.w700,
                   color: AppColor.kPrimary,
                 ),
                 recognizer: TapGestureRecognizer()
-                  ..onTap = () => Navigator.of(context).pushNamed(
-                    AppRouter.contiditionUtilisationRoute,
-                  ),
+                  ..onTap = () => Navigator.of(context)
+                      .pushNamed(AppRouter.contiditionUtilisationRoute),
               ),
               const TextSpan(text: ' et notre '),
               TextSpan(
@@ -1176,9 +1333,8 @@ class _RegisterPageState extends State<RegisterPage> {
                   color: AppColor.kPrimary,
                 ),
                 recognizer: TapGestureRecognizer()
-                  ..onTap = () => Navigator.of(context).pushNamed(
-                    AppRouter.politiqueConfRoute,
-                  ),
+                  ..onTap = () =>
+                      Navigator.of(context).pushNamed(AppRouter.politiqueConfRoute),
               ),
             ],
           ),
