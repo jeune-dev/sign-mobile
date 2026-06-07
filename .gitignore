@@ -45,3 +45,9 @@ app.*.map.json
 /android/app/release
 
 .env
+
+# BLK-06 : Keystore et credentials — NE JAMAIS commiter
+android/key.properties
+android/upload-keystore.jks
+*.jks
+*.keystore

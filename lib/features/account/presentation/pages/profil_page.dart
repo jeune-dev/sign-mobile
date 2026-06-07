@@ -270,7 +270,7 @@ class _ProfilPageState extends State<ProfilPage> {
           border: Border.all(color: Colors.white, width: 3),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4)),
           ],
@@ -293,7 +293,7 @@ class _ProfilPageState extends State<ProfilPage> {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white24,
+        color: Colors.white.withValues(alpha: 0.24),
         border: Border.all(color: Colors.white, width: 3),
       ),
       child: Center(
@@ -313,7 +313,7 @@ class _ProfilPageState extends State<ProfilPage> {
     return Container(
       width: size,
       height: size,
-      color: Colors.white24,
+      color: Colors.white.withValues(alpha: 0.24),
       child: Center(
         child: Text(
           initials,
@@ -341,10 +341,10 @@ class _ProfilPageState extends State<ProfilPage> {
     };
 
     final badgeColor = switch (role) {
-      'Professionnel' => Colors.blue.withOpacity(0.25),
-      'Independant'   => Colors.orange.withOpacity(0.25),
-      'Particulier'   => Colors.green.withOpacity(0.20),
-      _               => Colors.white.withOpacity(0.15),
+      'Professionnel' => Colors.blue.withValues(alpha: 0.25),
+      'Independant'   => Colors.orange.withValues(alpha: 0.25),
+      'Particulier'   => Colors.green.withValues(alpha: 0.20),
+      _               => Colors.white.withValues(alpha: 0.15),
     };
 
     return Container(
@@ -352,7 +352,7 @@ class _ProfilPageState extends State<ProfilPage> {
       decoration: BoxDecoration(
         color: badgeColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
       ),
       child: Text(
         label,
@@ -383,7 +383,7 @@ class _ProfilPageState extends State<ProfilPage> {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 12,
               offset: const Offset(0, 3)),
         ],
@@ -492,9 +492,9 @@ class _ProfilPageState extends State<ProfilPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withOpacity(0.3)),
+              border: Border.all(color: color.withValues(alpha: 0.3)),
             ),
             child: Text(
               label,

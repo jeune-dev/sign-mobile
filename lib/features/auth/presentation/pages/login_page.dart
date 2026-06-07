@@ -28,6 +28,11 @@ class _LoginPageState extends State<LoginPage> {
   bool _isEmail = true;
   bool _obscurePassword = true;
 
+  // SEC-05 : Throttle anti-brute-force — max 1 tentative toutes les 3 secondes
+  int _loginAttempts = 0;
+  DateTime? _lastLoginAttempt;
+  bool _isThrottled = false;
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -36,7 +41,42 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _onLoginPressed() {
+    // SEC-05 : Throttle anti-brute-force
+    final now = DateTime.now();
+    if (_lastLoginAttempt != null &&
+        now.difference(_lastLoginAttempt!) < const Duration(seconds: 3)) {
+      // Tentative trop rapide — ignorer silencieusement
+      return;
+    }
+
+    // Après 5 tentatives échouées, bloquer 30 secondes
+    if (_isThrottled) {
+      showToast(
+        context,
+        'Trop de tentatives',
+        'Veuillez patienter 30 secondes avant de réessayer.',
+        ToastificationType.warning,
+      );
+      return;
+    }
+
     if (_formKey.currentState!.validate()) {
+      _lastLoginAttempt = now;
+      _loginAttempts++;
+
+      // Blocage temporaire après 5 tentatives consécutives
+      if (_loginAttempts >= 5) {
+        setState(() => _isThrottled = true);
+        Future.delayed(const Duration(seconds: 30), () {
+          if (mounted) {
+            setState(() {
+              _isThrottled = false;
+              _loginAttempts = 0;
+            });
+          }
+        });
+      }
+
       String identifiant;
       if (_isEmail) {
         identifiant = _emailController.text.trim();
@@ -57,6 +97,9 @@ class _LoginPageState extends State<LoginPage> {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is AuthSuccess) {
+          // SEC-05 : Réinitialiser le compteur de tentatives après succès
+          _loginAttempts = 0;
+          _isThrottled = false;
           final role = state.user.role.toLowerCase();
           String route = AppRouter.homeRoute;
 
@@ -132,7 +175,7 @@ class _LoginPageState extends State<LoginPage> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 16,
                     offset: const Offset(0, 4),
                   ),
@@ -195,12 +238,12 @@ class _LoginPageState extends State<LoginPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColor.kPrimary.withOpacity(0.08),
+            color: AppColor.kPrimary.withValues(alpha: 0.08),
             blurRadius: 40,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -278,7 +321,7 @@ class _LoginPageState extends State<LoginPage> {
             boxShadow: selected
                 ? [
               BoxShadow(
-                color: AppColor.kPrimary.withOpacity(0.25),
+                color: AppColor.kPrimary.withValues(alpha: 0.25),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -564,7 +607,7 @@ class _LoginPageState extends State<LoginPage> {
               gradient: LinearGradient(
                 colors: [
                   AppColor.kPrimary,
-                  AppColor.kPrimary.withOpacity(0.82),
+                  AppColor.kPrimary.withValues(alpha: 0.82),
                 ],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
@@ -573,7 +616,7 @@ class _LoginPageState extends State<LoginPage> {
                   ? []
                   : [
                 BoxShadow(
-                  color: AppColor.kPrimary.withOpacity(0.35),
+                  color: AppColor.kPrimary.withValues(alpha: 0.35),
                   blurRadius: 18,
                   offset: const Offset(0, 6),
                 ),

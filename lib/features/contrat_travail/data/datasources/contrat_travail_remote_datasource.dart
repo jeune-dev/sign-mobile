@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sign_application/core/config/env.dart';
 import '../models/contrat_travail_model.dart';
 
@@ -36,8 +37,10 @@ class ContratTravailRemoteDataSourceImpl implements ContratTravailRemoteDataSour
     for (final e in dataList) {
       try {
         result.add(ContratTravailModel.fromJson(Map<String, dynamic>.from(e as Map)));
-      } catch (_) {
-        // Item ignoré silencieusement si parsing échoue
+      } catch (e, stack) {
+        // SEC-02 : Log l'item corrompu sans crasher toute la liste
+        debugPrint('⚠️ ContratTravail parse error: $e');
+        if (!kDebugMode) FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack));
       }
     }
     return result;

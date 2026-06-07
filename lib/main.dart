@@ -31,17 +31,23 @@ void main() async {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   // IMP-02 : Firebase Crashlytics — monitoring des crashes en production.
-  // PRÉREQUIS : Ajouter google-services.json dans android/app/ depuis la console Firebase.
-  // https://console.firebase.google.com → Nouveau projet → Ajouter app Android
-  // applicationId: com.signapp.sign_application
-  await Firebase.initializeApp();
-  if (!kDebugMode) {
-    // Crashlytics actif uniquement en production (pas pendant les tests)
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-      return true;
-    };
+  // Android  : google-services.json dans android/app/
+  // iOS      : GoogleService-Info.plist dans ios/Runner/ (via Xcode → Add Files to Runner)
+  // AS-03    : Guard iOS — sans GoogleService-Info.plist, Firebase crashe au démarrage iOS.
+  try {
+    await Firebase.initializeApp();
+    if (!kDebugMode) {
+      // Crashlytics actif uniquement en production (pas pendant les tests)
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+    }
+  } catch (e) {
+    // Firebase non configuré sur cette plateforme (iOS sans GoogleService-Info.plist)
+    // L'app continue de fonctionner sans Crashlytics
+    debugPrint('⚠️ Firebase non initialisé : $e');
   }
 
   // Requis par media_store_plus — initialiser une seule fois avant tout

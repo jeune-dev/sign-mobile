@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>sign_application</string>
+	<string>SIGN</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -28,22 +28,31 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<!-- AS-05 : Portrait uniquement — l'UI n'est pas conçue pour le landscape -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- AS-06 : Force le mode clair — pas de Dark Mode géré dans cette version -->
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
+
+	<!-- BLK-03/AS-02 : Permissions galerie et caméra — obligatoires pour image_picker -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SIGN utilise votre bibliothèque photo pour ajouter une photo de profil et un logo d'entreprise.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SIGN peut utiliser l'appareil photo pour prendre une photo de profil.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>SIGN enregistre vos documents signés dans votre bibliothèque photo.</string>
 </dict>
 </plist>

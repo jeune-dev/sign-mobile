@@ -6,7 +6,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:toastification/toastification.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:signature/signature.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -95,22 +94,23 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _openSignaturePad() async {
+    // BUG-03 : SignatureController doit être disposé dans tous les cas
     final controller = SignatureController(
       penStrokeWidth: 3,
       penColor: Colors.black,
       exportBackgroundColor: Colors.white,
     );
 
-    return showDialog(
+    await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Signez ici',
           style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
         ),
         content: Container(
-          width: MediaQuery.of(context).size.width * 0.8,
+          width: MediaQuery.of(dialogContext).size.width * 0.8,
           height: 200,
           decoration: BoxDecoration(
             color: const Color(0xFFF8F8FA),
@@ -120,7 +120,7 @@ class _RegisterPageState extends State<RegisterPage> {
             borderRadius: BorderRadius.circular(14),
             child: Signature(
               controller: controller,
-              width: MediaQuery.of(context).size.width * 0.8,
+              width: MediaQuery.of(dialogContext).size.width * 0.8,
               height: 200,
             ),
           ),
@@ -136,19 +136,22 @@ class _RegisterPageState extends State<RegisterPage> {
           ElevatedButton(
             onPressed: () async {
               if (controller.isEmpty) {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 return;
               }
               final Uint8List? data = await controller.toPngBytes();
+              // SEC-01 : Vérifier mounted après chaque await
+              if (!dialogContext.mounted) return;
               if (data != null) {
                 final tempDir = await getTemporaryDirectory();
+                if (!dialogContext.mounted) return;
                 final file = File(
                   '${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png',
                 );
                 await file.writeAsBytes(data);
-                setState(() => _signatureImage = file);
+                if (mounted) setState(() => _signatureImage = file);
               }
-              Navigator.pop(context);
+              if (dialogContext.mounted) Navigator.pop(dialogContext);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColor.kPrimary,
@@ -165,6 +168,9 @@ class _RegisterPageState extends State<RegisterPage> {
         ],
       ),
     );
+
+    // BUG-03 : Toujours disposer le controller après fermeture du dialogue
+    controller.dispose();
   }
 
   void _goToNextStep() {
@@ -290,7 +296,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
+                            color: Colors.black.withValues(alpha: 0.08),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
@@ -392,7 +398,7 @@ class _RegisterPageState extends State<RegisterPage> {
             boxShadow: isActive
                 ? [
               BoxShadow(
-                color: AppColor.kPrimary.withOpacity(0.3),
+                color: AppColor.kPrimary.withValues(alpha: 0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -431,12 +437,12 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppColor.kPrimary.withOpacity(0.08),
+            color: AppColor.kPrimary.withValues(alpha: 0.08),
             blurRadius: 40,
             offset: const Offset(0, 8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -644,8 +650,8 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isEnt
-              ? const Color(0xFF4285F4).withOpacity(0.3)
-              : const Color(0xFFFF9800).withOpacity(0.4),
+              ? const Color(0xFF4285F4).withValues(alpha: 0.3)
+              : const Color(0xFFFF9800).withValues(alpha: 0.4),
         ),
       ),
       child: Row(
@@ -1051,7 +1057,7 @@ class _RegisterPageState extends State<RegisterPage> {
         _fieldLabel('Rôle', isRequired: true),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _selectedRole,
+          initialValue: _selectedRole,
           isExpanded: true,
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColor.kPrimary),
           style: GoogleFonts.plusJakartaSans(
@@ -1324,7 +1330,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     gradient: LinearGradient(
                       colors: [
                         AppColor.kPrimary,
-                        AppColor.kPrimary.withOpacity(0.82),
+                        AppColor.kPrimary.withValues(alpha: 0.82),
                       ],
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
@@ -1333,7 +1339,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ? []
                         : [
                       BoxShadow(
-                        color: AppColor.kPrimary.withOpacity(0.35),
+                        color: AppColor.kPrimary.withValues(alpha: 0.35),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
