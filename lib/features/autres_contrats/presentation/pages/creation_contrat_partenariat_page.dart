@@ -5,6 +5,7 @@ import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
 import '../widgets/client_search_field.dart';
+import '../widgets/contrat_form_widgets.dart';
 
 class CreationContratPartenariatPage extends StatefulWidget {
   const CreationContratPartenariatPage({super.key});
@@ -14,53 +15,69 @@ class CreationContratPartenariatPage extends StatefulWidget {
 }
 
 class _State extends State<CreationContratPartenariatPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _objetCtrl = TextEditingController();
-  final _dureeCtrl = TextEditingController();
-  final _resp1Ctrl = TextEditingController();
-  final _resp2Ctrl = TextEditingController();
+  int _step = 0;
+  static const int _totalSteps = 3;
+  static const _steps = ['Partenaire', 'Accord', 'Revenus'];
+
+  static const _accent = Color(0xFF7C3AED);
+  static const _icon   = Icons.people_alt_outlined;
+  static const _titre  = 'Contrat de partenariat';
+
+  final _formKey1 = GlobalKey<FormState>();
+  final _formKey2 = GlobalKey<FormState>();
+
+  Client? _client;
+
+  final _objetCtrl   = TextEditingController();
+  final _dureeCtrl   = TextEditingController();
+  final _resp1Ctrl   = TextEditingController();
+  final _resp2Ctrl   = TextEditingController();
   final _contrib1Ctrl = TextEditingController();
   final _contrib2Ctrl = TextEditingController();
-  final _pct1Ctrl = TextEditingController();
-  final _pct2Ctrl = TextEditingController();
-  final _villeCtrl = TextEditingController();
-  bool _partageRevenus = false;
-  Client? _selectedClient;
+  final _pct1Ctrl    = TextEditingController();
+  final _pct2Ctrl    = TextEditingController();
+  final _villeCtrl   = TextEditingController();
 
-  static const _badgeColor = Color(0xFF4F46E5);
+  bool _partageRevenus = false;
 
   @override
   void dispose() {
-    _objetCtrl.dispose();
-    _dureeCtrl.dispose();
-    _resp1Ctrl.dispose();
-    _resp2Ctrl.dispose();
-    _contrib1Ctrl.dispose();
-    _contrib2Ctrl.dispose();
-    _pct1Ctrl.dispose();
-    _pct2Ctrl.dispose();
-    _villeCtrl.dispose();
+    _objetCtrl.dispose(); _dureeCtrl.dispose(); _resp1Ctrl.dispose();
+    _resp2Ctrl.dispose(); _contrib1Ctrl.dispose(); _contrib2Ctrl.dispose();
+    _pct1Ctrl.dispose(); _pct2Ctrl.dispose(); _villeCtrl.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedClient == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un client'), backgroundColor: Colors.red),
-      );
-      return;
+  void _onNext() {
+    if (_step == 0) {
+      if (_client == null) { _showError('Veuillez sélectionner un partenaire'); return; }
+      setState(() => _step = 1);
+    } else if (_step == 1) {
+      if (!(_formKey1.currentState?.validate() ?? false)) return;
+      setState(() => _step = 2);
+    } else {
+      _submit();
     }
+  }
+
+  void _onBack() => setState(() => _step--);
+
+  void _showError(String msg) => ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(msg), backgroundColor: Colors.red[600], behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+  );
+
+  void _submit() {
     context.read<AutresContratsBloc>().add(CreerContrat('contrat-partenariat', {
-      'autrePartieId': _selectedClient!.id,
+      'autrePartieId': _client!.id,
       'data': {
-        'objet_partenariat': _objetCtrl.text.trim(),
-        'duree': _dureeCtrl.text.trim(),
+        'objet_partenariat':       _objetCtrl.text.trim(),
+        'duree':                   _dureeCtrl.text.trim(),
         'responsabilites_partie1': _resp1Ctrl.text.trim(),
         'responsabilites_partie2': _resp2Ctrl.text.trim(),
-        'contribution_partie1': _contrib1Ctrl.text.trim(),
-        'contribution_partie2': _contrib2Ctrl.text.trim(),
-        'partage_revenus': _partageRevenus,
+        'contribution_partie1':    _contrib1Ctrl.text.trim(),
+        'contribution_partie2':    _contrib2Ctrl.text.trim(),
+        'partage_revenus':         _partageRevenus,
         if (_partageRevenus && _pct1Ctrl.text.isNotEmpty) 'pourcentage_partie1': double.tryParse(_pct1Ctrl.text),
         if (_partageRevenus && _pct2Ctrl.text.isNotEmpty) 'pourcentage_partie2': double.tryParse(_pct2Ctrl.text),
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
@@ -69,173 +86,50 @@ class _State extends State<CreationContratPartenariatPage> {
     }));
   }
 
+  String get _stepSubtitle {
+    switch (_step) {
+      case 0: return 'Identifiez le partenaire commercial';
+      case 1: return 'Définissez les termes du partenariat';
+      default: return 'Partage des revenus et finalisation';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: kBgColor,
       body: BlocListener<AutresContratsBloc, AutresContratsState>(
-        listener: (context, state) {
+        listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.green),
-            );
-            Navigator.pop(context);
+            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.green[600], behavior: SnackBarBehavior.floating));
+            Navigator.pop(ctx);
           }
-          if (state is AutresContratsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
-          }
+          if (state is AutresContratsError) _showError(state.message);
         },
         child: Column(
           children: [
-            // Custom Header
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
+            CFormHeader(
+              titre: _titre, stepTitle: _steps[_step], stepSubtitle: _stepSubtitle,
+              icon: _icon, accentColor: _accent, currentStep: _step,
+              totalSteps: _totalSteps, stepLabels: _steps,
+              onBack: () => Navigator.pop(context),
+            ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                transitionBuilder: (child, anim) => SlideTransition(
+                  position: Tween<Offset>(begin: const Offset(0.08, 0), end: Offset.zero)
+                      .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+                  child: FadeTransition(opacity: anim, child: child),
                 ),
-              ),
-              padding: EdgeInsets.fromLTRB(20, topPadding + 16, 20, 24),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Text(
-                      'Contrat de partenariat',
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: _badgeColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text('Partenariat', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                  ),
-                ],
+                child: KeyedSubtree(key: ValueKey(_step), child: _buildStep()),
               ),
             ),
-            // Body
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                  children: [
-                    ClientSearchField(
-                      label: 'Partenaire (partie 2)',
-                      onClientSelected: (c) => setState(() => _selectedClient = c),
-                    ),
-                    const SizedBox(height: 16),
-                    // Section: Objet du partenariat
-                    _buildSection(
-                      icon: Icons.handshake_outlined,
-                      iconColor: _badgeColor,
-                      title: 'Objet du partenariat',
-                      children: [
-                        _field(_objetCtrl, 'Objet du partenariat', icon: Icons.description_outlined, required: true, maxLines: 2),
-                        const SizedBox(height: 12),
-                        _field(_dureeCtrl, 'Durée du partenariat', icon: Icons.timer_outlined, required: true),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Section: Responsabilités
-                    _buildSection(
-                      icon: Icons.balance_outlined,
-                      iconColor: _badgeColor,
-                      title: 'Responsabilités',
-                      children: [
-                        _field(_resp1Ctrl, 'Responsabilités partie 1', icon: Icons.person_outline, required: true, maxLines: 2),
-                        const SizedBox(height: 12),
-                        _field(_resp2Ctrl, 'Responsabilités partie 2', icon: Icons.person_outline, required: true, maxLines: 2),
-                        const SizedBox(height: 12),
-                        _field(_contrib1Ctrl, 'Contribution partie 1', icon: Icons.volunteer_activism_outlined, required: true),
-                        const SizedBox(height: 12),
-                        _field(_contrib2Ctrl, 'Contribution partie 2', icon: Icons.volunteer_activism_outlined, required: true),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Section: Partage des revenus
-                    _buildSection(
-                      icon: Icons.payments_outlined,
-                      iconColor: _badgeColor,
-                      title: 'Partage des revenus',
-                      children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!),
-                          ),
-                          child: SwitchListTile(
-                            title: const Text('Partage des revenus', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                            value: _partageRevenus,
-                            activeColor: _badgeColor,
-                            onChanged: (v) => setState(() => _partageRevenus = v),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                        ),
-                        if (_partageRevenus) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(child: _field(_pct1Ctrl, '% Partie 1', icon: Icons.percent_outlined, required: false, keyboardType: TextInputType.number)),
-                              const SizedBox(width: 12),
-                              Expanded(child: _field(_pct2Ctrl, '% Partie 2', icon: Icons.percent_outlined, required: false, keyboardType: TextInputType.number)),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Section: Signature
-                    _buildSection(
-                      icon: Icons.location_on_outlined,
-                      iconColor: _badgeColor,
-                      title: 'Signature',
-                      children: [
-                        _field(_villeCtrl, 'Ville de signature (optionnel)', icon: Icons.place_outlined, required: false),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    BlocBuilder<AutresContratsBloc, AutresContratsState>(
-                      builder: (context, state) {
-                        final isLoading = state is AutresContratsLoading;
-                        return SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            onPressed: isLoading ? null : _submit,
-                            child: isLoading
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Text('Créer le contrat', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+            BlocBuilder<AutresContratsBloc, AutresContratsState>(
+              builder: (ctx, state) => CBottomBar(
+                step: _step, totalSteps: _totalSteps,
+                onBack: _onBack, onNext: _onNext, accentColor: _accent,
+                isLoading: state is AutresContratsLoading,
               ),
             ),
           ],
@@ -244,61 +138,138 @@ class _State extends State<CreationContratPartenariatPage> {
     );
   }
 
-  Widget _buildSection({required IconData icon, required Color iconColor, required String title, required List<Widget> children}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
-        ],
+  Widget _buildStep() {
+    switch (_step) {
+      case 0: return _step0();
+      case 1: return _step1();
+      default: return _step2();
+    }
+  }
+
+  Widget _step0() => ListView(
+    padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+    children: [
+      CInfoBanner(
+        title: 'Contrat de partenariat',
+        description: 'Définissez les droits, responsabilités et contributions de chaque partenaire dans un cadre légal solide.',
+        icon: _icon, accentColor: _accent,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      kGapLg,
+      CSection(
+        title: 'Partenaire',
+        icon: Icons.person_search_outlined,
+        accentColor: _accent,
+        subtitle: 'La seconde partie de ce partenariat',
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                  child: Icon(icon, color: iconColor, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-          ),
+          if (_client != null)
+            CClientDisplay(client: _client!, accentColor: _accent, role: 'Partenaire (partie 2)', onClear: () => setState(() => _client = null))
+          else
+            ClientSearchField(label: 'Rechercher un partenaire', onClientSelected: (c) => setState(() => _client = c)),
         ],
       ),
-    );
-  }
+    ],
+  );
 
-  Widget _field(TextEditingController ctrl, String label, {required bool required, int maxLines = 1, TextInputType keyboardType = TextInputType.text, IconData? icon}) {
-    return TextFormField(
-      controller: ctrl,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      decoration: _dec(label, icon: icon),
-      validator: required ? (v) => (v == null || v.isEmpty) ? 'Ce champ est requis' : null : null,
-    );
-  }
+  Widget _step1() => Form(
+    key: _formKey1,
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      children: [
+        CSection(
+          title: 'Objet & Durée',
+          icon: Icons.handshake_outlined,
+          accentColor: _accent,
+          children: [
+            CField(controller: _objetCtrl, label: 'Objet du partenariat', accentColor: _accent, maxLines: 3, hint: 'Décrivez la nature et les objectifs du partenariat…'),
+            kGap,
+            CField(controller: _dureeCtrl, label: 'Durée', accentColor: _accent, icon: Icons.timer_outlined, hint: 'Ex: 1 an, 24 mois…'),
+          ],
+        ),
+        kGapLg,
+        CSection(
+          title: 'Responsabilités',
+          icon: Icons.balance_outlined,
+          accentColor: _accent,
+          subtitle: 'Ce que chaque partie s\'engage à faire',
+          children: [
+            _partyLabel('Partie 1 — Vous'),
+            kGapSm,
+            CField(controller: _resp1Ctrl, label: 'Responsabilités', accentColor: _accent, maxLines: 2, hint: 'Ce que vous apportez et gérez…'),
+            kGap,
+            CField(controller: _contrib1Ctrl, label: 'Contribution', accentColor: _accent, hint: 'Ressources, moyens, compétences…'),
+            kGapLg,
+            _partyLabel('Partie 2 — Partenaire'),
+            kGapSm,
+            CField(controller: _resp2Ctrl, label: 'Responsabilités', accentColor: _accent, maxLines: 2, hint: 'Ce que le partenaire apporte et gère…'),
+            kGap,
+            CField(controller: _contrib2Ctrl, label: 'Contribution', accentColor: _accent, hint: 'Ressources, moyens, compétences…'),
+          ],
+        ),
+      ],
+    ),
+  );
 
-  InputDecoration _dec(String label, {IconData? icon}) => InputDecoration(
-    labelText: label,
-    filled: true,
-    fillColor: Colors.grey[50],
-    prefixIcon: icon != null ? Icon(icon, color: _badgeColor, size: 20) : null,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _badgeColor)),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+  Widget _step2() => Form(
+    key: _formKey2,
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      children: [
+        CSection(
+          title: 'Partage des revenus',
+          icon: Icons.pie_chart_outline_rounded,
+          accentColor: _accent,
+          subtitle: 'Optionnel — définissez la répartition des bénéfices',
+          children: [
+            CToggle(
+              title: 'Partage des revenus',
+              subtitle: 'Activez pour définir les pourcentages',
+              value: _partageRevenus,
+              accentColor: _accent,
+              onChanged: (v) => setState(() => _partageRevenus = v),
+            ),
+            if (_partageRevenus) ...[
+              kGap,
+              Row(children: [
+                Expanded(child: CField(controller: _pct1Ctrl, label: '% Partie 1', accentColor: _accent,
+                    icon: Icons.percent_rounded, keyboardType: TextInputType.number, required: false, hint: '50')),
+                const SizedBox(width: 12),
+                Expanded(child: CField(controller: _pct2Ctrl, label: '% Partie 2', accentColor: _accent,
+                    icon: Icons.percent_rounded, keyboardType: TextInputType.number, required: false, hint: '50')),
+              ]),
+            ],
+          ],
+        ),
+        kGapLg,
+        CSection(
+          title: 'Récapitulatif',
+          icon: Icons.summarize_outlined,
+          accentColor: _accent,
+          children: [
+            if (_client != null) CSummaryRow(label: 'Partenaire', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
+            CSummaryRow(label: 'Objet', value: _objetCtrl.text.isNotEmpty ? _objetCtrl.text : '—', icon: Icons.handshake_outlined, accentColor: _accent),
+            CSummaryRow(label: 'Durée', value: _dureeCtrl.text.isNotEmpty ? _dureeCtrl.text : '—', icon: Icons.timer_outlined, accentColor: _accent),
+            CSummaryRow(label: 'Partage revenus', value: _partageRevenus ? 'Oui' : 'Non', icon: Icons.pie_chart_outline_rounded, accentColor: _accent),
+          ],
+        ),
+        kGapLg,
+        CSection(
+          title: 'Lieu de signature',
+          icon: Icons.place_outlined,
+          accentColor: _accent,
+          children: [
+            CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar, Abidjan…'),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _partyLabel(String label) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    decoration: BoxDecoration(
+      color: _accent.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _accent)),
   );
 }

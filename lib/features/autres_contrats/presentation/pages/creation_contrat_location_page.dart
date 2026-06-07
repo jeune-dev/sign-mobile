@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
 import '../widgets/client_search_field.dart';
+import '../widgets/contrat_form_widgets.dart';
 
 class CreationContratLocationPage extends StatefulWidget {
   const CreationContratLocationPage({super.key});
@@ -14,221 +16,121 @@ class CreationContratLocationPage extends StatefulWidget {
 }
 
 class _State extends State<CreationContratLocationPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _descCtrl = TextEditingController();
-  final _etatCtrl = TextEditingController();
-  final _valeurCtrl = TextEditingController();
-  final _dureeCtrl = TextEditingController();
-  final _montantCtrl = TextEditingController();
-  final _montantCautionCtrl = TextEditingController();
-  final _villeCtrl = TextEditingController();
-  String _typeBien = 'matériel';
-  bool _caution = false;
-  Client? _selectedClient;
+  int _step = 0;
+  static const int _totalSteps = 3;
+  static const _steps = ['Locataire', 'Bien', 'Conditions'];
 
-  static const _badgeColor = Color(0xFF2563EB);
+  static const _accent = Color(0xFF059669);
+  static const _icon   = Icons.directions_car_outlined;
+  static const _titre  = 'Contrat de location';
+
+  final _formKey1 = GlobalKey<FormState>();
+  final _formKey2 = GlobalKey<FormState>();
+
+  Client? _client;
+
+  final _descCtrl         = TextEditingController();
+  final _etatCtrl         = TextEditingController();
+  final _valeurCtrl       = TextEditingController();
+  final _dureeCtrl        = TextEditingController();
+  final _montantCtrl      = TextEditingController();
+  final _montantCautionCtrl = TextEditingController();
+  final _villeCtrl        = TextEditingController();
+
+  String _typeBien = 'matériel';
+  bool   _caution  = false;
 
   @override
   void dispose() {
-    _descCtrl.dispose();
-    _etatCtrl.dispose();
-    _valeurCtrl.dispose();
-    _dureeCtrl.dispose();
-    _montantCtrl.dispose();
-    _montantCautionCtrl.dispose();
+    _descCtrl.dispose(); _etatCtrl.dispose(); _valeurCtrl.dispose();
+    _dureeCtrl.dispose(); _montantCtrl.dispose(); _montantCautionCtrl.dispose();
     _villeCtrl.dispose();
     super.dispose();
   }
 
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return;
-    if (_selectedClient == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un client'), backgroundColor: Colors.red),
-      );
-      return;
+  void _onNext() {
+    if (_step == 0) {
+      if (_client == null) { _showError('Veuillez sélectionner un locataire'); return; }
+      setState(() => _step = 1);
+    } else if (_step == 1) {
+      if (!(_formKey1.currentState?.validate() ?? false)) return;
+      setState(() => _step = 2);
+    } else {
+      if (!(_formKey2.currentState?.validate() ?? false)) return;
+      _submit();
     }
+  }
+
+  void _onBack() => setState(() => _step--);
+
+  void _showError(String msg) => ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(msg), backgroundColor: Colors.red[600], behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+  );
+
+  void _submit() {
     context.read<AutresContratsBloc>().add(CreerContrat('contrat-location', {
-      'autrePartieId': _selectedClient!.id,
+      'autrePartieId': _client!.id,
       'data': {
-        'type_bien': _typeBien,
-        'description_bien': _descCtrl.text.trim(),
-        'etat_bien': _etatCtrl.text.trim(),
-        'valeur_estimee': double.tryParse(_valeurCtrl.text) ?? 0,
-        'duree_location': _dureeCtrl.text.trim(),
-        'montant_location': double.tryParse(_montantCtrl.text) ?? 0,
-        'caution': _caution,
-        if (_caution && _montantCautionCtrl.text.isNotEmpty) 'montant_caution': double.tryParse(_montantCautionCtrl.text),
+        'type_bien':         _typeBien,
+        'description_bien':  _descCtrl.text.trim(),
+        'etat_bien':         _etatCtrl.text.trim(),
+        'valeur_estimee':    double.tryParse(_valeurCtrl.text) ?? 0,
+        'duree_location':    _dureeCtrl.text.trim(),
+        'montant_location':  double.tryParse(_montantCtrl.text) ?? 0,
+        'caution':           _caution,
+        if (_caution && _montantCautionCtrl.text.isNotEmpty)
+          'montant_caution': double.tryParse(_montantCautionCtrl.text),
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
       'signature_generateur': '',
     }));
   }
 
+  String get _stepSubtitle {
+    switch (_step) {
+      case 0: return 'Identifiez le locataire';
+      case 1: return 'Décrivez le bien à louer';
+      default: return 'Durée, loyer et caution';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: kBgColor,
       body: BlocListener<AutresContratsBloc, AutresContratsState>(
-        listener: (context, state) {
+        listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.green),
-            );
-            Navigator.pop(context);
+            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.green[600], behavior: SnackBarBehavior.floating));
+            Navigator.pop(ctx);
           }
-          if (state is AutresContratsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
-          }
+          if (state is AutresContratsError) _showError(state.message);
         },
         child: Column(
           children: [
-            // Custom Header
-            Container(
-              decoration: const BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
+            CFormHeader(
+              titre: _titre, stepTitle: _steps[_step], stepSubtitle: _stepSubtitle,
+              icon: _icon, accentColor: _accent, currentStep: _step,
+              totalSteps: _totalSteps, stepLabels: _steps,
+              onBack: () => Navigator.pop(context),
+            ),
+            Expanded(
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                transitionBuilder: (child, anim) => SlideTransition(
+                  position: Tween<Offset>(begin: const Offset(0.08, 0), end: Offset.zero)
+                      .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
+                  child: FadeTransition(opacity: anim, child: child),
                 ),
-              ),
-              padding: EdgeInsets.fromLTRB(20, topPadding + 16, 20, 24),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Text(
-                      'Contrat de location',
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: _badgeColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text('Location', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-                  ),
-                ],
+                child: KeyedSubtree(key: ValueKey(_step), child: _buildStep()),
               ),
             ),
-            // Body
-            Expanded(
-              child: Form(
-                key: _formKey,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                  children: [
-                    ClientSearchField(
-                      label: 'Locataire',
-                      onClientSelected: (c) => setState(() => _selectedClient = c),
-                    ),
-                    const SizedBox(height: 16),
-                    // Section: Bien loué
-                    _buildSection(
-                      icon: Icons.inventory_2_outlined,
-                      iconColor: _badgeColor,
-                      title: 'Bien loué',
-                      children: [
-                        DropdownButtonFormField<String>(
-                          value: _typeBien,
-                          decoration: _dec('Type de bien', icon: Icons.category_outlined),
-                          items: const [
-                            DropdownMenuItem(value: 'véhicule', child: Text('Véhicule')),
-                            DropdownMenuItem(value: 'matériel', child: Text('Matériel')),
-                            DropdownMenuItem(value: 'équipement', child: Text('Équipement')),
-                            DropdownMenuItem(value: 'électronique', child: Text('Électronique')),
-                            DropdownMenuItem(value: 'autre', child: Text('Autre')),
-                          ],
-                          onChanged: (v) => setState(() => _typeBien = v!),
-                        ),
-                        const SizedBox(height: 12),
-                        _field(_descCtrl, 'Description du bien', icon: Icons.description_outlined, required: true, maxLines: 2),
-                        const SizedBox(height: 12),
-                        _field(_etatCtrl, 'État du bien', icon: Icons.info_outline, required: true),
-                        const SizedBox(height: 12),
-                        _field(_valeurCtrl, 'Valeur estimée', icon: Icons.monetization_on_outlined, required: true, keyboardType: TextInputType.number),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Section: Conditions
-                    _buildSection(
-                      icon: Icons.payments_outlined,
-                      iconColor: _badgeColor,
-                      title: 'Conditions',
-                      children: [
-                        _field(_dureeCtrl, 'Durée de location', icon: Icons.timer_outlined, required: true),
-                        const SizedBox(height: 12),
-                        _field(_montantCtrl, 'Montant de location', icon: Icons.monetization_on_outlined, required: true, keyboardType: TextInputType.number),
-                        const SizedBox(height: 12),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.grey[50],
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!),
-                          ),
-                          child: SwitchListTile(
-                            title: const Text('Caution requise', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                            value: _caution,
-                            activeColor: _badgeColor,
-                            onChanged: (v) => setState(() => _caution = v),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12),
-                          ),
-                        ),
-                        if (_caution) ...[
-                          const SizedBox(height: 12),
-                          _field(_montantCautionCtrl, 'Montant de la caution', icon: Icons.shield_outlined, required: false, keyboardType: TextInputType.number),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    // Section: Signature
-                    _buildSection(
-                      icon: Icons.location_on_outlined,
-                      iconColor: _badgeColor,
-                      title: 'Signature',
-                      children: [
-                        _field(_villeCtrl, 'Ville de signature (optionnel)', icon: Icons.place_outlined, required: false),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    BlocBuilder<AutresContratsBloc, AutresContratsState>(
-                      builder: (context, state) {
-                        final isLoading = state is AutresContratsLoading;
-                        return SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            onPressed: isLoading ? null : _submit,
-                            child: isLoading
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                : const Text('Créer le contrat', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+            BlocBuilder<AutresContratsBloc, AutresContratsState>(
+              builder: (ctx, state) => CBottomBar(
+                step: _step, totalSteps: _totalSteps,
+                onBack: _onBack, onNext: _onNext, accentColor: _accent,
+                isLoading: state is AutresContratsLoading,
               ),
             ),
           ],
@@ -237,61 +139,161 @@ class _State extends State<CreationContratLocationPage> {
     );
   }
 
-  Widget _buildSection({required IconData icon, required Color iconColor, required String title, required List<Widget> children}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2)),
-        ],
+  Widget _buildStep() {
+    switch (_step) {
+      case 0: return _step0();
+      case 1: return _step1();
+      default: return _step2();
+    }
+  }
+
+  Widget _step0() => ListView(
+    padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+    children: [
+      CInfoBanner(
+        title: 'Contrat de location de bien',
+        description: 'Formalisez la mise à disposition d\'un véhicule, matériel ou équipement avec toutes les garanties nécessaires.',
+        icon: _icon, accentColor: _accent,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      kGapLg,
+      CSection(
+        title: 'Locataire',
+        icon: Icons.person_search_outlined,
+        accentColor: _accent,
+        subtitle: 'La personne qui loue le bien',
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(color: iconColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                  child: Icon(icon, color: iconColor, size: 20),
-                ),
-                const SizedBox(width: 12),
-                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87)),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-          ),
+          if (_client != null)
+            CClientDisplay(client: _client!, accentColor: _accent, role: 'Locataire', onClear: () => setState(() => _client = null))
+          else
+            ClientSearchField(label: 'Rechercher un locataire', onClientSelected: (c) => setState(() => _client = c)),
         ],
       ),
-    );
-  }
+    ],
+  );
 
-  Widget _field(TextEditingController ctrl, String label, {required bool required, int maxLines = 1, TextInputType keyboardType = TextInputType.text, IconData? icon}) {
-    return TextFormField(
-      controller: ctrl,
-      maxLines: maxLines,
-      keyboardType: keyboardType,
-      decoration: _dec(label, icon: icon),
-      validator: required ? (v) => (v == null || v.isEmpty) ? 'Ce champ est requis' : null : null,
-    );
-  }
+  Widget _step1() => Form(
+    key: _formKey1,
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      children: [
+        CSection(
+          title: 'Identification du bien',
+          icon: Icons.inventory_2_outlined,
+          accentColor: _accent,
+          subtitle: 'Caractéristiques du bien loué',
+          children: [
+            CDropdown<String>(
+              label: 'Type de bien',
+              value: _typeBien,
+              accentColor: _accent,
+              icon: Icons.category_outlined,
+              items: const [
+                DropdownMenuItem(value: 'véhicule',     child: Text('Véhicule')),
+                DropdownMenuItem(value: 'matériel',     child: Text('Matériel')),
+                DropdownMenuItem(value: 'équipement',   child: Text('Équipement')),
+                DropdownMenuItem(value: 'électronique', child: Text('Électronique')),
+                DropdownMenuItem(value: 'autre',        child: Text('Autre')),
+              ],
+              onChanged: (v) => setState(() => _typeBien = v!),
+            ),
+            kGap,
+            CField(controller: _descCtrl, label: 'Description du bien', accentColor: _accent, maxLines: 3,
+                hint: 'Marque, modèle, numéro de série, caractéristiques…'),
+            kGap,
+            CField(controller: _etatCtrl, label: 'État du bien', accentColor: _accent, icon: Icons.info_outline,
+                hint: 'Neuf, bon état, usage normal…'),
+            kGap,
+            CField(
+              controller: _valeurCtrl,
+              label: 'Valeur estimée (FCFA)',
+              accentColor: _accent,
+              icon: Icons.monetization_on_outlined,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              hint: '0',
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 
-  InputDecoration _dec(String label, {IconData? icon}) => InputDecoration(
-    labelText: label,
-    filled: true,
-    fillColor: Colors.grey[50],
-    prefixIcon: icon != null ? Icon(icon, color: _badgeColor, size: 20) : null,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey[200]!)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _badgeColor)),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+  Widget _step2() => Form(
+    key: _formKey2,
+    child: ListView(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+      children: [
+        CSection(
+          title: 'Conditions de location',
+          icon: Icons.receipt_long_outlined,
+          accentColor: _accent,
+          children: [
+            CField(controller: _dureeCtrl, label: 'Durée de location', accentColor: _accent, icon: Icons.timer_outlined,
+                hint: 'Ex: 7 jours, 1 mois…'),
+            kGap,
+            CField(
+              controller: _montantCtrl,
+              label: 'Montant de location (FCFA)',
+              accentColor: _accent,
+              icon: Icons.payments_outlined,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              hint: '0',
+            ),
+          ],
+        ),
+        kGapLg,
+        CSection(
+          title: 'Caution',
+          icon: Icons.shield_outlined,
+          accentColor: _accent,
+          subtitle: 'Garantie en cas de dommage ou manquement',
+          children: [
+            CToggle(
+              title: 'Caution requise',
+              subtitle: 'Montant récupérable à la restitution du bien',
+              value: _caution,
+              accentColor: _accent,
+              onChanged: (v) => setState(() => _caution = v),
+            ),
+            if (_caution) ...[
+              kGap,
+              CField(
+                controller: _montantCautionCtrl,
+                label: 'Montant de la caution (FCFA)',
+                accentColor: _accent,
+                icon: Icons.shield_outlined,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                required: false,
+                hint: '0',
+              ),
+            ],
+          ],
+        ),
+        kGapLg,
+        CSection(
+          title: 'Récapitulatif',
+          icon: Icons.summarize_outlined,
+          accentColor: _accent,
+          children: [
+            if (_client != null) CSummaryRow(label: 'Locataire', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
+            CSummaryRow(label: 'Type de bien', value: _typeBien, icon: Icons.inventory_2_outlined, accentColor: _accent),
+            if (_dureeCtrl.text.isNotEmpty) CSummaryRow(label: 'Durée', value: _dureeCtrl.text, icon: Icons.timer_outlined, accentColor: _accent),
+            if (_montantCtrl.text.isNotEmpty) CSummaryRow(label: 'Loyer', value: '${_montantCtrl.text} FCFA', icon: Icons.payments_outlined, accentColor: _accent),
+            CSummaryRow(label: 'Caution', value: _caution ? 'Oui' : 'Non', icon: Icons.shield_outlined, accentColor: _accent),
+          ],
+        ),
+        kGapLg,
+        CSection(
+          title: 'Lieu de signature',
+          icon: Icons.place_outlined,
+          accentColor: _accent,
+          children: [
+            CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar…'),
+          ],
+        ),
+      ],
+    ),
   );
 }

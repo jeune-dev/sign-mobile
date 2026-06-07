@@ -1,5 +1,14 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:sign_application/core/config/env.dart';
+import 'package:sign_application/core/utils/download_helper.dart';
+import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:sign_application/injection_container.dart' as di;
 import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
@@ -22,244 +31,665 @@ class AutresContratsListePage extends StatefulWidget {
 }
 
 class _AutresContratsListePageState extends State<AutresContratsListePage> {
+  // Stats
+  int _statsTotal = 0, _statsSignes = 0, _statsEnAttente = 0;
+  bool _statsLoading = true;
+
+  // Téléchargements en cours
+  final Set<String> _downloading = {};
+
+  // Titre en attente pour l'ouverture PDF
+  String _pendingTitre = '';
+
+  // Cache liste
+  AutresContratsListLoaded? _lastLoaded;
+
   @override
   void initState() {
     super.initState();
     context.read<AutresContratsBloc>().add(LoadContrats(widget.type));
+    _loadStats();
+  }
+
+  // ── Stats API ────────────────────────────────────────────────────────────
+  Future<void> _loadStats() async {
+    setState(() => _statsLoading = true);
+    try {
+      final resp = await di.sl<Dio>().get(Env.autresContratsStats(widget.type));
+      final data = resp.data['data'] as Map<String, dynamic>? ?? {};
+      if (!mounted) return;
+      setState(() {
+        _statsTotal     = (data['total']     as num?)?.toInt() ?? 0;
+        _statsSignes    = (data['signes']    as num?)?.toInt() ?? 0;
+        _statsEnAttente = (data['enAttente'] as num?)?.toInt() ?? 0;
+        _statsLoading   = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _statsLoading = false);
+    }
+  }
+
+  // ── Ouvrir PDF ────────────────────────────────────────────────────────────
+  void _ouvrirContrat(AutreContrat c) {
+    _pendingTitre = c.numeroContrat ?? c.id;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 60),
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 30)
+            ],
+          ),
+          child: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5),
+              SizedBox(height: 18),
+              Text('Ouverture…',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            ],
+          ),
+        ),
+      ),
+    );
+    context.read<AutresContratsBloc>().add(TelechargerContrat(widget.type, c.id));
+  }
+
+  Future<void> _saveAndOpen(List<int> bytes, String id) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/${widget.type}_$id.pdf');
+      await file.writeAsBytes(bytes);
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfViewerPage(
+            filePath: file.path,
+            titre: _pendingTitre.isNotEmpty ? _pendingTitre : id,
+          ),
+        ),
+      );
+      if (mounted) {
+        context.read<AutresContratsBloc>().add(LoadContrats(widget.type));
+        _loadStats();
+      }
+    } catch (e) {
+      if (mounted) showDownloadErrorSnackBar(context, e.toString());
+    }
+  }
+
+  // ── Télécharger PDF ───────────────────────────────────────────────────────
+  Future<void> _telecharger(AutreContrat c) async {
+    if (_downloading.contains(c.id)) return;
+    setState(() => _downloading.add(c.id));
+    try {
+      final url = '${Env.autresContratsBase(widget.type)}/${c.id}/telecharger';
+      final resp = await di.sl<Dio>().get(
+        url,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (resp.statusCode != 200) throw Exception('Erreur ${resp.statusCode}');
+      final Uint8List bytes = resp.data is Uint8List
+          ? resp.data
+          : Uint8List.fromList(List<int>.from(resp.data));
+      final name =
+          '${(c.numeroContrat ?? c.id).replaceAll(RegExp(r'[^a-zA-Z0-9\-]'), '_')}.pdf';
+      final path = await savePdfToDownloads(bytes, name);
+      if (!mounted) return;
+      showDownloadSuccessSnackBar(context, name, path);
+    } catch (e) {
+      if (!mounted) return;
+      showDownloadErrorSnackBar(context, e.toString());
+    } finally {
+      if (mounted) setState(() => _downloading.remove(c.id));
+    }
+  }
+
+  // ── Icône selon le type ───────────────────────────────────────────────────
+  IconData _iconForType(String type) {
+    switch (type) {
+      case 'contrat-prestation':      return Icons.handshake_outlined;
+      case 'contrat-partenariat':     return Icons.people_outline;
+      case 'contrat-location':        return Icons.directions_car_outlined;
+      case 'reconnaissance-dette':    return Icons.receipt_long_outlined;
+      case 'procuration':             return Icons.gavel_outlined;
+      case 'contrat-caution':         return Icons.verified_user_outlined;
+      case 'contrat-confidentialite': return Icons.lock_outline;
+      default:                        return Icons.description_outlined;
+    }
+  }
+
+  // ── Sous-titre selon le type ──────────────────────────────────────────────
+  String _subtitleForType(String type) {
+    switch (type) {
+      case 'contrat-prestation':      return 'Services & missions';
+      case 'contrat-partenariat':     return 'Accord de partenariat';
+      case 'contrat-location':        return 'Location de bien';
+      case 'reconnaissance-dette':    return 'Reconnaissance de dette';
+      case 'procuration':             return 'Mandat & délégation';
+      case 'contrat-caution':         return 'Engagement de caution';
+      case 'contrat-confidentialite': return 'Clause de confidentialité';
+      default:                        return 'Contrat';
+    }
+  }
+
+  String _fmt(String? d) {
+    if (d == null || d.isEmpty) return '—';
+    try {
+      return DateFormat('dd/MM/yyyy').format(DateTime.parse(d));
+    } catch (_) {
+      return d;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+      backgroundColor: const Color(0xFFF2F2F7),
+      body: BlocConsumer<AutresContratsBloc, AutresContratsState>(
+        listener: (ctx, state) {
+          if (state is AutresContratsListLoaded) {
+            _lastLoaded = state;
+          }
+          if (state is AutresContratsBytes) {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+            _saveAndOpen(state.bytes, state.id);
+          }
+          if (state is AutresContratsError) {
+            if (Navigator.canPop(context)) Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(state.message),
+              backgroundColor: Colors.red[400],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ));
+          }
+        },
+        builder: (ctx, state) {
+          final loading =
+              state is AutresContratsLoading && _lastLoaded == null;
+          final eff = state is AutresContratsListLoaded
+              ? state
+              : (state is! AutresContratsError && _lastLoaded != null)
+                  ? _lastLoaded!
+                  : state;
+          final contrats =
+              eff is AutresContratsListLoaded ? eff.contrats : <AutreContrat>[];
+
+          return Column(
+            children: [
+              _buildTopBar(),
+              Expanded(
+                child: loading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                            color: Colors.black87, strokeWidth: 2.5))
+                    : state is AutresContratsError && contrats.isEmpty
+                        ? _buildError(state.message)
+                        : RefreshIndicator(
+                            color: Colors.black87,
+                            onRefresh: () async {
+                              context
+                                  .read<AutresContratsBloc>()
+                                  .add(LoadContrats(widget.type));
+                              _loadStats();
+                            },
+                            child: contrats.isEmpty
+                                ? _buildEmpty()
+                                : ListView.separated(
+                                    padding: const EdgeInsets.fromLTRB(
+                                        16, 12, 16, 100),
+                                    itemCount: contrats.length,
+                                    separatorBuilder: (_, __) =>
+                                        const SizedBox(height: 12),
+                                    itemBuilder: (_, i) =>
+                                        _buildCard(contrats[i]),
+                                  ),
+                          ),
+              ),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(widget.titre, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () => context.read<AutresContratsBloc>().add(LoadContrats(widget.type)),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: widget.createPageBuilder),
+        ).then((_) {
+          context.read<AutresContratsBloc>().add(LoadContrats(widget.type));
+          _loadStats();
+        }),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Nouveau',
+            style: TextStyle(fontWeight: FontWeight.w700)),
+      ),
+    );
+  }
+
+  // ── Top bar (header noir avec stats) ─────────────────────────────────────
+  Widget _buildTopBar() {
+    final top = MediaQuery.of(context).padding.top;
+    final icon = _iconForType(widget.type);
+    final subtitle = _subtitleForType(widget.type);
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(20, top + 14, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.15)),
+                  ),
+                  child: const Icon(Icons.arrow_back_rounded,
+                      color: Colors.white, size: 20),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.titre,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.5), fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, color: Colors.white, size: 14),
+                    const SizedBox(width: 5),
+                    const Text('Contrat',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _statBadge('Total', _statsTotal),
+              const SizedBox(width: 10),
+              _statBadge('Signés', _statsSignes, color: Colors.green),
+              const SizedBox(width: 10),
+              _statBadge('En attente', _statsEnAttente,
+                  color: const Color(0xFFFFB347)),
+            ],
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.black,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: widget.createPageBuilder),
-          ).then((_) => context.read<AutresContratsBloc>().add(LoadContrats(widget.type)));
-        },
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: BlocConsumer<AutresContratsBloc, AutresContratsState>(
-        listener: (context, state) {
-          if (state is AutresContratsBytes) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Téléchargement réussi'), backgroundColor: Colors.green),
-            );
-          }
-          if (state is AutresContratsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
-          }
-        },
-        builder: (context, state) {
-          if (state is AutresContratsLoading) {
-            return const Center(child: CircularProgressIndicator(color: Colors.black));
-          }
-          if (state is AutresContratsListLoaded) {
-            final contrats = state.contrats;
-            final total = contrats.length;
-            final signes = contrats.where((c) => c.statut == 'signe').length;
-            final enAttente = contrats.where((c) => c.statut == 'en_attente').length;
+    );
+  }
 
-            return RefreshIndicator(
-              color: Colors.black,
-              onRefresh: () async {
-                context.read<AutresContratsBloc>().add(LoadContrats(widget.type));
-              },
-              child: CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
+  Widget _statBadge(String label, int value, {Color color = Colors.white}) {
+    final bg = color == Colors.white
+        ? Colors.white.withOpacity(0.12)
+        : color.withOpacity(0.25);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration:
+            BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          children: [
+            _statsLoading
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                        color: color, strokeWidth: 2))
+                : Text(
+                    '$value',
+                    style: TextStyle(
+                        color: color,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        height: 1),
+                  ),
+            const SizedBox(height: 3),
+            Text(label,
+                style: TextStyle(
+                    color: color.withOpacity(0.7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Carte contrat ─────────────────────────────────────────────────────────
+  Widget _buildCard(AutreContrat c) {
+    final isSign = c.statut == 'signe';
+    final statusColor = isSign ? Colors.green : const Color(0xFFFFB347);
+    final statusLabel = isSign ? 'Signé' : (c.statut ?? 'En attente');
+    final isDown = _downloading.contains(c.id);
+
+    final autrePartieNom = c.autrePartie != null
+        ? '${c.autrePartie!['prenom'] ?? ''} ${c.autrePartie!['nom'] ?? ''}'
+            .trim()
+        : null;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF0F0F0)),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 14,
+              offset: const Offset(0, 4))
+        ],
+      ),
+      child: Column(
+        children: [
+          // ── En-tête carte ──────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(14)),
+                  child: Icon(_iconForType(widget.type),
+                      color: Colors.white, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        c.numeroContrat ??
+                            'Contrat #${c.id.substring(0, 8)}',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14,
+                            color: Colors.black87),
+                      ),
+                      if (autrePartieNom != null &&
+                          autrePartieNom.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            Icon(Icons.person_outline,
+                                size: 11, color: Colors.grey[400]),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                autrePartieNom,
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey[500]),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                  ),
+                  child: Text(statusLabel,
+                      style: TextStyle(
+                          color: statusColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700)),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Infos ──────────────────────────────────────────────────────
+          if (c.createdAt != null) ...[
+            Divider(color: Colors.grey[100], height: 1),
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _chip(Icons.calendar_today_outlined,
+                        'Date création', _fmt(c.createdAt)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _chip(Icons.description_outlined, 'Type',
+                        _subtitleForType(widget.type)),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // ── Boutons Télécharger / Voir le doc ──────────────────────────
+          Divider(color: Colors.grey[100], height: 1),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Télécharger
+                Expanded(
+                  child: GestureDetector(
+                    onTap: isDown ? null : () => _telecharger(c),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey[200]!),
+                      ),
+                      child: isDown
+                          ? const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.black54, strokeWidth: 2),
+                                ),
+                                SizedBox(width: 8),
+                                Text('Téléchargement…',
+                                    style: TextStyle(
+                                        color: Colors.black45,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600)),
+                              ],
+                            )
+                          : const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.download_rounded,
+                                    size: 16, color: Colors.black54),
+                                SizedBox(width: 6),
+                                Text('Télécharger',
+                                    style: TextStyle(
+                                        color: Colors.black54,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700)),
+                              ],
+                            ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                // Voir le doc
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => _ouvrirContrat(c),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _StatCard(label: 'Total', value: total.toString(), color: Colors.black),
-                          const SizedBox(width: 8),
-                          _StatCard(label: 'Signés', value: signes.toString(), color: Colors.green),
-                          const SizedBox(width: 8),
-                          _StatCard(label: 'En attente', value: enAttente.toString(), color: Colors.orange),
+                          Icon(Icons.open_in_new_rounded,
+                              color: Colors.white, size: 16),
+                          SizedBox(width: 6),
+                          Text('Voir le doc',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700)),
                         ],
                       ),
                     ),
                   ),
-                  if (contrats.isEmpty)
-                    const SliverFillRemaining(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.description_outlined, size: 64, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text('Aucun contrat', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => _ContratCard(
-                          contrat: contrats[index],
-                          onDownload: () => context.read<AutresContratsBloc>().add(
-                                TelechargerContrat(widget.type, contrats[index].id),
-                              ),
-                        ),
-                        childCount: contrats.length,
-                      ),
-                    ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
-                ],
-              ),
-            );
-          }
-          if (state is AutresContratsError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(state.message, textAlign: TextAlign.center),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-                    onPressed: () => context.read<AutresContratsBloc>().add(LoadContrats(widget.type)),
-                    child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
-                  ),
-                ],
-              ),
-            );
-          }
-          return const Center(child: CircularProgressIndicator(color: Colors.black));
-        },
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
-  const _StatCard({required this.label, required this.value, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
-            Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-            const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 11, color: color.withOpacity(0.8))),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ContratCard extends StatelessWidget {
-  final AutreContrat contrat;
-  final VoidCallback onDownload;
-
-  const _ContratCard({required this.contrat, required this.onDownload});
-
-  @override
-  Widget build(BuildContext context) {
-    final isSign = contrat.statut == 'signe';
-    final autrePartieNom = contrat.autrePartie != null
-        ? '${contrat.autrePartie!['prenom'] ?? ''} ${contrat.autrePartie!['nom'] ?? ''}'.trim()
-        : 'N/A';
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(color: Colors.grey.shade100, blurRadius: 4, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: const Icon(Icons.description, color: Colors.white, size: 24),
-        ),
-        title: Text(
-          contrat.numeroContrat ?? 'Contrat #${contrat.id.substring(0, 8)}',
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(autrePartieNom, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isSign ? Colors.green.shade50 : Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isSign ? Colors.green : Colors.orange),
-                  ),
-                  child: Text(
-                    isSign ? 'Signé' : 'En attente',
-                    style: TextStyle(
-                      color: isSign ? Colors.green : Colors.orange,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
-                if (contrat.createdAt != null) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    contrat.createdAt!.substring(0, 10),
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 11),
-                  ),
-                ],
               ],
             ),
-          ],
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.download_outlined, color: Colors.black),
-          onPressed: onDownload,
-          tooltip: 'Télécharger',
-        ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _chip(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.black54, size: 14),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 9,
+                        color: Colors.black38,
+                        fontWeight: FontWeight.w500)),
+                const SizedBox(height: 1),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(_iconForType(widget.type), size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text('Aucun contrat',
+              style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600)),
+          const SizedBox(height: 6),
+          Text('Appuyez sur + pour créer votre premier contrat',
+              style: TextStyle(color: Colors.grey[400], fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildError(String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(message, textAlign: TextAlign.center),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
+            onPressed: () {
+              context
+                  .read<AutresContratsBloc>()
+                  .add(LoadContrats(widget.type));
+              _loadStats();
+            },
+            child: const Text('Réessayer',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
