@@ -894,7 +894,7 @@ class _RegisterPageState extends State<RegisterPage> {
             errorStyle: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               color: Colors.redAccent,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w500, 
             ),
           ),
           onChanged: onChanged,
