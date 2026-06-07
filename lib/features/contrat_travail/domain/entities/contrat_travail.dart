@@ -7,7 +7,7 @@ class ContratTravail extends Equatable {
   final List<dynamic>? missions;
   final String? lieuTravail;
   final String? typeContrat;
-  final String? jourTravail;
+  final List<dynamic>? jourTravail; // [{jour, debut, fin}, ...]
   final String? heureDebut;
   final String? heureFin;
   final String? tempsPause;

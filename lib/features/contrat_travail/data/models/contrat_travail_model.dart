@@ -41,7 +41,9 @@ class ContratTravailModel extends ContratTravail {
       missions: json['missions'],
       lieuTravail: json['lieu_travail'],
       typeContrat: json['type_contrat'],
-      jourTravail: json['jour_travail'],
+      jourTravail: json['jour_travail'] is List
+          ? List<dynamic>.from(json['jour_travail'] as List)
+          : null,
       heureDebut: json['heure_debut'],
       heureFin: json['heure_fin'],
       tempsPause: json['temps_pause'],
