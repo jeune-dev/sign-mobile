@@ -19,8 +19,13 @@ class Env {
     if (fromDefine.isNotEmpty) return fromDefine;
 
     // 2. Fallback sur .env chargé en mémoire (dev uniquement)
-    final fromDotenv = dotenv.maybeGet(key)?.trim();
-    if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
+    // Guard : dotenv.load() peut ne pas avoir été appelé (prod sans --dart-define)
+    try {
+      final fromDotenv = dotenv.maybeGet(key)?.trim();
+      if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
+    } catch (_) {
+      // dotenv non initialisé — on tombe sur le fallback codé en dur ci-dessous
+    }
 
     // 3. Valeur par défaut codée en dur
     return fallback;
