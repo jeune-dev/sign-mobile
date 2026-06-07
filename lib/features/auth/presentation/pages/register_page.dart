@@ -516,6 +516,10 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ─────────────────────── HELPERS RÔLE ───────────────────────
+  bool get _isProType => _selectedRole == 'Professionnel' || _selectedRole == 'Independant';
+  bool get _isEntreprise => _selectedRole == 'Professionnel';
+
   // ─────────────────────── STEP 2 ───────────────────────
   Widget _buildStep2Form() {
     return Column(
@@ -530,88 +534,158 @@ class _RegisterPageState extends State<RegisterPage> {
           validator: (v) => (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
         ),
         const SizedBox(height: 16),
-        // CORRECTION 4 : CIN — chiffres uniquement
         _buildCinInputField(),
         const SizedBox(height: 16),
         _buildRoleDropdown(),
         const SizedBox(height: 20),
         _buildProfilePhotoSection(),
 
-        if (_selectedRole == 'Professionnel') ...[
+        // ── Bloc commun Professionnel ET Indépendant ─────────────────
+        if (_isProType) ...[
           const SizedBox(height: 20),
           Container(height: 1, color: AppColor.kLine),
           const SizedBox(height: 20),
-          _buildSectionTitle("Informations de l'entreprise"),
+
+          // Badge type de compte
+          _buildAccountTypeBanner(),
           const SizedBox(height: 16),
+
+          _buildSectionTitle(
+            _isEntreprise
+                ? "Informations de l'entreprise"
+                : "Informations professionnelles",
+          ),
+          const SizedBox(height: 16),
+
           _buildInputField(
-            label: "Nom de l'entreprise",
-            hint: 'Ex: Mon Entreprise SARL',
+            label: _isEntreprise ? "Nom de l'entreprise" : "Nom commercial / Activité",
+            hint: _isEntreprise ? 'Ex: Mon Entreprise SARL' : 'Ex: Consulting Digital',
             controller: _nomEntrepriseController,
-            icon: Icons.apartment_outlined,
-            isRequired: true,
-            validator: (v) =>
-            (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
+            icon: _isEntreprise ? Icons.apartment_outlined : Icons.work_outline,
+            isRequired: false,
+            validator: null,
           ),
           const SizedBox(height: 16),
           _buildInputField(
-            label: "Adresse de l'entreprise",
+            label: "Adresse professionnelle",
             hint: 'Ex: Dakar, Sénégal',
             controller: _adresseEntrepriseController,
             icon: Icons.location_on_outlined,
-            isRequired: true,
-            validator: (v) =>
-            (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
+            isRequired: false,
+            validator: null,
           ),
           const SizedBox(height: 16),
           _buildPhoneInput(
-            label: "Téléphone de l'entreprise",
-            isRequired: true,
+            label: "Téléphone professionnel",
+            isRequired: false,
             controller: _entreprisePhoneController,
             onChanged: (phone) =>
                 setState(() => _entreprisePhoneNumber = phone.completeNumber),
           ),
           const SizedBox(height: 16),
           _buildInputField(
-            label: "Email de l'entreprise",
-            hint: 'Ex: contact@monentreprise.sn',
+            label: "Email professionnel",
+            hint: 'Ex: contact@monactivite.sn',
             controller: _emailEntrepriseController,
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
-            isRequired: true,
+            isRequired: false,
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Ce champ est obligatoire';
+              if (value == null || value.isEmpty) return null; // optionnel
               if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                 return 'Email invalide';
               }
               return null;
             },
           ),
-          const SizedBox(height: 16),
-          _buildInputField(
-            label: 'Registre de Commerce (RC)',
-            hint: 'Ex: RC 2023 B 12345',
-            controller: _rcController,
-            icon: Icons.business_center_outlined,
-            isRequired: true,
-            validator: (v) =>
-            (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
-          ),
-          const SizedBox(height: 16),
-          _buildInputField(
-            label: 'NINEA',
-            hint: 'Ex: 123456789',
-            controller: _nineaController,
-            icon: Icons.numbers_outlined,
-            isRequired: true,
-            validator: (v) =>
-            (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
-          ),
+
+          // ── RC et NINEA : UNIQUEMENT pour Professionnel (entreprise) ──
+          if (_isEntreprise) ...[
+            const SizedBox(height: 16),
+            _buildInputField(
+              label: 'Registre de Commerce (RC)',
+              hint: 'Ex: RC 2023 B 12345',
+              controller: _rcController,
+              icon: Icons.business_center_outlined,
+              isRequired: true,
+              validator: (v) =>
+              (v == null || v.isEmpty) ? 'RC obligatoire pour une entreprise' : null,
+            ),
+            const SizedBox(height: 16),
+            _buildInputField(
+              label: 'NINEA',
+              hint: 'Ex: 123456789',
+              controller: _nineaController,
+              icon: Icons.numbers_outlined,
+              isRequired: true,
+              validator: (v) =>
+              (v == null || v.isEmpty) ? 'NINEA obligatoire pour une entreprise' : null,
+            ),
+          ],
+
           const SizedBox(height: 16),
           _buildLogoSection(),
           const SizedBox(height: 16),
           _buildSignatureSection(),
         ],
       ],
+    );
+  }
+
+  /// Bannière informative qui explique la différence entre les types de compte
+  Widget _buildAccountTypeBanner() {
+    final isEnt = _isEntreprise;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isEnt
+            ? const Color(0xFFE8F0FE)
+            : const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isEnt
+              ? const Color(0xFF4285F4).withOpacity(0.3)
+              : const Color(0xFFFF9800).withOpacity(0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isEnt ? Icons.business : Icons.person_pin_outlined,
+            color: isEnt ? const Color(0xFF4285F4) : const Color(0xFFFF9800),
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isEnt ? 'Compte Professionnel' : 'Compte Indépendant',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: isEnt
+                        ? const Color(0xFF1A56DB)
+                        : const Color(0xFFE65100),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  isEnt
+                      ? 'RC et NINEA requis — pour les entreprises enregistrées'
+                      : 'Sans RC ni NINEA — pour les freelances et travailleurs indépendants',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

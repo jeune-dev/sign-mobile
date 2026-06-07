@@ -64,7 +64,10 @@ class _ProfilPageState extends State<ProfilPage> {
     final logoUrl = _buildUrl(user.logo);
     final signatureUrl = _buildUrl(user.signature);
 
-    final isPro = (user.role == 'Professionnel' || user.role == 'Indépendant');
+    // isPro      = a accès aux fonctionnalités professionnelles (Professionnel ET Indépendant)
+    // isEntreprise = a un RC et un NINEA (Professionnel uniquement)
+    final isPro       = user.role == 'Professionnel' || user.role == 'Independant';
+    final isEntreprise = user.role == 'Professionnel';
 
     return CustomScrollView(
       slivers: [
@@ -147,30 +150,37 @@ class _ProfilPageState extends State<ProfilPage> {
 
                 const SizedBox(height: 20),
 
-                // ── Informations entreprise (si professionnel) ─────────────
+                // ── Informations pro (Professionnel ET Indépendant) ────────
                 if (isPro) ...[
                   _buildSection(
-                    title: 'Informations entreprise',
-                    icon: Icons.business_outlined,
+                    title: isEntreprise
+                        ? 'Informations entreprise'
+                        : 'Informations professionnelles',
+                    icon: isEntreprise
+                        ? Icons.business_outlined
+                        : Icons.work_outline,
                     children: [
                       _buildInfoRow(
-                          Icons.store_outlined, 'Entreprise', user.nomEntreprise),
+                          Icons.store_outlined, 'Raison sociale', user.nomEntreprise),
                       _buildInfoRow(
                           Icons.location_city_outlined,
-                          'Adresse entreprise',
+                          'Adresse pro',
                           user.adresseEntreprise),
                       _buildInfoRow(
                           Icons.phone_in_talk_outlined,
-                          'Tél. entreprise',
+                          'Tél. professionnel',
                           user.telephoneEntreprise),
                       _buildInfoRow(
                           Icons.alternate_email,
-                          'Email entreprise',
+                          'Email professionnel',
                           user.emailEntreprise),
-                      _buildInfoRow(
-                          Icons.tag_outlined, 'NINEA', user.ninea),
-                      _buildInfoRow(
-                          Icons.numbers_outlined, 'RC', user.rc),
+                      // RC et NINEA uniquement pour les Professionnels (entreprise)
+                      if (isEntreprise) ...[
+                        _buildInfoRow(
+                            Icons.tag_outlined, 'NINEA', user.ninea),
+                        _buildInfoRow(
+                            Icons.numbers_outlined, 'RC', user.rc),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -320,17 +330,34 @@ class _ProfilPageState extends State<ProfilPage> {
   // ── Badge de rôle ─────────────────────────────────────────────────────────
   Widget _buildRoleBadge(String? role) {
     if (role == null || role.isEmpty) return const SizedBox.shrink();
+
+    // Labels et couleurs selon le type de compte
+    final label = switch (role) {
+      'Professionnel' => '🏢 Professionnel',
+      'Independant'   => '💼 Indépendant',
+      'Particulier'   => '👤 Particulier',
+      'Admin'         => '⚙️ Admin',
+      _               => role,
+    };
+
+    final badgeColor = switch (role) {
+      'Professionnel' => Colors.blue.withOpacity(0.25),
+      'Independant'   => Colors.orange.withOpacity(0.25),
+      'Particulier'   => Colors.green.withOpacity(0.20),
+      _               => Colors.white.withOpacity(0.15),
+    };
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: badgeColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white24),
       ),
       child: Text(
-        role,
+        label,
         style: const TextStyle(
-          color: Colors.white70,
+          color: Colors.white,
           fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
