@@ -13,23 +13,23 @@ class AutreContratModel extends AutreContrat {
   });
 
   factory AutreContratModel.fromJson(Map<String, dynamic> json, String type) {
+    // Cast sûr : évite le crash si la valeur est Map<dynamic,dynamic>
+    Map<String, dynamic>? _toMap(dynamic v) =>
+        v is Map ? Map<String, dynamic>.from(v) : null;
+
     return AutreContratModel(
-      id: json['id']?.toString() ?? '',
-      numeroContrat: json['numero_contrat'],
-      type: type,
-      statut: json['statut'],
-      generateur: json['generateur'] != null
-          ? Map<String, dynamic>.from(json['generateur'])
-          : null,
-      autrePartie: json['autrePartie'] != null
-          ? Map<String, dynamic>.from(json['autrePartie'])
-          : (json['autre_partie'] != null
-              ? Map<String, dynamic>.from(json['autre_partie'])
-              : null),
-      data: json['data'] != null
-          ? Map<String, dynamic>.from(json['data'])
-          : null,
-      createdAt: json['createdAt'],
+      id:            json['id']?.toString() ?? '',
+      numeroContrat: json['numero_contrat'] as String?,
+      type:          type,
+      statut:        json['statut'] as String?,
+      generateur:    _toMap(json['generateur']),
+      // backend alias peut être 'autrePartie' ou 'autre_partie'
+      autrePartie:   _toMap(json['autrePartie']) ?? _toMap(json['autre_partie']),
+      // Stocker TOUT le JSON dans data : clauses, missions, info_prestataire,
+      // info_partie1, pouvoirs_accordes… sont tous des DataTypes.JSON retournés
+      // au top-level par le backend, pas dans un sous-objet 'data'.
+      data:          Map<String, dynamic>.from(json),
+      createdAt:     json['createdAt'] as String?,
     );
   }
 }
