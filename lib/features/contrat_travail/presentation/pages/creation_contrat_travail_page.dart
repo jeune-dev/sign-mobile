@@ -19,7 +19,6 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
   final _formKey = GlobalKey<FormState>();
   final _posteCtrl = TextEditingController();
   final _lieuCtrl = TextEditingController();
-  final _jourTravailCtrl = TextEditingController();
   final _salaireCtrl = TextEditingController();
   final _nbrCongesCtrl = TextEditingController();
   final _clientSearchCtrl = TextEditingController();
@@ -29,19 +28,17 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
   bool _avanceSalaire = false;
   DateTime? _dateDebut;
   DateTime? _dateFin;
-  TimeOfDay? _heureDebut;
-  TimeOfDay? _heureFin;
   Client? _selectedClient;
 
-  // Format TimeOfDay → "HH:MM:SS" pour PostgreSQL TIME
-  String _formatTime(TimeOfDay t) =>
-      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
+  // Planning : liste de { jour, debut, fin }
+  final List<_JourTravail> _planning = [
+    _JourTravail(jour: 'Lundi'),
+  ];
 
-  Future<void> _pickTime({
-    required void Function(TimeOfDay) onPicked,
-    TimeOfDay? initial,
-  }) async {
-    final t = await showTimePicker(
+  static const _jours = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+
+  Future<TimeOfDay?> _pickTime({TimeOfDay? initial}) async {
+    return showTimePicker(
       context: context,
       initialTime: initial ?? const TimeOfDay(hour: 8, minute: 0),
       builder: (context, child) => MediaQuery(
@@ -49,12 +46,204 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
         child: child!,
       ),
     );
-    if (t != null) onPicked(t);
+  }
+
+  // Affichage UI : "08h30"
+  String _fmtTime(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2,'0')}h${t.minute.toString().padLeft(2,'0')}';
+
+  // Stockage BDD : "08:30:00"
+  String _fmtTimeBd(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2,'0')}:${t.minute.toString().padLeft(2,'0')}:00';
+
+  Widget _buildPlanningSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Titre + bouton ajouter
+        Row(
+          children: [
+            Container(
+              width: 32, height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFF00C896).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.calendar_month_outlined,
+                  color: Color(0xFF00C896), size: 18),
+            ),
+            const SizedBox(width: 10),
+            const Text('Planning hebdomadaire *',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87)),
+            const Spacer(),
+            GestureDetector(
+              onTap: () {
+                // Trouver le prochain jour non utilisé
+                final utilises = _planning.map((j) => j.jour).toSet();
+                final suivant = _jours.firstWhere(
+                  (j) => !utilises.contains(j),
+                  orElse: () => _jours[0],
+                );
+                setState(() => _planning.add(_JourTravail(jour: suivant)));
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.add_rounded, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text('Ajouter', style: TextStyle(color: Colors.white,
+                        fontSize: 12, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // En-tête colonnes
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              const Expanded(flex: 3, child: Text('Jour',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black54))),
+              const SizedBox(width: 8),
+              const Expanded(flex: 3, child: Text('Heure début',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black54))),
+              const SizedBox(width: 8),
+              const Expanded(flex: 3, child: Text('Heure fin',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.black54))),
+              const SizedBox(width: 36),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        // Lignes de planning
+        ..._planning.asMap().entries.map((entry) {
+          final i = entry.key;
+          final j = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Row(
+              children: [
+                // Dropdown jour
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: j.jour,
+                        isExpanded: true,
+                        style: const TextStyle(fontSize: 12, color: Colors.black87,
+                            fontWeight: FontWeight.w600),
+                        items: _jours.map((jour) => DropdownMenuItem(
+                          value: jour,
+                          child: Text(jour, style: const TextStyle(fontSize: 12)),
+                        )).toList(),
+                        onChanged: (v) => setState(() => _planning[i] = _JourTravail(
+                          jour: v!, debut: j.debut, fin: j.fin)),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Heure début
+                Expanded(
+                  flex: 3,
+                  child: GestureDetector(
+                    onTap: () async {
+                      final t = await _pickTime(initial: j.debut ?? const TimeOfDay(hour: 8, minute: 0));
+                      if (t != null) setState(() => _planning[i] = _JourTravail(
+                        jour: j.jour, debut: t, fin: j.fin));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+                      decoration: BoxDecoration(
+                        color: j.debut != null ? const Color(0xFF00C896).withOpacity(0.08) : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: j.debut != null
+                            ? const Color(0xFF00C896).withOpacity(0.4) : Colors.grey[200]!),
+                      ),
+                      child: Text(
+                        j.debut != null ? _fmtTime(j.debut!) : '—',
+                        style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                          color: j.debut != null ? const Color(0xFF00C896) : Colors.grey[400],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Heure fin
+                Expanded(
+                  flex: 3,
+                  child: GestureDetector(
+                    onTap: () async {
+                      final t = await _pickTime(initial: j.fin ?? const TimeOfDay(hour: 17, minute: 0));
+                      if (t != null) setState(() => _planning[i] = _JourTravail(
+                        jour: j.jour, debut: j.debut, fin: t));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
+                      decoration: BoxDecoration(
+                        color: j.fin != null ? Colors.red.withOpacity(0.06) : Colors.grey[50],
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: j.fin != null
+                            ? Colors.red.withOpacity(0.3) : Colors.grey[200]!),
+                      ),
+                      child: Text(
+                        j.fin != null ? _fmtTime(j.fin!) : '—',
+                        style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.w700,
+                          color: j.fin != null ? Colors.red[400] : Colors.grey[400],
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Supprimer
+                GestureDetector(
+                  onTap: _planning.length > 1
+                      ? () => setState(() => _planning.removeAt(i))
+                      : null,
+                  child: Container(
+                    width: 28, height: 28,
+                    decoration: BoxDecoration(
+                      color: _planning.length > 1 ? Colors.red[50] : Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(Icons.close_rounded,
+                      size: 14,
+                      color: _planning.length > 1 ? Colors.red[400] : Colors.grey[300],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    );
   }
 
   @override
   void dispose() {
-    _posteCtrl.dispose(); _lieuCtrl.dispose(); _jourTravailCtrl.dispose();
+    _posteCtrl.dispose(); _lieuCtrl.dispose();
     _salaireCtrl.dispose(); _nbrCongesCtrl.dispose(); _clientSearchCtrl.dispose();
     super.dispose();
   }
@@ -83,9 +272,14 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       );
       return;
     }
-    if (_heureDebut == null || _heureFin == null) {
+    // Vérifier qu'au moins un jour a heures début et fin
+    final planningInvalide = _planning.any((j) => j.debut == null || j.fin == null);
+    if (_planning.isEmpty || planningInvalide) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner les heures de début et de fin'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Veuillez renseigner les heures pour chaque jour de travail'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -95,9 +289,12 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       'poste': _posteCtrl.text.trim(),
       'type_contrat': _typeContrat,
       'lieu_travail': _lieuCtrl.text.trim(),
-      'jour_travail': _jourTravailCtrl.text.trim(),
-      'heure_debut': _formatTime(_heureDebut!),  // ex: "08:00:00"
-      'heure_fin':   _formatTime(_heureFin!),    // ex: "17:30:00"
+      // Nouveau format planning
+      'jour_travail': _planning.map((j) => {
+        'jour':  j.jour,
+        'debut': _fmtTimeBd(j.debut!), // HH:MM:SS
+        'fin':   _fmtTimeBd(j.fin!),   // HH:MM:SS
+      }).toList(),
       'date_debut': _dateDebut!.toIso8601String().substring(0, 10),
       if (_dateFin != null) 'date_fin': _dateFin!.toIso8601String().substring(0, 10),
       'salaire_mensuel': double.tryParse(_salaireCtrl.text) ?? 0,
@@ -230,24 +427,8 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
               ),
               const SizedBox(height: 14),
               _field(_lieuCtrl, 'Lieu de travail *'),
-              const SizedBox(height: 14),
-              _field(_jourTravailCtrl, 'Jours de travail *'),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(child: _timePicker(
-                    label: 'Heure début *',
-                    value: _heureDebut,
-                    onPicked: (t) => setState(() => _heureDebut = t),
-                  )),
-                  const SizedBox(width: 12),
-                  Expanded(child: _timePicker(
-                    label: 'Heure fin *',
-                    value: _heureFin,
-                    onPicked: (t) => setState(() => _heureFin = t),
-                  )),
-                ],
-              ),
+              const SizedBox(height: 20),
+              _buildPlanningSection(),
               const SizedBox(height: 14),
               _datePicker('Date de début *', _dateDebut, (dt) => setState(() => _dateDebut = dt)),
               const SizedBox(height: 14),
@@ -309,7 +490,10 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
     required void Function(TimeOfDay) onPicked,
   }) {
     return GestureDetector(
-      onTap: () => _pickTime(onPicked: onPicked, initial: value),
+      onTap: () async {
+        final t = await _pickTime(initial: value);
+        if (t != null) onPicked(t);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
@@ -377,4 +561,13 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black)),
     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
   );
+}
+
+
+// Modèle local pour une ligne du planning
+class _JourTravail {
+  final String jour;
+  final TimeOfDay? debut;
+  final TimeOfDay? fin;
+  const _JourTravail({required this.jour, this.debut, this.fin});
 }
