@@ -102,7 +102,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       if (_dateFin != null) 'date_fin': _dateFin!.toIso8601String().substring(0, 10),
       'salaire_mensuel': double.tryParse(_salaireCtrl.text) ?? 0,
       'moyen_paiement': _moyenPaiement,
-      if (_nbrCongesCtrl.text.isNotEmpty) 'nbr_jours_conges': int.tryParse(_nbrCongesCtrl.text),
+      'nbr_jours_conges': int.tryParse(_nbrCongesCtrl.text.trim()) ?? 0,
       'avance_salaire': _avanceSalaire,
       'missions': [], // Tableau vide pour l'instant (requis par backend)
       'signature_employeur': '', // String vide (requis par backend)
