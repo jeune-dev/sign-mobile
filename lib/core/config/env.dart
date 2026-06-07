@@ -89,6 +89,12 @@ class Env {
         return const String.fromEnvironment('FICHE_PAIE_MES_FICHES_PATH');
       case 'FICHE_PAIE_DETAIL_PATH':
         return const String.fromEnvironment('FICHE_PAIE_DETAIL_PATH');
+      case 'PARTICULIER_DASHBOARD_STATS_PATH':
+        return const String.fromEnvironment('PARTICULIER_DASHBOARD_STATS_PATH');
+      case 'PARTICULIER_FACTURES_PATH':
+        return const String.fromEnvironment('PARTICULIER_FACTURES_PATH');
+      case 'PARTICULIER_CONTRATS_PATH':
+        return const String.fromEnvironment('PARTICULIER_CONTRATS_PATH');
       default:
         return '';
     }
@@ -173,6 +179,14 @@ class Env {
       _get('FICHE_PAIE_MES_FICHES_PATH', fallback: '/professionnel/mes-fiches-paie');
   static String get fichePaieDetail =>
       _get('FICHE_PAIE_DETAIL_PATH', fallback: '/professionnel/fiche-paie');
+
+  // ─── Particulier ─────────────────────────────────────────────────────────────
+  static String get particulierDashboardStats =>
+      _get('PARTICULIER_DASHBOARD_STATS_PATH', fallback: '/particulier/dashboard/stats');
+  static String get particulierFactures =>
+      _get('PARTICULIER_FACTURES_PATH', fallback: '/particulier/factures');
+  static String get particulierContrats =>
+      _get('PARTICULIER_CONTRATS_PATH', fallback: '/particulier/contrats');
 
   // ─── Autres Contrats ──────────────────────────────────────────────────────────
   static const String typeCaution             = 'contrat-caution';

@@ -90,7 +90,7 @@ import 'features/autres_contrats/domain/usecases/signer_autre_contrat.dart';
 import 'features/autres_contrats/domain/usecases/telecharger_autre_contrat.dart';
 import 'features/autres_contrats/presentation/bloc/autres_contrats_bloc.dart';
 
-// Dashboard
+// Dashboard (Professionnel)
 import 'features/dashboard/data/datasources/dashboard_remote_datasource.dart';
 import 'features/dashboard/data/repositories/dashboard_repository_impl.dart';
 import 'features/dashboard/domain/repositories/dashboard_repository.dart';
@@ -98,6 +98,16 @@ import 'features/dashboard/domain/usecases/get_dashboard_stats.dart';
 import 'features/dashboard/domain/usecases/get_documents_recents.dart';
 import 'features/dashboard/domain/usecases/ouvrir_document_dashboard.dart';
 import 'features/dashboard/presentation/bloc/dashboard_bloc.dart';
+
+// Particulier
+import 'features/particulier/data/datasources/particulier_remote_datasource.dart';
+import 'features/particulier/data/repositories/particulier_repository_impl.dart';
+import 'features/particulier/domain/repositories/particulier_repository.dart';
+import 'features/particulier/domain/usecases/get_dashboard_stats.dart'
+    as particulier_dashboard;
+import 'features/particulier/domain/usecases/get_factures_client.dart';
+import 'features/particulier/domain/usecases/get_contrats_client.dart';
+import 'features/particulier/presentation/bloc/particulier_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -375,6 +385,30 @@ Future<void> init() async {
         getDashboardStats: sl(),
         getDocumentsRecents: sl(),
         ouvrirDocument: sl(),
+      ));
+
+  //================================================
+  // FEATURE — PARTICULIER (CLIENT)
+  //================================================
+
+  sl.registerLazySingleton<ParticulierRemoteDataSource>(
+      () => ParticulierRemoteDataSourceImpl(dio: sl()));
+  sl.registerLazySingleton<ParticulierRepository>(
+      () => ParticulierRepositoryImpl(remoteDataSource: sl()));
+  sl.registerLazySingleton(
+      () => particulier_dashboard.GetDashboardStats(sl()));
+  sl.registerLazySingleton(() => GetFacturesClient(sl()));
+  sl.registerLazySingleton(() => GetContratsClient(sl()));
+  sl.registerLazySingleton(() => GetContratsByTypeClient(sl()));
+  sl.registerLazySingleton(() => GetContratDetailClient(sl()));
+  sl.registerLazySingleton(() => SignerContratClient(sl()));
+  sl.registerFactory(() => ParticulierBloc(
+        getDashboardStats: sl<particulier_dashboard.GetDashboardStats>(),
+        getFacturesClient: sl(),
+        getContratsClient: sl(),
+        getContratsByTypeClient: sl(),
+        getContratDetailClient: sl(),
+        signerContratClient: sl(),
       ));
 
 }
