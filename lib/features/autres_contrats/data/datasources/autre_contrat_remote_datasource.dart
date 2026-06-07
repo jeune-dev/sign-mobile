@@ -54,11 +54,12 @@ class AutreContratRemoteDataSourceImpl implements AutreContratRemoteDataSource {
 
   @override
   Future<List<int>> telechargerContrat(String type, String id) async {
+    // VULN-M01 : validateStatus restreint aux 2xx uniquement
     final response = await dio.get(
       '${Env.autresContratsBase(type)}/$id/download',
       options: Options(
         responseType: ResponseType.bytes,
-        validateStatus: (status) => true,
+        validateStatus: (status) => status != null && status >= 200 && status < 300,
       ),
     );
     return List<int>.from(response.data);

@@ -1,7 +1,11 @@
 import 'dart:io';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/core/theme/app_theme.dart';
@@ -20,6 +24,25 @@ import 'package:sign_application/injection_container.dart' as di;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // IMP-06 : Désactive le téléchargement runtime des polices Google Fonts.
+  // Les fichiers .ttf doivent être bundlés dans assets/fonts/ (voir pubspec.yaml).
+  // Si les fichiers .ttf sont absents, Flutter tombera sur la police système par défaut.
+  GoogleFonts.config.allowRuntimeFetching = false;
+
+  // IMP-02 : Firebase Crashlytics — monitoring des crashes en production.
+  // PRÉREQUIS : Ajouter google-services.json dans android/app/ depuis la console Firebase.
+  // https://console.firebase.google.com → Nouveau projet → Ajouter app Android
+  // applicationId: com.signapp.sign_application
+  await Firebase.initializeApp();
+  if (!kDebugMode) {
+    // Crashlytics actif uniquement en production (pas pendant les tests)
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+  }
 
   // Requis par media_store_plus — initialiser une seule fois avant tout
   if (Platform.isAndroid) {

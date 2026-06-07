@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/features/auth/presentation/pages/login_page.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 // Première page d'onboarding (logo 1)
 class OnboardingPage1 extends StatefulWidget {

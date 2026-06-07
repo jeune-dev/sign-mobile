@@ -22,25 +22,24 @@ class AuthRepositoryImpl implements AuthRepository {
       ) async {
     try {
       final authResponse =
-      await remoteDataSource.login(identifiant, motDePasse);
+          await remoteDataSource.login(identifiant, motDePasse);
 
+      // Stocker le JWT
       await sl<TokenService>().setToken(authResponse.token);
 
-      await sl<FlutterSecureStorage>().write(
-        key: 'user_id',
-        value: authResponse.user.id.toString(),
-      );
+      // Stocker l'ID et le rôle (pour la reprise de session)
+      final storage = sl<FlutterSecureStorage>();
+      await storage.write(key: 'user_id', value: authResponse.user.id);
+      await storage.write(key: 'user_role', value: authResponse.user.role);
 
       return Right(authResponse.user);
     } on DioException catch (e) {
       String message = 'Une erreur est survenue';
-
       if (e.response?.data is Map && e.response?.data['message'] != null) {
         message = e.response!.data['message'];
       } else if (e.message != null) {
         message = e.message!;
       }
-
       return Left(ServerFailure(errorMessage: message));
     } catch (e) {
       return Left(ServerFailure(errorMessage: e.toString()));
@@ -62,8 +61,6 @@ class AuthRepositoryImpl implements AuthRepository {
     String? rc,
     String? ninea,
     XFile? signature,
-
-    // Champs entreprise ajoutés
     String? nomEntreprise,
     String? adresseEntreprise,
     String? telephoneEntreprise,
@@ -92,16 +89,20 @@ class AuthRepositoryImpl implements AuthRepository {
 
       await sl<TokenService>().setToken(authResponse.token);
 
+      // Stocker le rôle pour la reprise de session
+      await sl<FlutterSecureStorage>().write(
+        key: 'user_role',
+        value: authResponse.user.role,
+      );
+
       return Right(authResponse.user);
     } on DioException catch (e) {
       String message = 'Une erreur est survenue';
-
       if (e.response?.data is Map && e.response?.data['message'] != null) {
         message = e.response!.data['message'];
       } else if (e.message != null) {
         message = e.message!;
       }
-
       return Left(ServerFailure(errorMessage: message));
     } catch (e) {
       return Left(ServerFailure(errorMessage: e.toString()));

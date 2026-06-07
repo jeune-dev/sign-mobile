@@ -58,8 +58,8 @@ class _CreationContratPageState extends State<CreationContratPage>
   bool _meuble = false, _parking = false, _cave = false, _balcon = false;
 
   static const _typesBien = [
-    'Appartement', 'Maison', 'Studio', 'Villa',
-    'Bureau', 'Local commercial', 'Entrepôt', 'Autre'
+    'Appartement', 'Maison', 'Studio', 'Chambre', 'Villa',
+    'Local commercial', 'Bureau', 'Entrepôt', 'Terrain', 'Autre'
   ];
   static const _usagesBien = ['Habitation', 'Professionnel', 'Usage mixte'];
 
@@ -83,7 +83,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   bool   _chargesIncluses = false;
 
   static const _devises      = ['FCFA', 'EUR', 'USD', 'GBP'];
-  static const _periodicites = ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel'];
+  static const _periodicites = ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel', 'Autre'];
 
   // ← Enum exact du backend
   static const _moyens = [
@@ -485,40 +485,6 @@ class _CreationContratPageState extends State<CreationContratPage>
       ),
     );
   }
-
-  Widget _sectionDot(String label, IconData icon, int index) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.12),
-              shape: BoxShape.circle,
-              border: Border.all(
-                  color: Colors.white.withOpacity(0.25)),
-            ),
-            child: Icon(icon, color: Colors.white70, size: 16),
-          ),
-          const SizedBox(height: 4),
-          Text(label,
-              style: TextStyle(
-                  color: Colors.white.withOpacity(0.4),
-                  fontSize: 8,
-                  fontWeight: FontWeight.w600),
-              textAlign: TextAlign.center),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionLine() => Expanded(
-        child: Container(
-          height: 1,
-          margin: const EdgeInsets.only(bottom: 18),
-          color: Colors.white.withOpacity(0.15),
-        ),
-      );
 
   // ── Bottom bar ─────────────────────────────────────────────
   Widget _buildBottomBar() {

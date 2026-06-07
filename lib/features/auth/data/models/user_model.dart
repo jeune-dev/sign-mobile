@@ -1,12 +1,12 @@
 import '../../domain/entities/user.dart';
 
+/// Modèle de données — mot_de_passe jamais stocké (VULN-C03)
 class UserModel extends User {
   const UserModel({
     required super.id,
     required super.nom,
     required super.prenom,
     required super.email,
-    required super.mot_de_passe,
     required super.adresse,
     required super.telephone,
     required super.carte_identite_national_num,
@@ -28,7 +28,7 @@ class UserModel extends User {
       nom: json['nom'] ?? '',
       prenom: json['prenom'] ?? '',
       email: json['email'] ?? '',
-      mot_de_passe: json['mot_de_passe'] ?? '',
+      // VULN-C03 : mot_de_passe jamais mappé dans l'entité
       adresse: json['adresse'] ?? '',
       telephone: json['telephone'] ?? '',
       carte_identite_national_num: json['carte_identite_national_num'] ?? '',
@@ -51,7 +51,6 @@ class UserModel extends User {
       'nom': nom,
       'prenom': prenom,
       'email': email,
-      'mot_de_passe': mot_de_passe,
       'adresse': adresse,
       'telephone': telephone,
       'carte_identite_national_num': carte_identite_national_num,
@@ -60,7 +59,6 @@ class UserModel extends User {
       'logo': logo,
       'rc': rc,
       'ninea': ninea,
-      'signature': signature,
       'nomEntreprise': nomEntreprise,
       'adresseEntreprise': adresseEntreprise,
       'telephoneEntreprise': telephoneEntreprise,
@@ -86,7 +84,7 @@ class AuthResponseModel {
 
   Map<String, dynamic> toJson() {
     return {
-      'token': token,
+      'token': '[REDACTED]',
       'utilisateur': user.toJson(),
     };
   }

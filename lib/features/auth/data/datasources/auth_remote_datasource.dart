@@ -20,7 +20,6 @@ abstract class AuthRemoteDataSource {
     String? rc,
     String? ninea,
     XFile? signature,
-
     String? nomEntreprise,
     String? adresseEntreprise,
     String? telephoneEntreprise,
@@ -52,33 +51,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       String identifiant,
       String motDePasse,
       ) async {
+    final response = await dio.post(
+      _loginPath,
+      data: {
+        'identifiant': identifiant,
+        'mot_de_passe': motDePasse,
+      },
+    );
 
-    try {
-      final response = await dio.post(
-        _loginPath,
-        data: {
-          'identifiant': identifiant,
-          'mot_de_passe': motDePasse,
-        },
-      );
-
-      if (response.statusCode == 200) {
-        return AuthResponseModel.fromJson(response.data);
-      }
-
-      throw DioException(
-        requestOptions: response.requestOptions,
-        response: response,
-        type: DioExceptionType.badResponse,
-        error: response.data['message'] ?? 'Erreur de connexion',
-      );
-    } on DioException catch (e) {
-      print('--- Erreur Dio ---');
-      print('Type: ${e.type}');
-      print('Response: ${e.response?.data}');
-      print('Message: ${e.message}');
-      rethrow;
+    if (response.statusCode == 200) {
+      return AuthResponseModel.fromJson(response.data);
     }
+
+    throw DioException(
+      requestOptions: response.requestOptions,
+      response: response,
+      type: DioExceptionType.badResponse,
+      error: response.data['message'] ?? 'Erreur de connexion',
+    );
   }
 
   @override
@@ -96,120 +86,67 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     XFile? photoProfil,
     XFile? logo,
     XFile? signature,
-
     String? nomEntreprise,
     String? adresseEntreprise,
     String? telephoneEntreprise,
     String? emailEntreprise,
   }) async {
+    // VULN-H02 : Aucun print() — données sensibles jamais loggées
+    final formData = FormData.fromMap({
+      'nom': nom,
+      'prenom': prenom,
+      'email': email,
+      'mot_de_passe': mot_de_passe,
+      'adresse': adresse,
+      'telephone': telephone,
+      'carte_identite_national_num': carte_identite_national_num,
+      'role': role,
+      if (rc != null) 'rc': rc,
+      if (ninea != null) 'ninea': ninea,
+      if (nomEntreprise != null) 'nomEntreprise': nomEntreprise,
+      if (adresseEntreprise != null) 'adresseEntreprise': adresseEntreprise,
+      if (telephoneEntreprise != null) 'telephoneEntreprise': telephoneEntreprise,
+      if (emailEntreprise != null) 'emailEntreprise': emailEntreprise,
+    });
+
+    if (photoProfil != null) {
+      formData.files.add(MapEntry(
+        'photoProfil',
+        await MultipartFile.fromFile(
+          File(photoProfil.path).path,
+          filename: photoProfil.path.split('/').last,
+        ),
+      ));
+    }
+
+    if (logo != null) {
+      formData.files.add(MapEntry(
+        'logo',
+        await MultipartFile.fromFile(
+          File(logo.path).path,
+          filename: logo.path.split('/').last,
+        ),
+      ));
+    }
+
+    if (signature != null) {
+      formData.files.add(MapEntry(
+        'signature',
+        await MultipartFile.fromFile(
+          File(signature.path).path,
+          filename: signature.path.split('/').last,
+        ),
+      ));
+    }
+
     try {
-      print('========== REGISTER REQUEST ==========');
-      print('Endpoint : $_registerPath');
-
-      // Créer FormData pour envoyer les données et le fichier
-      final formData = FormData.fromMap({
-        'nom': nom,
-        'prenom': prenom,
-        'email': email,
-        'mot_de_passe': mot_de_passe,
-        'adresse': adresse,
-        'telephone': telephone,
-        'carte_identite_national_num': carte_identite_national_num,
-        'role': role,
-        'rc': rc,
-        'ninea': ninea,
-        'nomEntreprise': nomEntreprise,
-        'adresseEntreprise': adresseEntreprise,
-        'telephoneEntreprise': telephoneEntreprise,
-        'emailEntreprise': emailEntreprise,
-
-      });
-
-      // Ajouter le fichier photoProfil s'il existe
-      if (photoProfil != null) {
-        final file = File(photoProfil.path);
-        final fileName = photoProfil.path.split('/').last;
-
-        formData.files.add(MapEntry(
-          'photoProfil',
-          await MultipartFile.fromFile(
-            file.path,
-            filename: fileName,
-          ),
-        ));
-
-        print('Avec fichier photoProfil: $fileName');
-      }
-
-      // Ajouter le fichier logo s'il existe
-      if (logo != null) {
-        final file = File(logo.path);
-        final fileName = logo.path.split('/').last;
-
-        formData.files.add(MapEntry(
-          'logo',
-          await MultipartFile.fromFile(
-            file.path,
-            filename: fileName,
-          ),
-        ));
-
-        print('Avec fichier logo: $fileName');
-      }
-
-      // Ajouter le fichier signature s'il existe
-      if (signature != null) {
-        final file = File(signature.path);
-        final fileName = signature.path.split('/').last;
-
-        formData.files.add(MapEntry(
-          'signature',
-          await MultipartFile.fromFile(
-            file.path,
-            filename: fileName,
-          ),
-        ));
-
-        print('Avec fichier signature: $fileName');
-      }
-
-      print('Payload :');
-      print({
-        'nom': nom,
-        'prenom': prenom,
-        'email': email,
-        'mot_de_passe': '***',
-        'adresse': adresse,
-        'telephone': telephone,
-        'carte_identite_national_num': carte_identite_national_num,
-        'role': role,
-        'photoProfil': photoProfil != null ? 'présent' : 'absent',
-        'logo': logo != null ? 'présent' : 'absent',
-        'signature': signature != null ? 'présent' : 'absent',
-      });
-
       final response = await dio.post(
         _registerPath,
         data: formData,
-        options: Options(
-          contentType: 'multipart/form-data',
-        ),
+        options: Options(contentType: 'multipart/form-data'),
       );
-
-      print('========== REGISTER RESPONSE ==========');
-      print('Status code : ${response.statusCode}');
-      print('Response data : ${response.data}');
-
       return AuthResponseModel.fromJson(response.data);
     } on DioException catch (e) {
-      print('========== REGISTER ERROR (DIO) ==========');
-      print('Message : ${e.message}');
-      print('Type : ${e.type}');
-      print('Status code : ${e.response?.statusCode}');
-      print('Error data : ${e.response?.data}');
-      print('Request path : ${e.requestOptions.path}');
-
-      // Gestion spécifique des erreurs
       if (e.response?.statusCode == 400) {
         final errorData = e.response?.data;
         final errorMessage = errorData is Map && errorData.containsKey('message')
@@ -222,11 +159,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
           error: errorMessage,
         );
       }
-
-      rethrow;
-    } catch (e) {
-      print('========== REGISTER ERROR (UNKNOWN) ==========');
-      print('Error : $e');
       rethrow;
     }
   }

@@ -25,6 +25,8 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
 
   String _typeContrat = 'CDI';
   String _moyenPaiement = 'Virement bancaire';
+  String _remunerationFeries = 'rémunérés';
+  String _remunerationMaladie = 'rémunérés';
   bool _avanceSalaire = false;
   DateTime? _dateDebut;
   DateTime? _dateFin;
@@ -300,6 +302,8 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       'salaire_mensuel': double.tryParse(_salaireCtrl.text) ?? 0,
       'moyen_paiement': _moyenPaiement,
       'nbr_jours_conges': int.tryParse(_nbrCongesCtrl.text.trim()) ?? 0,
+      'remuneration_jours_feries': _remunerationFeries,
+      'remuneration_absences_maladie': _remunerationMaladie,
       'avance_salaire': _avanceSalaire,
       'missions': [], // Tableau vide pour l'instant (requis par backend)
       'signature_employeur': '', // String vide (requis par backend)
@@ -444,8 +448,31 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
                   DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
                   DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
+                  DropdownMenuItem(value: 'Autre', child: Text('Autre')),
                 ],
                 onChanged: (v) => setState(() => _moyenPaiement = v!),
+              ),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<String>(
+                value: _remunerationFeries,
+                decoration: _dec('Rémunération jours fériés *'),
+                items: const [
+                  DropdownMenuItem(value: 'rémunérés', child: Text('Rémunérés')),
+                  DropdownMenuItem(value: 'non rémunérés', child: Text('Non rémunérés')),
+                  DropdownMenuItem(value: 'travail_effectif', child: Text('Travail effectif')),
+                ],
+                onChanged: (v) => setState(() => _remunerationFeries = v!),
+              ),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<String>(
+                value: _remunerationMaladie,
+                decoration: _dec('Rémunération absences maladie *'),
+                items: const [
+                  DropdownMenuItem(value: 'rémunérés', child: Text('Rémunérées')),
+                  DropdownMenuItem(value: 'non rémunérés', child: Text('Non rémunérées')),
+                  DropdownMenuItem(value: 'sous_conditions', child: Text('Sous conditions')),
+                ],
+                onChanged: (v) => setState(() => _remunerationMaladie = v!),
               ),
               const SizedBox(height: 14),
               _field(_nbrCongesCtrl, 'Nombre de jours de congés', required: false, keyboardType: TextInputType.number),
@@ -479,42 +506,6 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _timePicker({
-    required String label,
-    required TimeOfDay? value,
-    required void Function(TimeOfDay) onPicked,
-  }) {
-    return GestureDetector(
-      onTap: () async {
-        final t = await _pickTime(initial: value);
-        if (t != null) onPicked(t);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.grey[50],
-          border: Border.all(color: Colors.grey.shade300),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.access_time_rounded, size: 18,
-                color: value != null ? const Color(0xFF00C896) : Colors.grey),
-            const SizedBox(width: 8),
-            Text(
-              value != null
-                  ? '${value.hour.toString().padLeft(2, '0')}h${value.minute.toString().padLeft(2, '0')}'
-                  : label,
-              style: TextStyle(
-                  color: value != null ? Colors.black87 : Colors.grey.shade500,
-                  fontWeight: value != null ? FontWeight.w600 : FontWeight.normal),
-            ),
-          ],
         ),
       ),
     );

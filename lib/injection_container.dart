@@ -1,9 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'core/config/env.dart';
 import 'core/services/token_service.dart';
 
 // Account
@@ -105,7 +106,9 @@ Future<void> init() async {
   // SERVICES EXTERNES
   //================================================
 
-  await dotenv.load(fileName: '.env');
+  // REST-C01 : En production, les variables sont injectées via --dart-define.
+  // Le fichier .env n'est PAS bundlé dans l'APK.
+  // flutter_dotenv est maintenant en dev_dependencies uniquement.
 
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
@@ -126,17 +129,13 @@ Future<void> init() async {
   //================================================
 
   sl.registerLazySingleton(() {
-    final baseUrl = dotenv.maybeGet('API_BASE_URL')?.trim();
-    if (baseUrl == null || baseUrl.isEmpty) {
-      throw StateError('API_BASE_URL est manquant dans le fichier .env');
-    }
-
+    // REST-C01 : URL résolue depuis --dart-define (prod) ou .env (dev) ou fallback codé
     final dio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 120),
-        sendTimeout: const Duration(seconds: 60),
+        baseUrl: Env.baseUrl,
+        connectTimeout: const Duration(seconds: 15),   // OPT-04 : réduit de 30s → 15s
+        receiveTimeout: const Duration(seconds: 30),   // OPT-04 : réduit de 120s → 30s
+        sendTimeout: const Duration(seconds: 30),      // OPT-04 : réduit de 60s → 30s
         contentType: 'application/json',
         headers: {'Accept': 'application/json'},
       ),
@@ -144,35 +143,64 @@ Future<void> init() async {
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        print('🌐 [REQUEST] ${options.method} ${options.path}');
+        // VULN-H02 : Log uniquement en debug, sans données sensibles
+        if (kDebugMode) {
+          debugPrint('🌐 [REQUEST] ${options.method} ${options.path}');
+        }
 
         final path = options.path.split('?')[0].trim();
         final isAuthEndpoint =
             path.endsWith('/auth/login') || path.endsWith('/auth/register');
 
         if (!isAuthEndpoint) {
-          try {
-            final token = await sl<TokenService>().getToken();
-            if (token != null && token.isNotEmpty) {
-              options.headers['Authorization'] = 'Bearer $token';
-              print('🔑 Token ajouté');
-            }
-          } catch (e) {
-            print('⚠️ Erreur token: $e');
+          // VULN-M05 : Utilise getValidToken() qui vérifie l'expiration
+          final token = await sl<TokenService>().getValidToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
           }
         }
 
         return handler.next(options);
       },
       onResponse: (response, handler) {
-        print('✅ [RESPONSE] ${response.statusCode} ${response.requestOptions.path}');
+        if (kDebugMode) {
+          debugPrint('✅ [RESPONSE] ${response.statusCode} ${response.requestOptions.path}');
+        }
         return handler.next(response);
       },
-      onError: (DioException e, handler) {
-        print('❌ [ERROR] ${e.type} ${e.requestOptions.path}');
-        if (e.response != null) {
-          print('📊 Status: ${e.response!.statusCode}');
+      onError: (DioException e, handler) async {
+        if (kDebugMode) {
+          debugPrint('❌ [ERROR] ${e.type} ${e.requestOptions.path} — Status: ${e.response?.statusCode}');
         }
+
+        // VULN-C04 : Déconnexion automatique sur 401 (token expiré / révoqué)
+        if (e.response?.statusCode == 401) {
+          await sl<TokenService>().clearToken();
+        }
+
+        // OPT-05 : Retry automatique sur erreurs réseau transitoires (max 2 tentatives)
+        // Retry uniquement sur timeout et connection error, PAS sur erreurs HTTP 4xx/5xx
+        final isNetworkError = e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.connectionError;
+
+        final retryCount = e.requestOptions.extra['retryCount'] as int? ?? 0;
+
+        if (isNetworkError && retryCount < 2) {
+          if (kDebugMode) {
+            debugPrint('🔄 [RETRY] Tentative ${retryCount + 1}/2 pour ${e.requestOptions.path}');
+          }
+          e.requestOptions.extra['retryCount'] = retryCount + 1;
+          // Attente exponentielle : 1s, 2s
+          await Future.delayed(Duration(seconds: retryCount + 1));
+          try {
+            final response = await dio.fetch(e.requestOptions);
+            return handler.resolve(response);
+          } catch (_) {
+            // Si le retry échoue aussi, on laisse passer l'erreur originale
+          }
+        }
+
         return handler.next(e);
       },
     ));
@@ -349,18 +377,4 @@ Future<void> init() async {
         ouvrirDocument: sl(),
       ));
 
-  _validateEnvVariables();
-}
-
-void _validateEnvVariables() {
-  final required = ['API_BASE_URL', 'AUTH_LOGIN_PATH', 'AUTH_REGISTER_PATH'];
-  final missing = required.where((v) {
-    final val = dotenv.maybeGet(v)?.trim();
-    return val == null || val.isEmpty;
-  }).toList();
-
-  if (missing.isNotEmpty) {
-    throw StateError(
-        'Variables .env manquantes:\n${missing.join('\n')}');
-  }
 }

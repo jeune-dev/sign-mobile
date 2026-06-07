@@ -1,16 +1,8 @@
+/// REST-M02 : Ce fichier est conservé pour compatibilité mais
+/// ne doit plus être utilisé directement — utiliser Env ou sl<Dio>().
+/// L'URL pointe désormais vers le backend actif (ha5a).
+@Deprecated('Utiliser Env.baseUrl ou sl<Dio>() via injection_container')
 class ApiConstants {
-  static const String baseUrl = "https://sign-backend-v1.onrender.com/sign";
-
-  // 🔹 Contrat immobilier
-  static const String mesContrats =
-      "$baseUrl/professionnel/contratBail/mes-contrat-immobilier";
-
-  static const String creerContrat =
-      "$baseUrl/professionnel/contratBail/creer";
-
-  static const String detailContrat =
-      "$baseUrl/professionnel/contratBail/detail";
-
-  static const String supprimerContrat =
-      "$baseUrl/professionnel/contratBail/supprimer";
+  @Deprecated('Utiliser Env.baseUrl')
+  static const String baseUrl = 'https://sign-backend-ha5a.onrender.com/sign';
 }

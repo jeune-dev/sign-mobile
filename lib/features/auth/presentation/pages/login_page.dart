@@ -6,7 +6,6 @@ import 'package:flutter/gestures.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
 import 'package:sign_application/core/routes/app_router.dart';
-import 'package:sign_application/core/widgets/primary_text_button.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import '../../../../core/theme/app_color.dart';
 import '../bloc/auth_bloc.dart';

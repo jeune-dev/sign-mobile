@@ -1,11 +1,11 @@
 import 'package:equatable/equatable.dart';
 
+/// Entité utilisateur — ne contient JAMAIS le mot de passe (VULN-C03)
 class User extends Equatable {
   final String id;
   final String nom;
   final String prenom;
   final String email;
-  final String mot_de_passe;
   final String adresse;
   final String telephone;
   final String carte_identite_national_num;
@@ -28,7 +28,6 @@ class User extends Equatable {
     required this.nom,
     required this.prenom,
     required this.email,
-    required this.mot_de_passe,
     required this.adresse,
     required this.telephone,
     required this.carte_identite_national_num,
@@ -50,7 +49,6 @@ class User extends Equatable {
     'nom': nom,
     'prenom': prenom,
     'email': email,
-    'mot_de_passe': mot_de_passe,
     'adresse': adresse,
     'telephone': telephone,
     'carte_identite_national_num': carte_identite_national_num,
@@ -59,12 +57,12 @@ class User extends Equatable {
     'logo': logo,
     'rc': rc,
     'ninea': ninea,
-    'signature': signature,
+    // VULN-C03 : signature non exposée dans les logs
+    'signature': signature != null ? '[PRÉSENT]' : null,
     'nomEntreprise': nomEntreprise,
     'adresseEntreprise': adresseEntreprise,
     'telephoneEntreprise': telephoneEntreprise,
     'emailEntreprise': emailEntreprise,
-    'token': token,
   };
 
   @override
@@ -73,7 +71,6 @@ class User extends Equatable {
     nom,
     prenom,
     email,
-    mot_de_passe,
     adresse,
     telephone,
     carte_identite_national_num,
@@ -82,11 +79,10 @@ class User extends Equatable {
     logo,
     rc,
     ninea,
-    signature,
     nomEntreprise,
     adresseEntreprise,
     telephoneEntreprise,
     emailEntreprise,
-    token
+    token,
   ];
 }

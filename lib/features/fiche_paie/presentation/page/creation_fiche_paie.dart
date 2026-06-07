@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:sign_application/core/constants/api_constants.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_bloc.dart';
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_event.dart';
@@ -142,15 +141,8 @@ class _FichePaieFormPageState extends State<FichePaieFormPage>
     _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
-    try {
-      _dio = GetIt.instance<Dio>();
-    } catch (_) {
-      _dio = Dio(BaseOptions(
-        baseUrl: ApiConstants.baseUrl,
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-      ));
-    }
+    // REST-M02 : utilise uniquement le Dio sécurisé de injection_container
+    _dio = GetIt.instance<Dio>();
   }
 
   @override

@@ -19,7 +19,7 @@ class _ClientPageState extends State<ClientPage> {
   @override
   void initState() {
     super.initState();
-    print('User dans ClientPage: ${widget.user?.toJson()}');
+    // VULN-H02 : suppression du print (données sensibles)
   }
 
   // Méthode pour gérer la déconnexion

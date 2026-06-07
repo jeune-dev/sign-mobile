@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- VULN-M04 : Chemins restreints aux seuls répertoires nécessaires -->
 <paths>
-    <cache-path name="cache" path="." />
-    <external-cache-path name="external_cache" path="." />
-    <files-path name="files" path="." />
-    <external-path name="external_files" path="." />
-    <external-files-path name="external_data" path="." />
+    <!-- Cache interne uniquement (PDFs temporaires) -->
+    <cache-path name="cache" path="pdfs/" />
+    <!-- Fichiers internes de l'app -->
+    <files-path name="files" path="downloads/" />
+    <!-- Cache externe (partage de fichiers téléchargés) -->
+    <external-cache-path name="external_cache" path="pdfs/" />
 </paths>

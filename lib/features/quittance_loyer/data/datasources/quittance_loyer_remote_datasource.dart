@@ -40,11 +40,12 @@ class QuittanceLoyerRemoteDataSourceImpl implements QuittanceLoyerRemoteDataSour
 
   @override
   Future<List<int>> telechargerQuittance(String quittanceId) async {
+    // VULN-M01 : validateStatus restreint aux 2xx uniquement
     final response = await dio.get(
       '${Env.quittanceTelecharger}/$quittanceId/download',
       options: Options(
         responseType: ResponseType.bytes,
-        validateStatus: (status) => true,
+        validateStatus: (status) => status != null && status >= 200 && status < 300,
       ),
     );
     return List<int>.from(response.data);

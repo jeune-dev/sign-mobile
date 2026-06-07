@@ -702,12 +702,4 @@ class _ClientDetailSheet extends StatelessWidget {
     );
   }
 
-  String _formatDate(String dateString) {
-    try {
-      final dt = DateTime.parse(dateString);
-      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
-    } catch (_) {
-      return dateString;
-    }
-  }
 }

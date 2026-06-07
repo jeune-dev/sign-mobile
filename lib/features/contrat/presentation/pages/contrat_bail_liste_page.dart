@@ -304,7 +304,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
     final statusColor = isActif ? Colors.green : const Color(0xFFFFB347);
     final statusLabel = isActif ? 'Actif' : (c.statut ?? 'En attente');
     final isDown = _downloading.contains(c.id);
-    final locataires = (c.locataires as List?)
+    final locataires = c.locataires
         ?.map((l) => '${l['prenom'] ?? ''} ${l['nom'] ?? ''}').join(', ')
         ?? '—';
 
