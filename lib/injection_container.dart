@@ -312,7 +312,7 @@ Future<void> init() async {
       ));
 
   //================================================
-  // FEATURE — AUTRES CONTRATS 
+  // FEATURE — AUTRES CONTRATS
   //================================================
 
   sl.registerLazySingleton<AutreContratRemoteDataSource>(
