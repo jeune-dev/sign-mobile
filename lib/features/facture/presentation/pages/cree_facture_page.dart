@@ -8,6 +8,8 @@ import 'package:sign_application/features/facture/presentation/bloc/facture_bloc
 import 'package:sign_application/features/facture/presentation/bloc/facture_event.dart';
 import 'package:sign_application/features/facture/presentation/bloc/facture_state.dart';
 import 'package:sign_application/features/client/presentation/widgets/client_avatar.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class CreeFacture extends StatefulWidget {
   const CreeFacture({super.key});
@@ -118,23 +120,17 @@ class _CreeFactureState extends State<CreeFacture> {
   void _soumettreFacture() {
     if (!_formKey.currentState!.validate()) return;
     if (_clientSelectionne == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un client'), backgroundColor: Colors.red),
-      );
+      showToast(context, 'Champ requis', 'Veuillez sélectionner un client', ToastificationType.error);
       return;
     }
     for (int i = 0; i < _items.length; i++) {
       final item = _items[i];
       if ((item['designation'] ?? '').toString().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Veuillez remplir la désignation de l\'article ${i + 1}'), backgroundColor: Colors.red),
-        );
+        showToast(context, 'Article incomplet', 'Veuillez remplir la désignation de l\'article ${i + 1}', ToastificationType.error);
         return;
       }
       if ((item['prix_unitaire'] ?? 0) <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Le prix unitaire de l\'article ${i + 1} doit être > 0'), backgroundColor: Colors.red),
-        );
+        showToast(context, 'Prix invalide', 'Le prix unitaire de l\'article ${i + 1} doit être supérieur à 0', ToastificationType.error);
         return;
       }
     }
@@ -167,15 +163,11 @@ class _CreeFactureState extends State<CreeFacture> {
     return BlocListener<FactureBloc, FactureState>(
       listener: (context, state) {
         if (state is FactureSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.green),
-          );
+          showToast(context, 'Facture créée', 'La facture a été créée avec succès.', ToastificationType.success);
           Navigator.pop(context);
         }
         if (state is FactureError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: ${state.message}'), backgroundColor: Colors.red),
-          );
+          showToast(context, 'Erreur', state.message, ToastificationType.error);
         }
       },
       child: BlocListener<ClientBloc, ClientState>(

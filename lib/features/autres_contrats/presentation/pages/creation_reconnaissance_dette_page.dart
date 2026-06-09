@@ -8,6 +8,8 @@ import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
 import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class CreationReconnaissanceDettePage extends StatefulWidget {
   const CreationReconnaissanceDettePage({super.key});
@@ -63,10 +65,7 @@ class _State extends State<CreationReconnaissanceDettePage> {
 
   void _onBack() => setState(() => _step--);
 
-  void _showError(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(msg), backgroundColor: Colors.red[600], behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-  );
+  void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   void _submit() {
     context.read<AutresContratsBloc>().add(CreerContrat('reconnaissance-dette', {
@@ -107,7 +106,7 @@ class _State extends State<CreationReconnaissanceDettePage> {
       body: BlocListener<AutresContratsBloc, AutresContratsState>(
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
-            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.green[600], behavior: SnackBarBehavior.floating));
+            showToast(ctx, 'Contrat créé', 'La reconnaissance de dette a été créée avec succès.', ToastificationType.success);
             Navigator.pop(ctx);
           }
           if (state is AutresContratsError) _showError(state.message);

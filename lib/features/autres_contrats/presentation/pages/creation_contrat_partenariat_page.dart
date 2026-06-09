@@ -6,6 +6,8 @@ import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
 import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class CreationContratPartenariatPage extends StatefulWidget {
   const CreationContratPartenariatPage({super.key});
@@ -62,10 +64,7 @@ class _State extends State<CreationContratPartenariatPage> {
 
   void _onBack() => setState(() => _step--);
 
-  void _showError(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(msg), backgroundColor: Colors.red[600], behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-  );
+  void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   void _submit() {
     context.read<AutresContratsBloc>().add(CreerContrat('contrat-partenariat', {
@@ -101,7 +100,7 @@ class _State extends State<CreationContratPartenariatPage> {
       body: BlocListener<AutresContratsBloc, AutresContratsState>(
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
-            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.green[600], behavior: SnackBarBehavior.floating));
+            showToast(ctx, 'Contrat créé', 'Le contrat de partenariat a été créé avec succès.', ToastificationType.success);
             Navigator.pop(ctx);
           }
           if (state is AutresContratsError) _showError(state.message);

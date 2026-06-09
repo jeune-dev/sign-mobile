@@ -7,6 +7,8 @@ import 'package:sign_application/features/client/presentation/bloc/client_state.
 import '../bloc/contrat_travail_bloc.dart';
 import '../bloc/contrat_travail_event.dart';
 import '../bloc/contrat_travail_state.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class CreationContratTravailPage extends StatefulWidget {
   const CreationContratTravailPage({super.key});
@@ -490,26 +492,17 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClient == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un salarié'), backgroundColor: Colors.red),
-      );
+      showToast(context, 'Champ requis', 'Veuillez sélectionner un salarié', ToastificationType.error);
       return;
     }
     if (_dateDebut == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner la date de début'), backgroundColor: Colors.red),
-      );
+      showToast(context, 'Champ requis', 'Veuillez sélectionner la date de début', ToastificationType.error);
       return;
     }
     // Vérifier qu'au moins un jour a heures début et fin
     final planningInvalide = _planning.any((j) => j.debut == null || j.fin == null);
     if (_planning.isEmpty || planningInvalide) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez renseigner les heures pour chaque jour de travail'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      showToast(context, 'Planning incomplet', 'Veuillez renseigner les heures pour chaque jour de travail', ToastificationType.error);
       return;
     }
 
@@ -550,15 +543,11 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       body: BlocListener<ContratTravailBloc, ContratTravailState>(
         listener: (context, state) {
           if (state is ContratTravailSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.green),
-            );
+            showToast(context, 'Contrat créé', 'Le contrat de travail a été créé avec succès.', ToastificationType.success);
             Navigator.pop(context);
           }
           if (state is ContratTravailError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         child: Form(

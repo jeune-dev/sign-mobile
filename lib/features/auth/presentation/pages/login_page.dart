@@ -95,6 +95,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
+      listenWhen: (previous, current) => previous is AuthLoading,
       listener: (context, state) {
         if (state is AuthSuccess) {
           // SEC-05 : Réinitialiser le compteur de tentatives après succès

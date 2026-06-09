@@ -11,6 +11,8 @@ import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_pai
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_event.dart';
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_state.dart';
 import 'package:sign_application/features/fiche_paie/domain/entities/fiche_paie.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Palette
@@ -260,19 +262,7 @@ class _FichePaieFormPageState extends State<FichePaieFormPage>
     context.read<FichePaieBloc>().add(CreerFichePaieEvent(fiche));
   }
 
-  void _showErr(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        const Icon(Icons.warning_rounded, color: Colors.white, size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(msg, style: const TextStyle(fontWeight: FontWeight.w500))),
-      ]),
-      backgroundColor: _P.danger,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
-    ));
-  }
+  void _showErr(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   // ─────────────────────────────────────────────────────────────────────────
   // UI HELPERS
@@ -847,17 +837,7 @@ class _FichePaieFormPageState extends State<FichePaieFormPage>
       body: BlocListener<FichePaieBloc, FichePaieState>(
         listener: (ctx, state) {
           if (state is FichePaieSuccess) {
-            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-              content: const Row(children: [
-                Icon(Icons.check_circle_rounded, color: Colors.white),
-                SizedBox(width: 10),
-                Text('Fiche de paie créée avec succès', style: TextStyle(fontWeight: FontWeight.w600)),
-              ]),
-              backgroundColor: _P.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-            ));
+            showToast(ctx, 'Fiche créée', 'La fiche de paie a été créée avec succès.', ToastificationType.success);
             Navigator.pop(ctx);
           }
           if (state is FichePaieError) _showErr(state.message);

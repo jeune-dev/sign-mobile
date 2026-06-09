@@ -11,6 +11,8 @@ import 'package:sign_application/features/contrat/presentation/bloc/contrat_bloc
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_event.dart';
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_state.dart';
 import 'package:sign_application/features/client/presentation/widgets/client_avatar.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class CreationContratPage extends StatefulWidget {
   final User? user;
@@ -306,31 +308,11 @@ class _CreationContratPageState extends State<CreationContratPage>
   }
 
   void _showSuccess() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _SuccessDialog(
-        onRetour: () {
-          Navigator.pop(context);       // ferme le dialog
-          Navigator.pop(context, true); // revient à la liste des contrats
-        },
-      ),
-    );
+    showToast(context, 'Contrat créé', 'Le contrat de bail a été créé avec succès.', ToastificationType.success);
+    Navigator.pop(context, true);
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        const Icon(Icons.error_outline, color: Colors.white, size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(msg)),
-      ]),
-      backgroundColor: Colors.red[400],
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(12),
-    ));
-  }
+  void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   // ──────────────────────────────────────────────────────────────
   @override
