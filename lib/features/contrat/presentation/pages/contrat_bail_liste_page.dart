@@ -23,7 +23,7 @@ class ContratBailListePage extends StatefulWidget {
 }
 
 class _ContratBailListePageState extends State<ContratBailListePage> {
-  int _statsTotal = 0, _statsActifs = 0, _statsEnAttente = 0;
+  int _statsTotal = 0, _statsSignes = 0, _statsEnAttente = 0;
   bool _statsLoading = true;
   final Set<String> _downloading = {};
   String _pendingTitre = '';
@@ -44,7 +44,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
       if (!mounted) return;
       setState(() {
         _statsTotal     = (data['total']     as num?)?.toInt() ?? 0;
-        _statsActifs    = (data['signes']    as num?)?.toInt() ?? 0;
+        _statsSignes    = (data['signes']    as num?)?.toInt() ?? 0;
         _statsEnAttente = (data['enAttente'] as num?)?.toInt() ?? 0;
         _statsLoading   = false;
       });
@@ -263,7 +263,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
             children: [
               _statBadge('Total', _statsTotal),
               const SizedBox(width: 10),
-              _statBadge('Actifs', _statsActifs, color: Colors.green),
+              _statBadge('Signés', _statsSignes, color: Colors.green),
               const SizedBox(width: 10),
               _statBadge('En attente', _statsEnAttente, color: const Color(0xFFFFB347)),
             ],
@@ -300,9 +300,9 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
   }
 
   Widget _buildCard(ContratBail c) {
-    final isActif = c.statut?.toLowerCase() == 'actif';
-    final statusColor = isActif ? Colors.green : const Color(0xFFFFB347);
-    final statusLabel = isActif ? 'Actif' : (c.statut ?? 'En attente');
+    final isSigne = c.statut == 'signe';
+    final statusColor = isSigne ? Colors.green : const Color(0xFFFFB347);
+    final statusLabel = isSigne ? 'Signé' : 'En attente de signature';
     final isDown = _downloading.contains(c.id);
     final locataires = c.locataires
         ?.map((l) => '${l['prenom'] ?? ''} ${l['nom'] ?? ''}').join(', ')
@@ -429,7 +429,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                       child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(Icons.open_in_new_rounded, color: Colors.white, size: 16),
                         SizedBox(width: 6),
-                        Text('Voir le doc',
+                        Text('Voir Contrat de Bail',
                             style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
                       ]),
                     ),

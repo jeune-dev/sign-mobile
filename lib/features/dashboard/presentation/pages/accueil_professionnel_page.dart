@@ -9,7 +9,11 @@ import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_
 import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_event.dart';
 import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:sign_application/features/facture/presentation/pages/historique_factures_page.dart';
+import 'package:sign_application/features/facture/presentation/pages/cree_facture_page.dart';
+import 'package:sign_application/features/facture/presentation/bloc/facture_bloc.dart';
+import 'package:sign_application/features/contrat/presentation/widgets/contract_type_modal.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:sign_application/injection_container.dart' as di;
 
 class HomeProfessionnelPage extends StatefulWidget {
   final User? user;
@@ -213,30 +217,52 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSectionTitle('Vue d\'ensemble'),
-            const SizedBox(height: 16),
-            _buildMainStatCard(stats.nombreFactures),
             const SizedBox(height: 14),
+            // ── Cartes stats (compactes) ──────────────────────────────────
             Row(
               children: [
+                Expanded(child: _buildMainStatCard(stats.nombreFactures, stats.creancesClients)),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: _buildMiniStatCard(
-                    title: 'Contrats',
-                    value: '${stats.nombreContratsImmobilier}',
-                    icon: Icons.handshake_outlined,
-                    color: const Color(0xFF6C63FF),
-                    subtitle: 'Immobilier',
+                  child: Column(
+                    children: [
+                      _buildMiniStatCard(
+                        title: 'Bail',
+                        value: '${stats.nombreContratsImmobilier}',
+                        icon: Icons.handshake_outlined,
+                        color: const Color(0xFF6C63FF),
+                        subtitle: 'Contrats',
+                      ),
+                      const SizedBox(height: 12),
+                      _buildMiniStatCard(
+                        title: 'Travail',
+                        value: '${stats.nombreContratsTravail}',
+                        icon: Icons.work_outline,
+                        color: const Color(0xFF00C896),
+                        subtitle: 'Contrats',
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: _buildMiniStatCard(
-                    title: 'Contrat',
-                    value: '${stats.nombreContratsTravail}',
-                    icon: Icons.work_outline,
-                    color: const Color(0xFF00C896),
-                    subtitle: 'Travail',
-                  ),
-                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // ── Boutons d'action rapide ───────────────────────────────────
+            Row(
+              children: [
+                Expanded(child: _buildQuickActionBtn(
+                  label: 'Créer une facture',
+                  icon: Icons.receipt_long_outlined,
+                  color: const Color(0xFF2563EB),
+                  onTap: _ouvrirCreationFacture,
+                )),
+                const SizedBox(width: 12),
+                Expanded(child: _buildQuickActionBtn(
+                  label: 'Créer un contrat',
+                  icon: Icons.description_outlined,
+                  color: Colors.black,
+                  onTap: _ouvrirModalContrat,
+                )),
               ],
             ),
           ],
@@ -247,71 +273,106 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     return const SizedBox.shrink();
   }
 
-  Widget _buildMainStatCard(int nombreFactures) {
+  // ── Carte principale factures + KPI créances (compacte) ───────────────────
+  Widget _buildMainStatCard(int nombreFactures, double creancesClients) {
+    final creancesFormatted = NumberFormat('#,###', 'fr_FR')
+        .format(creancesClients)
+        .replaceAll(',', ' '); // espace fine insécable
+
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [Color(0xFF1a1a1a), Color(0xFF3a3a3a)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 8)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 14, offset: const Offset(0, 6)),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Text(
-                    '📁  Nombre de factures',
-                    style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '$nombreFactures',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 52,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -2,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Factures enregistrés',
-                  style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-                ),
-              ],
+          // ── Badge Factures ────────────────────────────────────────────────
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Text(
+              '🧾  Factures',
+              style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
             ),
           ),
-          Container(
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(20),
+          const SizedBox(height: 10),
+          // ── Nombre de factures ────────────────────────────────────────────
+          Text(
+            '$nombreFactures',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 38,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1.5,
+              height: 1,
             ),
-            child: const Icon(Icons.folder_open_rounded, color: Colors.white38, size: 34),
+          ),
+          Text(
+            'enregistrées',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 10),
+          ),
+          // ── Séparateur ────────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Container(height: 0.5, color: Colors.white.withValues(alpha: 0.15)),
+          ),
+          // ── KPI Créances clients ──────────────────────────────────────────
+          Row(
+            children: [
+              Container(
+                width: 28, height: 28,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFB347).withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.account_balance_wallet_outlined,
+                    color: Color(0xFFFFB347), size: 15),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Créances clients',
+                      style: TextStyle(
+                          color: Colors.white54, fontSize: 9, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      '$creancesFormatted FCFA',
+                      style: const TextStyle(
+                        color: Color(0xFFFFB347),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  // ── Mini carte contrats (compacte) ──────────────────────────────────────────
   Widget _buildMiniStatCard({
     required String title,
     required String value,
@@ -320,36 +381,95 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     required String subtitle,
   }) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey[100]!),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3)),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(11)),
-            child: Icon(icon, color: color, size: 20),
+            width: 34, height: 34,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 18),
           ),
-          const SizedBox(height: 14),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: -1, height: 1),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(value,
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: -0.8, height: 1)),
+              const SizedBox(height: 1),
+              Text('$subtitle $title',
+                  style: TextStyle(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+            ],
           ),
-          const SizedBox(height: 4),
-          Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.black87)),
-          const SizedBox(height: 2),
-          Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[400], fontWeight: FontWeight.w400)),
         ],
       ),
     );
+  }
+
+  // ── Bouton action rapide ────────────────────────────────────────────────────
+  Widget _buildQuickActionBtn({
+    required String label,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Actions boutons rapides ─────────────────────────────────────────────────
+  void _ouvrirCreationFacture() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: di.sl<FactureBloc>(),
+          child: const CreeFacture(),
+        ),
+      ),
+    ).then((_) {
+      if (mounted) context.read<DashboardBloc>().add(LoadDashboard());
+    });
+  }
+
+  void _ouvrirModalContrat() {
+    showContractTypeModal(context, user: widget.user);
   }
 
   Widget _buildSectionTitle(String title) {
@@ -572,7 +692,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
                   children: [
                     Icon(Icons.open_in_new_rounded, color: Colors.white, size: 16),
                     SizedBox(width: 8),
-                    Text('Voir le document', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                    Text('Voir Facture', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),

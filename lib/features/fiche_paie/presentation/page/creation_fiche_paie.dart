@@ -812,9 +812,25 @@ class _FichePaieFormPageState extends State<FichePaieFormPage>
   Widget _sectionPaiement() => _card(
     icon: '💳', title: 'Paiement',
     children: [
-      _drop('Mode de paiement', _paiement,
-          ['Espèces','Virement bancaire','Wave / Orange Money'],
-              (v) => setState(() => _paiement = v!)),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _label('Mode de paiement', req: true),
+        DropdownButtonFormField<String>(
+          value: _paiement,
+          isExpanded: true,
+          onChanged: (v) => setState(() => _paiement = v!),
+          style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
+          decoration: _deco(),
+          borderRadius: BorderRadius.circular(14),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _P.inkLight),
+          items: const [
+            DropdownMenuItem(value: 'Espèces', child: Text('Espèces')),
+            DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
+            DropdownMenuItem(value: 'Wave / Orange Money', child: Text('Wave / Orange Money')),
+            DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
+          ],
+        ),
+        const SizedBox(height: 14),
+      ]),
       _datePicker('Date de paiement', _datePaiement, (d) => setState(() => _datePaiement = d)),
       _field('Numéro de fiche', _numCtrl, hint: 'FP-2025-001', req: true),
     ],

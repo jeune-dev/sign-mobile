@@ -140,6 +140,7 @@ class Env {
       _get('DOCUMENT_OUVRIR_PATH', fallback: '/professionnel/document/ouvrir-document');
   static String get documentTelecharger =>
       _get('DOCUMENT_TELECHARGER_PATH', fallback: '/professionnel/document/telecharger-document');
+  static String documentMettreAJour(String id) => '/professionnel/document/$id/mettre-a-jour';
 
   // ─── Contrat Bail ─────────────────────────────────────────────────────────────
   static String get contratBailListe =>

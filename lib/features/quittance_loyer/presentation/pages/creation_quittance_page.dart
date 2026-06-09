@@ -282,6 +282,8 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                   DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
                   DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
                   DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
+                  DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
+                  DropdownMenuItem(value: 'Autre', child: Text('Autre')),
                 ],
                 onChanged: (v) => setState(() => _modePaiement = v!),
               ),

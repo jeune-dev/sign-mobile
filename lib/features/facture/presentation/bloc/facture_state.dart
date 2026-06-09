@@ -36,3 +36,8 @@ class FactureError extends FactureState {
   final String message;
   FactureError(this.message);
 }
+
+class FactureMiseAJourSuccess extends FactureState {
+  final Map<String, dynamic> data;
+  FactureMiseAJourSuccess(this.data);
+}

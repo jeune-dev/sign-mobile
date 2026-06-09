@@ -53,7 +53,7 @@ const List<_ContratType> _allContractTypes = [
   _ContratType(id: Env.typePartenariat,       titre: 'Contrat de partenariat',      shortLabel: 'Partenariat', description: 'Accord de collaboration',        icon: Icons.people_outline_rounded,    color: Color(0xFF4F46E5)),
   _ContratType(id: Env.typeLocation,         titre: 'Contrat de location',         shortLabel: 'Location',    description: 'Location de véhicule/matériel',  icon: Icons.directions_car_outlined,   color: Color(0xFF2563EB)),
   _ContratType(id: Env.typeCaution,          titre: 'Contrat de caution',          shortLabel: 'Caution',     description: 'Garantie de paiement',           icon: Icons.shield_outlined,           color: Color(0xFF4F46E5)),
-  _ContratType(id: Env.typeConfidentialite,  titre: 'Accord de confidentialité',   shortLabel: 'NDA',         description: 'Protection des informations',    icon: Icons.lock_outline_rounded,      color: Color(0xFF2563EB)),
+  _ContratType(id: Env.typeConfidentialite,  titre: 'Contrat de Confidentialité',  shortLabel: 'Confidentialité', description: 'Protection des informations',    icon: Icons.lock_outline_rounded,      color: Color(0xFF2563EB)),
   _ContratType(id: Env.typeProcuration,      titre: 'Procuration',                  shortLabel: 'Procuration', description: 'Délégation de pouvoirs',         icon: Icons.assignment_ind_outlined,   color: Color(0xFF4F46E5)),
   _ContratType(id: Env.typeReconnaissanceDette, titre: 'Reconnaissance de dette',  shortLabel: 'Dette',       description: 'Engagement de remboursement',    icon: Icons.account_balance_outlined,  color: Color(0xFF2563EB)),
 ];

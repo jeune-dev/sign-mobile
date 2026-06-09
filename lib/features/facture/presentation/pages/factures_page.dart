@@ -57,18 +57,49 @@ class _FacturesPageState extends State<FacturesPage> {
   }
 
   Color _statusColor(Facture doc) {
-    if (doc.avance >= doc.montant) return Colors.green;
-    if (doc.avance > 0) return Colors.orange;
-    return Colors.red;
+    switch (doc.statut) {
+      case 'payee': return Colors.green;
+      case 'partiel': return Colors.orange;
+      default:
+        if (doc.avance >= doc.montant) return Colors.green;
+        if (doc.avance > 0) return Colors.orange;
+        return Colors.red;
+    }
   }
 
   String _statusText(Facture doc) {
-    if (doc.avance >= doc.montant) return 'Payée';
-    if (doc.avance > 0) return 'Incomplet';
-    return 'Non payée';
+    switch (doc.statut) {
+      case 'payee': return 'Payée';
+      case 'partiel': return 'Partiel';
+      case 'en_attente': return 'En attente';
+      default:
+        if (doc.avance >= doc.montant) return 'Payée';
+        if (doc.avance > 0) return 'Incomplet';
+        return 'Non payée';
+    }
   }
 
   // ── Ouvrir le document (même logique que l'accueil) ───────────────────────
+  // ── Mise à jour de facture (UX fintech) ──────────────────────────────────
+  void _ouvrirModalMiseAJour(Facture doc) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _FactureMiseAJourSheet(
+        doc: doc,
+        formatMontant: _formatMontant,
+        onConfirm: (avance, statut) {
+          context.read<FactureBloc>().add(MettreAJourFactureEvent(
+            documentId: doc.id,
+            avance: avance,
+            statut: statut,
+          ));
+        },
+      ),
+    );
+  }
+
   void _ouvrirDocument(String documentId, String numeroFacture) {
     _pendingTitreDocument = numeroFacture;
 
@@ -160,6 +191,17 @@ class _FacturesPageState extends State<FacturesPage> {
         if (state is DocumentBytes) {
           if (Navigator.canPop(context)) Navigator.pop(context);
           _saveAndOpenPdf(state.bytes, _pendingTitreDocument);
+        }
+        if (state is FactureMiseAJourSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Facture mise à jour avec succès'),
+              backgroundColor: Colors.green[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+          context.read<FactureBloc>().add(LoadFactures());
         }
         if (state is FactureError) {
           if (Navigator.canPop(context)) Navigator.pop(context);
@@ -608,7 +650,7 @@ class _FacturesPageState extends State<FacturesPage> {
                           Icon(Icons.open_in_new_rounded,
                               color: Colors.white, size: 16),
                           SizedBox(width: 6),
-                          Text('Voir le doc',
+                          Text('Voir Facture',
                               style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
@@ -619,6 +661,34 @@ class _FacturesPageState extends State<FacturesPage> {
                   ),
                 ),
               ],
+            ),
+          ),
+          // ── Bouton Mettre à jour ─────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: GestureDetector(
+              onTap: () => _ouvrirModalMiseAJour(doc),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withOpacity(0.25)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.edit_outlined, color: Colors.orange[700], size: 16),
+                    const SizedBox(width: 6),
+                    Text('Mettre à jour la facture',
+                        style: TextStyle(
+                            color: Colors.orange[700],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -806,6 +876,347 @@ class _FacturesPageState extends State<FacturesPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Sheet de mise à jour de facture (UX fintech) ─────────────────────────────
+class _FactureMiseAJourSheet extends StatefulWidget {
+  final Facture doc;
+  final String Function(dynamic) formatMontant;
+  final void Function(double? avance, String? statut) onConfirm;
+
+  const _FactureMiseAJourSheet({
+    required this.doc,
+    required this.formatMontant,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_FactureMiseAJourSheet> createState() => _FactureMiseAJourSheetState();
+}
+
+class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
+  late final TextEditingController _avanceCtrl;
+  late String _statut;
+  // 0 = totalité, 1 = moitié, 2 = personnalisé
+  int _quickChip = 2;
+
+  double get _montant => widget.doc.montant;
+  double get _dejaPaye => widget.doc.avance;
+  double get _reste => _montant - _dejaPaye;
+  double get _pourcent => _montant > 0 ? (_dejaPaye / _montant).clamp(0.0, 1.0) : 0.0;
+
+  Color get _progressColor {
+    if (_pourcent >= 1.0) return const Color(0xFF22C55E);
+    if (_pourcent > 0) return const Color(0xFFF97316);
+    return const Color(0xFFEF4444);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _statut = widget.doc.statut ?? 'en_attente';
+    _avanceCtrl = TextEditingController(
+      text: _reste > 0 ? _reste.toStringAsFixed(0) : '0',
+    );
+  }
+
+  @override
+  void dispose() {
+    _avanceCtrl.dispose();
+    super.dispose();
+  }
+
+  void _setQuick(int chip) {
+    setState(() {
+      _quickChip = chip;
+      if (chip == 0) {
+        _avanceCtrl.text = _montant.toStringAsFixed(0);
+      } else if (chip == 1) {
+        _avanceCtrl.text = (_montant / 2).toStringAsFixed(0);
+      }
+    });
+  }
+
+  String _formatNum(double v) {
+    final s = v.toStringAsFixed(0);
+    final buf = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(' ');
+      buf.write(s[i]);
+    }
+    return '${buf.toString()} FCFA';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Drag handle ─────────────────────────────────────────────────
+            Container(
+              width: 40, height: 4,
+              margin: const EdgeInsets.only(top: 12, bottom: 4),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+
+            // ── Header avec ring de progression ────────────────────────────
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Row(
+                children: [
+                  // Ring
+                  SizedBox(
+                    width: 64, height: 64,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 64, height: 64,
+                          child: CircularProgressIndicator(
+                            value: _pourcent,
+                            strokeWidth: 5,
+                            backgroundColor: Colors.grey[200],
+                            valueColor: AlwaysStoppedAnimation(_progressColor),
+                            strokeCap: StrokeCap.round,
+                          ),
+                        ),
+                        Text(
+                          '${(_pourcent * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: _progressColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.doc.numeroFacture ?? 'Facture',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.black87),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            _miniStat('Total', _formatNum(_montant), Colors.black87),
+                            const SizedBox(width: 16),
+                            _miniStat('Payé', _formatNum(_dejaPaye), const Color(0xFF22C55E)),
+                            const SizedBox(width: 16),
+                            _miniStat('Reste', _formatNum(_reste), const Color(0xFFF97316)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 32, height: 32,
+                      decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
+                      child: const Icon(Icons.close_rounded, size: 17, color: Colors.black54),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Corps ───────────────────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Chips rapides
+                  Text('Montant reçu',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[700])),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      _quickBtn(0, 'Totalité', Icons.check_circle_outline),
+                      const SizedBox(width: 8),
+                      _quickBtn(1, '50 %', Icons.percent_rounded),
+                      const SizedBox(width: 8),
+                      _quickBtn(2, 'Autre', Icons.edit_outlined),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Champ montant
+                  TextField(
+                    controller: _avanceCtrl,
+                    keyboardType: TextInputType.number,
+                    onTap: () => setState(() => _quickChip = 2),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
+                    decoration: InputDecoration(
+                      hintText: '0',
+                      suffixText: 'FCFA',
+                      suffixStyle: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[400]),
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Icon(Icons.payments_outlined, size: 20, color: Colors.grey[500]),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey[200]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: Colors.grey[200]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: const BorderSide(color: Colors.black87, width: 1.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Statut
+                  Text('Statut',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[700])),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(child: _statutTile('en_attente', 'En attente', Icons.hourglass_empty_rounded, const Color(0xFFEF4444))),
+                      const SizedBox(width: 8),
+                      Expanded(child: _statutTile('partiel', 'Partiel', Icons.incomplete_circle_rounded, const Color(0xFFF97316))),
+                      const SizedBox(width: 8),
+                      Expanded(child: _statutTile('payee', 'Payée', Icons.check_circle_rounded, const Color(0xFF22C55E))),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Bouton confirmer
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      final v = double.tryParse(_avanceCtrl.text.trim());
+                      widget.onConfirm(v, _statut);
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.check_rounded, color: Colors.white, size: 18),
+                          SizedBox(width: 8),
+                          Text('Enregistrer la mise à jour',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 9, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+        Text(value, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: color)),
+      ],
+    );
+  }
+
+  Widget _quickBtn(int chip, String label, IconData icon) {
+    final selected = _quickChip == chip;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _setQuick(chip),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? Colors.black87 : Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 16, color: selected ? Colors.white : Colors.grey[500]),
+              const SizedBox(height: 4),
+              Text(label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? Colors.white : Colors.grey[500],
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _statutTile(String value, String label, IconData icon, Color color) {
+    final selected = _statut == value;
+    return GestureDetector(
+      onTap: () => setState(() => _statut = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected ? color.withValues(alpha: 0.10) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: selected ? color : Colors.grey[200]!,
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 20, color: selected ? color : Colors.grey[400]),
+            const SizedBox(height: 5),
+            Text(label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                  color: selected ? color : Colors.grey[500],
+                )),
+          ],
+        ),
       ),
     );
   }

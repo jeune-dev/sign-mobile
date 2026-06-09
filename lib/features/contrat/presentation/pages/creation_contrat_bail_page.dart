@@ -91,6 +91,7 @@ class _CreationContratPageState extends State<CreationContratPage>
     'Virement bancaire',
     'Mobile Money',
     'Chèque',
+    'ALL',
     'Autre',
   ];
 
@@ -735,7 +736,7 @@ class _CreationContratPageState extends State<CreationContratPage>
 
   // ── Dropdown ───────────────────────────────────────────────
   Widget _dropdown<T>(String label, T value, List<T> items,
-      void Function(T?) onChanged, {bool required = false}) {
+      void Function(T?) onChanged, {bool required = false, String Function(T)? labelBuilder}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -767,7 +768,8 @@ class _CreationContratPageState extends State<CreationContratPage>
             ),
             items: items
                 .map((e) => DropdownMenuItem(
-                    value: e, child: Text(e.toString())))
+                    value: e,
+                    child: Text(labelBuilder != null ? labelBuilder(e) : e.toString())))
                 .toList(),
           ),
         ],
@@ -1245,9 +1247,10 @@ class _CreationContratPageState extends State<CreationContratPage>
           _dropdown('Périodicité', _periodicite, _periodicites,
               (v) => setState(() => _periodicite = v!)),
         ),
-        // Mode de paiement — enum exact du backend
         _dropdown('Mode de paiement', _moyen, _moyens,
-            (v) => setState(() => _moyen = v!), required: true),
+            (v) => setState(() => _moyen = v!),
+            required: true,
+            labelBuilder: (e) => e == 'ALL' ? 'Tout mode de paiement' : e),
         const SizedBox(height: 8),
         // Autres charges
         Row(
@@ -1363,7 +1366,7 @@ class _CreationContratPageState extends State<CreationContratPage>
     return _section(
       Icons.shield_outlined,
       const Color(0xFF45B7D1),
-      'Dépôt de garantie',
+      'Dépôt de garantie / Caution',
       [
         _toggle('Dépôt de garantie prévu', _depotPrevu,
             (v) => setState(() => _depotPrevu = v),
@@ -1378,7 +1381,8 @@ class _CreationContratPageState extends State<CreationContratPage>
                 onPicked: (dt) =>
                     setState(() => _depotDateValue = dt)),
             _dropdown('Mode de paiement', _depotMode, _moyens,
-                (v) => setState(() => _depotMode = v!)),
+                (v) => setState(() => _depotMode = v!),
+                labelBuilder: (e) => e == 'ALL' ? 'Tout mode de paiement' : e),
           ),
         ],
       ],

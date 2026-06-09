@@ -39,13 +39,240 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
 
   static const _jours = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 
-  Future<TimeOfDay?> _pickTime({TimeOfDay? initial}) async {
-    return showTimePicker(
+  static const _minutes = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+  Future<TimeOfDay?> _pickTime({required String title, TimeOfDay? initial}) async {
+    final initH = initial?.hour ?? 8;
+    final initM = initial?.minute ?? 0;
+    int selHour = initH;
+    int selMin = _minutes.contains(initM) ? initM : 0;
+
+    final hourCtrl = FixedExtentScrollController(initialItem: initH);
+    final minCtrl  = FixedExtentScrollController(
+        initialItem: _minutes.indexOf(selMin).clamp(0, _minutes.length - 1));
+
+    return showModalBottomSheet<TimeOfDay>(
       context: context,
-      initialTime: initial ?? const TimeOfDay(hour: 8, minute: 0),
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          final h = selHour.toString().padLeft(2, '0');
+          final m = selMin.toString().padLeft(2, '0');
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Handle
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Header noir
+                Container(
+                  margin: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.access_time_rounded,
+                          color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Text(title,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15)),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text('$h : $m',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                letterSpacing: 1.5)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Légendes
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 60),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Text('Heure',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[500],
+                              letterSpacing: 0.5)),
+                      Text('Minute',
+                          style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[500],
+                              letterSpacing: 0.5)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                // Roues défilantes
+                SizedBox(
+                  height: 200,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Bande de sélection
+                      Positioned.fill(
+                        child: Align(
+                          alignment: Alignment.center,
+                          child: Container(
+                            height: 52,
+                            margin: const EdgeInsets.symmetric(horizontal: 40),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: Colors.grey[200]!, width: 1.5),
+                            ),
+                          ),
+                        ),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Roue heures
+                          SizedBox(
+                            width: 110,
+                            child: ListWheelScrollView.useDelegate(
+                              controller: hourCtrl,
+                              itemExtent: 52,
+                              perspective: 0.003,
+                              diameterRatio: 1.8,
+                              physics: const FixedExtentScrollPhysics(),
+                              onSelectedItemChanged: (i) =>
+                                  setS(() => selHour = i),
+                              childDelegate: ListWheelChildBuilderDelegate(
+                                childCount: 24,
+                                builder: (_, i) {
+                                  final sel = i == selHour;
+                                  return Center(
+                                    child: Text(
+                                      i.toString().padLeft(2, '0'),
+                                      style: TextStyle(
+                                        fontSize: sel ? 28 : 20,
+                                        fontWeight: sel
+                                            ? FontWeight.w900
+                                            : FontWeight.w400,
+                                        color: sel
+                                            ? Colors.black
+                                            : Colors.grey[400],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          // Séparateur
+                          Padding(
+                            padding:
+                                const EdgeInsets.only(bottom: 4),
+                            child: Text(':',
+                                style: TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.grey[700])),
+                          ),
+                          // Roue minutes
+                          SizedBox(
+                            width: 110,
+                            child: ListWheelScrollView(
+                              controller: minCtrl,
+                              itemExtent: 52,
+                              perspective: 0.003,
+                              diameterRatio: 1.8,
+                              physics: const FixedExtentScrollPhysics(),
+                              onSelectedItemChanged: (i) =>
+                                  setS(() => selMin = _minutes[i]),
+                              children: _minutes.map((mm) {
+                                final sel = mm == selMin;
+                                return Center(
+                                  child: Text(
+                                    mm.toString().padLeft(2, '0'),
+                                    style: TextStyle(
+                                      fontSize: sel ? 28 : 20,
+                                      fontWeight: sel
+                                          ? FontWeight.w900
+                                          : FontWeight.w400,
+                                      color: sel
+                                          ? Colors.black
+                                          : Colors.grey[400],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Bouton confirmer
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14)),
+                        elevation: 0,
+                      ),
+                      onPressed: () => Navigator.pop(
+                          ctx,
+                          TimeOfDay(
+                              hour: selHour, minute: selMin)),
+                      child: Text(
+                        'Confirmer  $h h $m',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -165,7 +392,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   flex: 3,
                   child: GestureDetector(
                     onTap: () async {
-                      final t = await _pickTime(initial: j.debut ?? const TimeOfDay(hour: 8, minute: 0));
+                      final t = await _pickTime(title: 'Heure de début', initial: j.debut ?? const TimeOfDay(hour: 8, minute: 0));
                       if (t != null) setState(() => _planning[i] = _JourTravail(
                         jour: j.jour, debut: t, fin: j.fin));
                     },
@@ -194,7 +421,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   flex: 3,
                   child: GestureDetector(
                     onTap: () async {
-                      final t = await _pickTime(initial: j.fin ?? const TimeOfDay(hour: 17, minute: 0));
+                      final t = await _pickTime(title: 'Heure de fin', initial: j.fin ?? const TimeOfDay(hour: 17, minute: 0));
                       if (t != null) setState(() => _planning[i] = _JourTravail(
                         jour: j.jour, debut: j.debut, fin: t));
                     },
@@ -426,6 +653,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   DropdownMenuItem(value: 'CDD', child: Text('CDD')),
                   DropdownMenuItem(value: 'Stage', child: Text('Stage')),
                   DropdownMenuItem(value: 'Freelance', child: Text('Freelance')),
+                  DropdownMenuItem(value: 'Intérim', child: Text('Intérim')),
                 ],
                 onChanged: (v) => setState(() => _typeContrat = v!),
               ),
@@ -448,6 +676,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
                   DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
                   DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
+                  DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
                   DropdownMenuItem(value: 'Autre', child: Text('Autre')),
                 ],
                 onChanged: (v) => setState(() => _moyenPaiement = v!),

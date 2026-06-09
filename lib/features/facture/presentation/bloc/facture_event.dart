@@ -24,3 +24,14 @@ class OuvrirDocumentEvent extends FactureEvent {
 }
 
 class ResetFactureState extends FactureEvent {}
+
+class MettreAJourFactureEvent extends FactureEvent {
+  final String documentId;
+  final double? avance;
+  final String? statut;
+  MettreAJourFactureEvent({
+    required this.documentId,
+    this.avance,
+    this.statut,
+  });
+}

@@ -18,9 +18,10 @@ class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
     final data = response.data['data'] ?? {};
 
     return DashboardStats(
-      nombreFactures: data['nombreFactures'] ?? 0,
+      nombreFactures:           data['nombreFactures']           ?? 0,
       nombreContratsImmobilier: data['nombreContratsImmobilier'] ?? 0,
-      nombreContratsTravail: data['nombreContratsTravail'] ?? 0,
+      nombreContratsTravail:    data['nombreContratsTravail']    ?? 0,
+      creancesClients:          (data['creancesClients'] as num? ?? 0).toDouble(),
     );
   }
 

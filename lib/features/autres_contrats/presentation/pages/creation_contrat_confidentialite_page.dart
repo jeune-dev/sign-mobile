@@ -131,7 +131,7 @@ class _State extends State<CreationContratConfidentialitePage> {
                 step: _step, totalSteps: _totalSteps,
                 onBack: _onBack, onNext: _onNext, accentColor: _accent,
                 isLoading: state is AutresContratsLoading,
-                submitLabel: 'Créer l\'accord NDA',
+                submitLabel: 'Créer le contrat de confidentialité',
               ),
             ),
           ],
@@ -152,7 +152,7 @@ class _State extends State<CreationContratConfidentialitePage> {
     padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
     children: [
       CInfoBanner(
-        title: 'Accord de non-divulgation (NDA)',
+        title: 'Contrat de Confidentialité',
         description: 'Protégez vos informations sensibles, secrets commerciaux et données confidentielles partagés avec un tiers.',
         icon: _icon, accentColor: _accent,
       ),

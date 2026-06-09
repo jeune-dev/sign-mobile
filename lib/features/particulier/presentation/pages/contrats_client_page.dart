@@ -343,7 +343,7 @@ class _StatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        isSigne ? 'Signé' : 'En attente',
+        isSigne ? 'Signé' : 'En attente de signature',
         style: TextStyle(
           fontSize: 11,
           color: isSigne ? Colors.green.shade800 : Colors.orange.shade800,

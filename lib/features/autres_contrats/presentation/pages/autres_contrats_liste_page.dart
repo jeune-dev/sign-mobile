@@ -180,6 +180,19 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
     }
   }
 
+  String _labelVoirContrat(String type) {
+    switch (type) {
+      case 'contrat-prestation':      return 'Voir Contrat de Prestation';
+      case 'contrat-partenariat':     return 'Voir Contrat de Partenariat';
+      case 'contrat-location':        return 'Voir Contrat de Location';
+      case 'reconnaissance-dette':    return 'Voir Reconnaissance de Dette';
+      case 'procuration':             return 'Voir Procuration';
+      case 'contrat-caution':         return 'Voir Contrat de Caution';
+      case 'contrat-confidentialite': return 'Voir Accord de Confidentialité';
+      default:                        return 'Voir Contrat';
+    }
+  }
+
   String _fmt(String? d) {
     if (d == null || d.isEmpty) return '—';
     try {
@@ -413,7 +426,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   Widget _buildCard(AutreContrat c) {
     final isSign = c.statut == 'signe';
     final statusColor = isSign ? Colors.green : const Color(0xFFFFB347);
-    final statusLabel = isSign ? 'Signé' : (c.statut ?? 'En attente');
+    final statusLabel = isSign ? 'Signé' : 'En attente de signature';
     final isDown = _downloading.contains(c.id);
 
     final autrePartieNom = c.autrePartie != null
@@ -588,14 +601,14 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                         color: Colors.black,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.open_in_new_rounded,
+                          const Icon(Icons.open_in_new_rounded,
                               color: Colors.white, size: 16),
-                          SizedBox(width: 6),
-                          Text('Voir le doc',
-                              style: TextStyle(
+                          const SizedBox(width: 6),
+                          Text(_labelVoirContrat(widget.type),
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700)),
