@@ -12,6 +12,8 @@ import 'package:sign_application/core/theme/app_theme.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_bloc.dart';
 import 'package:sign_application/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sign_application/features/auth/presentation/pages/splash_page.dart';
+import 'package:sign_application/core/services/auth_event_bus.dart';
+import 'package:sign_application/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_bloc.dart';
 import 'package:sign_application/features/contrat_travail/presentation/bloc/contrat_travail_bloc.dart';
@@ -65,8 +67,32 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  final _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    // Écouter le bus d'événements : logout forcé depuis l'intercepteur Dio (401 définitif)
+    AuthEventBus.instance.onLogout.listen((_) {
+      // Émettre LogoutRequested sur l'AuthBloc global
+      if (mounted) {
+        di.sl<AuthBloc>().add(LogoutRequested());
+        // Rediriger vers login et vider la pile de navigation
+        _navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          AppRouter.loginRoute,
+          (route) => false,
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +110,7 @@ class MyApp extends StatelessWidget {
         BlocProvider(create: (_) => di.sl<AutresContratsBloc>()),
       ],
       child: MaterialApp(
+        navigatorKey: _navigatorKey,
         debugShowCheckedModeBanner: false,
         title: 'Sign',
         theme: AppTheme.light(),

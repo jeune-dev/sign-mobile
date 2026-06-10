@@ -121,6 +121,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Effacer access token + refresh token du stockage sécurisé
       await sl<TokenService>().clearToken();
       await storage.delete(key: 'user_id');
+      await storage.delete(key: 'user_role'); // Évite navigation FCM incorrecte si 2 users partagent le device
 
       emit(AuthInitial());
     } catch (e) {

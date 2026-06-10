@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/config/env.dart';
 import 'core/services/token_service.dart';
+import 'core/services/auth_event_bus.dart';
 
 // Account
 import 'features/account/data/datasources/account_remote_datasource.dart';
@@ -259,6 +260,8 @@ Future<void> init() async {
             }
           }
           await sl<TokenService>().clearToken();
+          // Notifier l'UI d'un logout forcé — sans BuildContext
+          AuthEventBus.instance.emitLogout();
         }
 
         // OPT-05 : Retry automatique sur erreurs réseau transitoires (max 2 tentatives)
