@@ -30,7 +30,11 @@ class ContratBloc extends Bloc<ContratEvent, ContratState> {
     LoadContratsImmobilier event,
     Emitter<ContratState> emit,
   ) async {
-    emit(ContratLoading());
+    if (_contrats.isNotEmpty) {
+      emit(ContratsLoaded(contrats: _contrats, isRefreshing: true));
+    } else {
+      emit(ContratLoading());
+    }
     _currentPage = 1;
     _contrats = [];
     final result = await getContratsImmobilier(page: 1, limit: event.limit);
@@ -78,7 +82,7 @@ class ContratBloc extends Bloc<ContratEvent, ContratState> {
     final result = await telechargerContrat(event.contratId);
     result.fold(
       (failure) => emit(ContratError(failure.errorMessage)),
-      (bytes) => emit(ContratBytes(bytes: bytes, contratId: event.contratId)),
+      (bytes) => emit(ContratBytes(bytes: bytes, contratId: event.contratId, titre: event.titre)),
     );
   }
 }

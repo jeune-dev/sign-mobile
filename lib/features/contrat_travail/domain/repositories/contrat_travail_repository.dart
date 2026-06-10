@@ -8,4 +8,5 @@ abstract class ContratTravailRepository {
   Future<Either<Failure, void>> creerContratTravail(Map<String, dynamic> data);
   Future<Either<Failure, void>> signerContratTravail(String contratId, String signature);
   Future<Either<Failure, List<int>>> telechargerContratTravail(String contratId);
+  Future<Either<Failure, Map<String, int>>> getStatsTravail();
 }

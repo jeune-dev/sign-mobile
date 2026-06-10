@@ -101,6 +101,7 @@ class _RegisterPageState extends State<RegisterPage> {
       exportBackgroundColor: Colors.white,
     );
 
+    try {
     await showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -168,9 +169,9 @@ class _RegisterPageState extends State<RegisterPage> {
         ],
       ),
     );
-
-    // BUG-03 : Toujours disposer le controller après fermeture du dialogue
-    controller.dispose();
+    } finally {
+      controller.dispose();
+    }
   }
 
   void _goToNextStep() {

@@ -26,7 +26,10 @@ class SignerContratTravailEvent extends ContratTravailEvent {
 
 class TelechargerContratTravailEvent extends ContratTravailEvent {
   final String contratId;
-  TelechargerContratTravailEvent(this.contratId);
+  final String titre;
+  TelechargerContratTravailEvent(this.contratId, {this.titre = ''});
 }
 
 class ResetContratTravailState extends ContratTravailEvent {}
+
+class LoadStatsTravail extends ContratTravailEvent {}

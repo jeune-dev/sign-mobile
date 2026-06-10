@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/config/user_role.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/features/account/domain/entities/account_user.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_bloc.dart';
@@ -64,10 +65,9 @@ class _ProfilPageState extends State<ProfilPage> {
     final logoUrl = _buildUrl(user.logo);
     final signatureUrl = _buildUrl(user.signature);
 
-    // isPro      = a accès aux fonctionnalités professionnelles (Professionnel ET Indépendant)
-    // isEntreprise = a un RC et un NINEA (Professionnel uniquement)
-    final isPro       = user.role == 'Professionnel' || user.role == 'Independant';
-    final isEntreprise = user.role == 'Professionnel';
+    final _role       = UserRoleX.fromString(user.role);
+    final isPro       = _role.isPro;
+    final isEntreprise = _role.isEntreprise;
 
     return CustomScrollView(
       slivers: [
@@ -331,21 +331,9 @@ class _ProfilPageState extends State<ProfilPage> {
   Widget _buildRoleBadge(String? role) {
     if (role == null || role.isEmpty) return const SizedBox.shrink();
 
-    // Labels et couleurs selon le type de compte
-    final label = switch (role) {
-      'Professionnel' => '🏢 Professionnel',
-      'Independant'   => '💼 Indépendant',
-      'Particulier'   => '👤 Particulier',
-      'Admin'         => '⚙️ Admin',
-      _               => role,
-    };
-
-    final badgeColor = switch (role) {
-      'Professionnel' => Colors.blue.withValues(alpha: 0.25),
-      'Independant'   => Colors.orange.withValues(alpha: 0.25),
-      'Particulier'   => Colors.green.withValues(alpha: 0.20),
-      _               => Colors.white.withValues(alpha: 0.15),
-    };
+    final r = UserRoleX.fromString(role);
+    final label = r == UserRole.unknown ? role : r.label;
+    final badgeColor = r.badgeColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),

@@ -34,18 +34,19 @@ class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
     Emitter<ParticulierState> emit,
   ) async {
     emit(ParticulierLoading());
-    try {
-      final data    = await getDashboardStats();
-      final factures = ((data['recentesFactures'] as List?) ?? [])
-          .map((e) => ParticulierFactureModel.fromJson(Map<String, dynamic>.from(e as Map)))
-          .toList();
-      emit(DashboardLoaded(
-        stats:            data['stats'] as Map<String, dynamic>? ?? {},
-        recentesFactures: factures,
-      ));
-    } catch (e) {
-      emit(ParticulierError(e.toString()));
-    }
+    final result = await getDashboardStats();
+    result.fold(
+      (failure) => emit(ParticulierError(failure.errorMessage)),
+      (data) {
+        final factures = ((data['recentesFactures'] as List?) ?? [])
+            .map((e) => ParticulierFactureModel.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+        emit(DashboardLoaded(
+          stats:            data['stats'] as Map<String, dynamic>? ?? {},
+          recentesFactures: factures,
+        ));
+      },
+    );
   }
 
   Future<void> _onLoadFactures(
@@ -53,12 +54,11 @@ class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
     Emitter<ParticulierState> emit,
   ) async {
     emit(ParticulierLoading());
-    try {
-      final factures = await getFacturesClient(statut: event.statut);
-      emit(FacturesLoaded(factures: factures, statut: event.statut));
-    } catch (e) {
-      emit(ParticulierError(e.toString()));
-    }
+    final result = await getFacturesClient(statut: event.statut);
+    result.fold(
+      (failure) => emit(ParticulierError(failure.errorMessage)),
+      (factures) => emit(FacturesLoaded(factures: factures, statut: event.statut)),
+    );
   }
 
   Future<void> _onLoadContrats(
@@ -66,14 +66,13 @@ class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
     Emitter<ParticulierState> emit,
   ) async {
     emit(ParticulierLoading());
-    try {
-      final contrats = event.type == null
-          ? await getContratsClient(statut: event.statut)
-          : await getContratsByTypeClient(type: event.type!, statut: event.statut);
-      emit(ContratsLoaded(contrats: contrats, type: event.type, statut: event.statut));
-    } catch (e) {
-      emit(ParticulierError(e.toString()));
-    }
+    final result = event.type == null
+        ? await getContratsClient(statut: event.statut)
+        : await getContratsByTypeClient(type: event.type!, statut: event.statut);
+    result.fold(
+      (failure) => emit(ParticulierError(failure.errorMessage)),
+      (contrats) => emit(ContratsLoaded(contrats: contrats, type: event.type, statut: event.statut)),
+    );
   }
 
   Future<void> _onLoadContratDetail(
@@ -81,12 +80,11 @@ class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
     Emitter<ParticulierState> emit,
   ) async {
     emit(ParticulierLoading());
-    try {
-      final contrat = await getContratDetailClient(type: event.type, contratId: event.contratId);
-      emit(ContratDetailLoaded(contrat: contrat));
-    } catch (e) {
-      emit(ParticulierError(e.toString()));
-    }
+    final result = await getContratDetailClient(type: event.type, contratId: event.contratId);
+    result.fold(
+      (failure) => emit(ParticulierError(failure.errorMessage)),
+      (contrat) => emit(ContratDetailLoaded(contrat: contrat)),
+    );
   }
 
   Future<void> _onSignerContrat(
@@ -94,15 +92,14 @@ class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
     Emitter<ParticulierState> emit,
   ) async {
     emit(ContratSignatureEnCours());
-    try {
-      await signerContratClient(
-        type:       event.type,
-        contratId:  event.contratId,
-        signature:  event.signature,
-      );
-      emit(const ContratSigne());
-    } catch (e) {
-      emit(ParticulierError(e.toString()));
-    }
+    final result = await signerContratClient(
+      type:      event.type,
+      contratId: event.contratId,
+      signature: event.signature,
+    );
+    result.fold(
+      (failure) => emit(ParticulierError(failure.errorMessage)),
+      (_)       => emit(const ContratSigne()),
+    );
   }
 }

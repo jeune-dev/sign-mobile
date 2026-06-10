@@ -18,9 +18,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
-    on<ResetAuthState>((event, emit) {
-      emit(AuthInitial());
-    });
+    on<ResetAuthState>((_, emit) => emit(AuthInitial()));
   }
 
   Future<void> _onLoginRequested(
@@ -29,10 +27,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ) async {
     emit(AuthLoading());
 
-    final result = await loginUser(
-      event.identifiant,
-      event.mot_de_passe,
-    );
+    final result = await loginUser(event.identifiant, event.mot_de_passe);
 
     result.fold(
           (failure) => emit(AuthFailure(message: failure.errorMessage)),
@@ -46,7 +41,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       ) async {
     emit(AuthLoading());
 
-    final result = await registerUser.call(
+    final result = await registerUser(
       nom: event.nom,
       prenom: event.prenom,
       email: event.email,
@@ -60,8 +55,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       rc: event.rc,
       ninea: event.ninea,
       signature: event.signature,
-
-      // Champs entreprise ajoutés
       nomEntreprise: event.nomEntreprise,
       adresseEntreprise: event.adresseEntreprise,
       telephoneEntreprise: event.telephoneEntreprise,
@@ -83,6 +76,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final storage = sl<FlutterSecureStorage>();
 
+      // Révoquer le refresh token côté backend (best-effort — erreur réseau ignorée)
+      await revokeRefreshToken(sl());
+
+      // Effacer access token + refresh token du stockage sécurisé
       await sl<TokenService>().clearToken();
       await storage.delete(key: 'user_id');
 

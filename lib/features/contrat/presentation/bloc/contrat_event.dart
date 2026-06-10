@@ -15,7 +15,8 @@ class CreerContratBailEvent extends ContratEvent {
 
 class TelechargerContratEvent extends ContratEvent {
   final String contratId;
-  TelechargerContratEvent(this.contratId);
+  final String titre;
+  TelechargerContratEvent(this.contratId, {this.titre = ''});
 }
 
 class ResetContratState extends ContratEvent {}

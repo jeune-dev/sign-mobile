@@ -97,7 +97,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
     final result = await ouvrirDocument(event.documentId);
     result.fold(
       (failure) => emit(FactureError(failure.errorMessage)),
-      (bytes) => emit(DocumentBytes(bytes)),
+      (bytes) => emit(DocumentBytes(bytes, titre: event.titre)),
     );
   }
 

@@ -47,7 +47,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     final result = await ouvrirDocument(event.documentId);
     result.fold(
       (failure) => emit(DashboardError(failure.errorMessage)),
-      (bytes) => emit(DashboardDocumentBytes(bytes: bytes, documentId: event.documentId)),
+      (bytes) => emit(DashboardDocumentBytes(bytes: bytes, documentId: event.documentId, titre: event.titre)),
     );
   }
 }

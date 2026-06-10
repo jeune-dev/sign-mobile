@@ -9,6 +9,7 @@ abstract class ContratTravailRemoteDataSource {
   Future<void> creerContratTravail(Map<String, dynamic> data);
   Future<void> signerContratTravail(String contratId, String signature);
   Future<List<int>> telechargerContratTravail(String contratId);
+  Future<Map<String, int>> getStatsTravail();
 }
 
 class ContratTravailRemoteDataSourceImpl implements ContratTravailRemoteDataSource {
@@ -74,6 +75,17 @@ class ContratTravailRemoteDataSourceImpl implements ContratTravailRemoteDataSour
       '${Env.contratTravailSigner}/$contratId/sign',
       data: {'signature': signature},
     );
+  }
+
+  @override
+  Future<Map<String, int>> getStatsTravail() async {
+    final response = await dio.get(Env.contratTravailStats);
+    final data = response.data['data'] as Map<String, dynamic>? ?? {};
+    return {
+      'total':     (data['total']     as num?)?.toInt() ?? 0,
+      'signes':    (data['signes']    as num?)?.toInt() ?? 0,
+      'enAttente': (data['enAttente'] as num?)?.toInt() ?? 0,
+    };
   }
 
   @override

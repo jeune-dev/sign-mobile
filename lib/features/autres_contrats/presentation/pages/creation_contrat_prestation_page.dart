@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:sign_application/core/config/contrat_type.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
@@ -82,7 +83,7 @@ class _State extends State<CreationContratPrestationPage>
   void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   void _submit() {
-    context.read<AutresContratsBloc>().add(CreerContrat('contrat-prestation', {
+    context.read<AutresContratsBloc>().add(CreerContrat(ContratType.prestation.apiValue, {
       'autrePartieId': _client!.id,
       'data': {
         'titre_contrat':      _titreCtrl.text.trim(),

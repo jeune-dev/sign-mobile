@@ -6,8 +6,7 @@ import 'package:sign_application/features/account/presentation/bloc/account_even
 import 'package:sign_application/features/account/presentation/bloc/account_state.dart';
 import 'package:sign_application/features/account/presentation/pages/profil_page.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
-import 'package:sign_application/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:sign_application/features/auth/presentation/bloc/auth_event.dart';
+import 'package:sign_application/core/widgets/logout_dialog.dart';
 import 'package:sign_application/features/dashboard/presentation/pages/accueil_professionnel_page.dart';
 import 'package:sign_application/features/client/presentation/pages/listeclients_page.dart';
 import 'package:sign_application/features/facture/presentation/pages/factures_page.dart';
@@ -36,60 +35,6 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
     return photoProfil.trim();
   }
 
-  // ─── Dialog de déconnexion ────────────────────────────────────────────────
-  void _confirmLogout() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.logout, size: 50, color: Colors.red),
-              const SizedBox(height: 15),
-              const Text('Déconnexion',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              const Text('Voulez-vous vraiment vous déconnecter ?',
-                  textAlign: TextAlign.center),
-              const SizedBox(height: 25),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12)),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Annuler'),
-                    ),
-                  ),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        context.read<AuthBloc>().add(LogoutRequested());
-                        Navigator.of(context).pushNamedAndRemoveUntil(
-                            '/login', (route) => false);
-                      },
-                      child: const Text('Oui',
-                          style: TextStyle(color: Colors.white)),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -194,8 +139,8 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
               ),
               // ── Déconnexion ───────────────────────────────────────────
               IconButton(
-                icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: _confirmLogout,
+                icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                onPressed: () => LogoutDialog.show(context),
                 tooltip: 'Déconnexion',
               ),
             ],

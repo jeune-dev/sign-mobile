@@ -9,7 +9,15 @@ class ContratTravailLoading extends ContratTravailState {}
 class ContratsTravailLoaded extends ContratTravailState {
   final List<ContratTravail> contrats;
   final bool hasMore;
-  ContratsTravailLoaded({required this.contrats, this.hasMore = true});
+  final bool isRefreshing;
+  ContratsTravailLoaded({required this.contrats, this.hasMore = true, this.isRefreshing = false});
+
+  ContratsTravailLoaded copyWith({List<ContratTravail>? contrats, bool? hasMore, bool? isRefreshing}) =>
+      ContratsTravailLoaded(
+        contrats:     contrats     ?? this.contrats,
+        hasMore:      hasMore      ?? this.hasMore,
+        isRefreshing: isRefreshing ?? this.isRefreshing,
+      );
 }
 
 class ContratTravailDetailLoaded extends ContratTravailState {
@@ -25,10 +33,20 @@ class ContratTravailSuccess extends ContratTravailState {
 class ContratTravailBytes extends ContratTravailState {
   final List<int> bytes;
   final String contratId;
-  ContratTravailBytes({required this.bytes, required this.contratId});
+  final String titre;
+  ContratTravailBytes({required this.bytes, required this.contratId, this.titre = ''});
 }
 
 class ContratTravailError extends ContratTravailState {
   final String message;
   ContratTravailError(this.message);
 }
+
+class ContratTravailStatsLoaded extends ContratTravailState {
+  final int total;
+  final int signes;
+  final int enAttente;
+  ContratTravailStatsLoaded({required this.total, required this.signes, required this.enAttente});
+}
+
+class ContratTravailStatsLoading extends ContratTravailState {}

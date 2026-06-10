@@ -37,14 +37,27 @@ class _P {
 // ─────────────────────────────────────────────────────────────────────────────
 // Widget principal
 // ─────────────────────────────────────────────────────────────────────────────
-class FichePaieFormPage extends StatefulWidget {
+class FichePaieFormPage extends StatelessWidget {
   final User? user;
   const FichePaieFormPage({super.key, this.user});
+
   @override
-  State<FichePaieFormPage> createState() => _FichePaieFormPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => GetIt.instance<FichePaieBloc>(),
+      child: _FichePaieFormView(user: user),
+    );
+  }
 }
 
-class _FichePaieFormPageState extends State<FichePaieFormPage>
+class _FichePaieFormView extends StatefulWidget {
+  final User? user;
+  const _FichePaieFormView({this.user});
+  @override
+  State<_FichePaieFormView> createState() => _FichePaieFormPageState();
+}
+
+class _FichePaieFormPageState extends State<_FichePaieFormView>
     with SingleTickerProviderStateMixin {
 
   final _formKey = GlobalKey<FormState>();

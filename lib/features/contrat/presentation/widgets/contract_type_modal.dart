@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sign_application/core/config/env.dart';
+import 'package:sign_application/core/config/contrat_type.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import 'package:sign_application/features/autres_contrats/presentation/bloc/autres_contrats_bloc.dart';
 import 'package:sign_application/features/autres_contrats/presentation/pages/creation_contrat_caution_page.dart';
@@ -30,16 +30,16 @@ class ContratTypeItem {
   });
 }
 
-const List<ContratTypeItem> allContractTypes = [
-  ContratTypeItem(id: 'bail',                       titre: 'Contrat de bail',           description: 'Location immobilière',           icon: Icons.home_work_outlined,        color: Color(0xFF2563EB)),
-  ContratTypeItem(id: 'travail',                    titre: 'Contrat de travail',         description: 'CDI, CDD, Stage, Freelance',     icon: Icons.work_outline_rounded,      color: Color(0xFF4F46E5)),
-  ContratTypeItem(id: Env.typePrestation,           titre: 'Contrat de prestation',      description: 'Mission de service',             icon: Icons.handshake_outlined,        color: Color(0xFF2563EB)),
-  ContratTypeItem(id: Env.typePartenariat,          titre: 'Contrat de partenariat',     description: 'Accord de collaboration',        icon: Icons.people_outline_rounded,    color: Color(0xFF4F46E5)),
-  ContratTypeItem(id: Env.typeLocation,             titre: 'Contrat de location',        description: 'Location de véhicule/matériel',  icon: Icons.directions_car_outlined,   color: Color(0xFF2563EB)),
-  ContratTypeItem(id: Env.typeCaution,              titre: 'Contrat de caution',         description: 'Garantie de paiement',           icon: Icons.shield_outlined,           color: Color(0xFF4F46E5)),
-  ContratTypeItem(id: Env.typeConfidentialite,      titre: 'Accord de confidentialité',  description: 'Protection des informations',    icon: Icons.lock_outline_rounded,      color: Color(0xFF2563EB)),
-  ContratTypeItem(id: Env.typeProcuration,          titre: 'Procuration',                description: 'Délégation de pouvoirs',         icon: Icons.assignment_ind_outlined,   color: Color(0xFF4F46E5)),
-  ContratTypeItem(id: Env.typeReconnaissanceDette,  titre: 'Reconnaissance de dette',    description: 'Engagement de remboursement',    icon: Icons.account_balance_outlined,  color: Color(0xFF2563EB)),
+final List<ContratTypeItem> allContractTypes = [
+  const ContratTypeItem(id: 'bail',     titre: 'Contrat de bail',           description: 'Location immobilière',           icon: Icons.home_work_outlined,        color: Color(0xFF2563EB)),
+  const ContratTypeItem(id: 'travail',  titre: 'Contrat de travail',         description: 'CDI, CDD, Stage, Freelance',     icon: Icons.work_outline_rounded,      color: Color(0xFF4F46E5)),
+  ContratTypeItem(id: ContratType.prestation.apiValue,         titre: 'Contrat de prestation',      description: 'Mission de service',             icon: Icons.handshake_outlined,        color: const Color(0xFF2563EB)),
+  ContratTypeItem(id: ContratType.partenariat.apiValue,        titre: 'Contrat de partenariat',     description: 'Accord de collaboration',        icon: Icons.people_outline_rounded,    color: const Color(0xFF4F46E5)),
+  ContratTypeItem(id: ContratType.location.apiValue,           titre: 'Contrat de location',        description: 'Location de véhicule/matériel',  icon: Icons.directions_car_outlined,   color: const Color(0xFF2563EB)),
+  ContratTypeItem(id: ContratType.caution.apiValue,            titre: 'Contrat de caution',         description: 'Garantie de paiement',           icon: Icons.shield_outlined,           color: const Color(0xFF4F46E5)),
+  ContratTypeItem(id: ContratType.confidentialite.apiValue,    titre: 'Accord de confidentialité',  description: 'Protection des informations',    icon: Icons.lock_outline_rounded,      color: const Color(0xFF2563EB)),
+  ContratTypeItem(id: ContratType.procuration.apiValue,        titre: 'Procuration',                description: 'Délégation de pouvoirs',         icon: Icons.assignment_ind_outlined,   color: const Color(0xFF4F46E5)),
+  ContratTypeItem(id: ContratType.reconnaissanceDette.apiValue,titre: 'Reconnaissance de dette',    description: 'Engagement de remboursement',    icon: Icons.account_balance_outlined,  color: const Color(0xFF2563EB)),
 ];
 
 // ─── Fonction de navigation vers la page de création ─────────────────────────
@@ -50,34 +50,24 @@ Future<void> navigateToContractCreation(
   User? user,
 }) async {
   Widget? page;
-  switch (type.id) {
-    case 'bail':
-      page = CreationContratPage(user: user);
-      break;
-    case 'travail':
-      page = const CreationContratTravailPage();
-      break;
-    case Env.typePrestation:
-      page = const CreationContratPrestationPage();
-      break;
-    case Env.typePartenariat:
-      page = const CreationContratPartenariatPage();
-      break;
-    case Env.typeLocation:
-      page = const CreationContratLocationPage();
-      break;
-    case Env.typeCaution:
-      page = const CreationContratCautionPage();
-      break;
-    case Env.typeConfidentialite:
-      page = const CreationContratConfidentialitePage();
-      break;
-    case Env.typeProcuration:
-      page = const CreationProcurationPage();
-      break;
-    case Env.typeReconnaissanceDette:
-      page = const CreationReconnaissanceDettePage();
-      break;
+  if (type.id == 'bail') {
+    page = CreationContratPage(user: user);
+  } else if (type.id == 'travail') {
+    page = const CreationContratTravailPage();
+  } else if (type.id == ContratType.prestation.apiValue) {
+    page = const CreationContratPrestationPage();
+  } else if (type.id == ContratType.partenariat.apiValue) {
+    page = const CreationContratPartenariatPage();
+  } else if (type.id == ContratType.location.apiValue) {
+    page = const CreationContratLocationPage();
+  } else if (type.id == ContratType.caution.apiValue) {
+    page = const CreationContratCautionPage();
+  } else if (type.id == ContratType.confidentialite.apiValue) {
+    page = const CreationContratConfidentialitePage();
+  } else if (type.id == ContratType.procuration.apiValue) {
+    page = const CreationProcurationPage();
+  } else if (type.id == ContratType.reconnaissanceDette.apiValue) {
+    page = const CreationReconnaissanceDettePage();
   }
 
   if (page != null && context.mounted) {

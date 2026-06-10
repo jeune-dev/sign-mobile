@@ -29,11 +29,6 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
 
-  // Cache du dernier état chargé — évite l'écran vide au retour du PDF
-  DashboardLoaded? _lastLoaded;
-
-  // Référence du document en cours d'ouverture (ex: FAC-2026-0002)
-  String _pendingTitreDocument = '';
 
   @override
   void initState() {
@@ -81,16 +76,13 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
   }
 
   Future<void> _ouvrirDocument(String documentId, String numeroFacture) async {
-    // Mémoriser la référence pour l'afficher dans le titre du PDF viewer
-    _pendingTitreDocument = numeroFacture;
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: _LoadingDialog()),
     );
 
-    context.read<DashboardBloc>().add(OuvrirDocumentDashboardEvent(documentId));
+    context.read<DashboardBloc>().add(OuvrirDocumentDashboardEvent(documentId, titre: numeroFacture));
   }
 
   @override
@@ -98,15 +90,11 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     return BlocListener<DashboardBloc, DashboardState>(
       listener: (context, state) {
         if (state is DashboardLoaded) {
-          _lastLoaded = state; // ← mémoriser le dernier état valide
           _animController.forward();
         }
         if (state is DashboardDocumentBytes) {
-          if (Navigator.canPop(context)) Navigator.pop(context); // ferme loading
-          // Utiliser la référence mémorisée (FAC-2026-0002) au lieu de l'UUID
-          _saveAndOpenPdf(state.bytes, _pendingTitreDocument.isNotEmpty
-              ? _pendingTitreDocument
-              : state.documentId);
+          if (Navigator.canPop(context)) Navigator.pop(context);
+          _saveAndOpenPdf(state.bytes, state.titre.isNotEmpty ? state.titre : state.documentId);
         }
         if (state is DashboardError) {
           if (Navigator.canPop(context)) Navigator.pop(context);
@@ -174,12 +162,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
   }
 
   Widget _buildStatsSection(DashboardState state) {
-    // Si on a un cache et que l'état actuel n'est pas une erreur → afficher le cache
-    final effectiveState = (state is DashboardLoaded)
-        ? state
-        : (state is! DashboardError && _lastLoaded != null)
-            ? _lastLoaded!
-            : state;
+    final effectiveState = state;
 
     if (effectiveState is DashboardLoading) {
       return SizedBox(
@@ -523,17 +506,8 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
   }
 
   Widget _buildRecentDocumentsSection(DashboardState state) {
-    // Utiliser le cache si on est en cours de rechargement
-    final effectiveState = (state is DashboardLoaded)
-        ? state
-        : (state is! DashboardError && _lastLoaded != null)
-            ? _lastLoaded!
-            : state;
-
-    final docs = effectiveState is DashboardLoaded
-        ? effectiveState.documentsRecents
-        : [];
-    final isLoading = state is DashboardLoading && _lastLoaded == null;
+    final docs = state is DashboardLoaded ? state.documentsRecents : [];
+    final isLoading = state is DashboardLoading;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

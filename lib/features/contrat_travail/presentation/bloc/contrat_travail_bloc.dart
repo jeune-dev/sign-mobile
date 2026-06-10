@@ -4,6 +4,7 @@ import '../../domain/usecases/get_contrat_travail_detail.dart';
 import '../../domain/usecases/creer_contrat_travail.dart';
 import '../../domain/usecases/signer_contrat_travail.dart';
 import '../../domain/usecases/telecharger_contrat_travail.dart';
+import '../../domain/usecases/get_stats_travail.dart';
 import '../../domain/entities/contrat_travail.dart';
 import 'contrat_travail_event.dart';
 import 'contrat_travail_state.dart';
@@ -14,6 +15,7 @@ class ContratTravailBloc extends Bloc<ContratTravailEvent, ContratTravailState> 
   final CreerContratTravail creerContratTravail;
   final SignerContratTravail signerContratTravail;
   final TelechargerContratTravail telechargerContratTravail;
+  final GetStatsTravail getStatsTravail;
 
   List<ContratTravail> _contrats = [];
   int _currentPage = 1;
@@ -24,6 +26,7 @@ class ContratTravailBloc extends Bloc<ContratTravailEvent, ContratTravailState> 
     required this.creerContratTravail,
     required this.signerContratTravail,
     required this.telechargerContratTravail,
+    required this.getStatsTravail,
   }) : super(ContratTravailInitial()) {
     on<LoadContratsTravail>(_onLoadContrats);
     on<LoadMoreContratsTravail>(_onLoadMoreContrats);
@@ -32,10 +35,15 @@ class ContratTravailBloc extends Bloc<ContratTravailEvent, ContratTravailState> 
     on<SignerContratTravailEvent>(_onSignerContrat);
     on<TelechargerContratTravailEvent>(_onTelechargerContrat);
     on<ResetContratTravailState>((_, emit) => emit(ContratTravailInitial()));
+    on<LoadStatsTravail>(_onLoadStats);
   }
 
   Future<void> _onLoadContrats(LoadContratsTravail event, Emitter<ContratTravailState> emit) async {
-    emit(ContratTravailLoading());
+    if (_contrats.isNotEmpty) {
+      emit(ContratsTravailLoaded(contrats: _contrats, isRefreshing: true));
+    } else {
+      emit(ContratTravailLoading());
+    }
     _currentPage = 1;
     _contrats = [];
     final result = await getContratsTravail(page: 1, limit: event.limit);
@@ -87,12 +95,25 @@ class ContratTravailBloc extends Bloc<ContratTravailEvent, ContratTravailState> 
     );
   }
 
+  Future<void> _onLoadStats(LoadStatsTravail event, Emitter<ContratTravailState> emit) async {
+    emit(ContratTravailStatsLoading());
+    final result = await getStatsTravail();
+    result.fold(
+      (_) => emit(ContratTravailStatsLoaded(total: 0, signes: 0, enAttente: 0)),
+      (stats) => emit(ContratTravailStatsLoaded(
+        total:     stats['total']     ?? 0,
+        signes:    stats['signes']    ?? 0,
+        enAttente: stats['enAttente'] ?? 0,
+      )),
+    );
+  }
+
   Future<void> _onTelechargerContrat(TelechargerContratTravailEvent event, Emitter<ContratTravailState> emit) async {
     emit(ContratTravailLoading());
     final result = await telechargerContratTravail(event.contratId);
     result.fold(
       (failure) => emit(ContratTravailError(failure.errorMessage)),
-      (bytes) => emit(ContratTravailBytes(bytes: bytes, contratId: event.contratId)),
+      (bytes) => emit(ContratTravailBytes(bytes: bytes, contratId: event.contratId, titre: event.titre)),
     );
   }
 }

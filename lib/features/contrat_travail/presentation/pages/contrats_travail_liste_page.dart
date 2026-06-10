@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sign_application/core/config/env.dart';
 import 'package:sign_application/core/utils/download_helper.dart';
+import 'package:sign_application/core/widgets/empty_state.dart';
+import 'package:sign_application/core/widgets/shimmer_list.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import '../bloc/contrat_travail_bloc.dart';
@@ -14,6 +16,14 @@ import '../bloc/contrat_travail_event.dart';
 import '../bloc/contrat_travail_state.dart';
 import '../../domain/entities/contrat_travail.dart';
 import 'creation_contrat_travail_page.dart';
+
+// Stats snapshot carried separately so stats updates don't rebuild the list.
+class _StatsSnapshot {
+  final int total;
+  final int signes;
+  final int enAttente;
+  const _StatsSnapshot({this.total = 0, this.signes = 0, this.enAttente = 0});
+}
 
 class ContratsTravailListePage extends StatefulWidget {
   const ContratsTravailListePage({super.key});
@@ -24,47 +34,27 @@ class ContratsTravailListePage extends StatefulWidget {
 }
 
 class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
-  // Stats depuis l'API
-  int _statsTotal     = 0;
-  int _statsSignes    = 0;
-  int _statsEnAttente = 0;
-  bool _statsLoading  = true;
+  // Stats snapshot driven by BLoC
+  _StatsSnapshot _stats = const _StatsSnapshot();
+  bool _statsLoading = true;
 
-  // Suivi des téléchargements
   final Set<String> _downloading = {};
-  String _pendingTitreContrat    = '';
-
-  // Cache liste pour éviter l'écran vide pendant reload
-  ContratsTravailLoaded? _lastLoaded;
 
   @override
   void initState() {
     super.initState();
     context.read<ContratTravailBloc>().add(LoadContratsTravail());
-    _loadStats();
+    context.read<ContratTravailBloc>().add(LoadStatsTravail());
   }
 
-  // ── Stats API ─────────────────────────────────────────────────────────────
-  Future<void> _loadStats() async {
-    setState(() => _statsLoading = true);
-    try {
-      final resp = await di.sl<Dio>().get(Env.contratTravailStats);
-      final data = resp.data['data'] as Map<String, dynamic>? ?? {};
-      if (!mounted) return;
-      setState(() {
-        _statsTotal     = (data['total']     as num?)?.toInt() ?? 0;
-        _statsSignes    = (data['signes']    as num?)?.toInt() ?? 0;
-        _statsEnAttente = (data['enAttente'] as num?)?.toInt() ?? 0;
-        _statsLoading   = false;
-      });
-    } catch (_) {
-      if (mounted) setState(() => _statsLoading = false);
-    }
+  void _refreshAll() {
+    context.read<ContratTravailBloc>().add(LoadContratsTravail());
+    context.read<ContratTravailBloc>().add(LoadStatsTravail());
   }
 
   // ── Ouvrir PDF ────────────────────────────────────────────────────────────
   void _ouvrirContrat(ContratTravail contrat) {
-    _pendingTitreContrat = contrat.numeroContrat ?? contrat.id;
+    final titre = contrat.numeroContrat ?? contrat.id;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -86,30 +76,22 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
         ),
       ),
     );
-    context.read<ContratTravailBloc>().add(TelechargerContratTravailEvent(contrat.id));
+    context.read<ContratTravailBloc>().add(TelechargerContratTravailEvent(contrat.id, titre: titre));
   }
 
-  Future<void> _handleBytes(List<int> bytes, String contratId) async {
+  Future<void> _handleBytes(List<int> bytes, String titre) async {
     try {
       final dir  = await getTemporaryDirectory();
-      final file = File('${dir.path}/ct_$contratId.pdf');
+      final file = File('${dir.path}/ct_$titre.pdf');
       await file.writeAsBytes(bytes);
       if (!mounted) return;
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => PdfViewerPage(
-            filePath: file.path,
-            titre: _pendingTitreContrat.isNotEmpty
-                ? _pendingTitreContrat
-                : contratId,
-          ),
+          builder: (_) => PdfViewerPage(filePath: file.path, titre: titre),
         ),
       );
-      if (mounted) {
-        context.read<ContratTravailBloc>().add(LoadContratsTravail());
-        _loadStats();
-      }
+      if (mounted) _refreshAll();
     } catch (e) {
       if (mounted) showDownloadErrorSnackBar(context, e.toString());
     }
@@ -160,10 +142,20 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
       backgroundColor: const Color(0xFFF2F2F7),
       body: BlocListener<ContratTravailBloc, ContratTravailState>(
         listener: (context, state) {
-          if (state is ContratsTravailLoaded) _lastLoaded = state;
+          if (state is ContratTravailStatsLoading) {
+            setState(() => _statsLoading = true);
+          }
+          if (state is ContratTravailStatsLoaded) {
+            setState(() {
+              _stats = _StatsSnapshot(
+                total: state.total, signes: state.signes, enAttente: state.enAttente,
+              );
+              _statsLoading = false;
+            });
+          }
           if (state is ContratTravailBytes) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            _handleBytes(state.bytes, state.contratId);
+            _handleBytes(state.bytes, state.titre.isNotEmpty ? state.titre : state.contratId);
           }
           if (state is ContratTravailError) {
             if (Navigator.canPop(context)) Navigator.pop(context);
@@ -175,36 +167,28 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
             ));
           }
           if (state is ContratTravailSuccess) {
-            context.read<ContratTravailBloc>().add(LoadContratsTravail());
-            _loadStats();
+            _refreshAll();
           }
         },
         child: BlocBuilder<ContratTravailBloc, ContratTravailState>(
           builder: (context, state) {
-            final isLoading = state is ContratTravailLoading && _lastLoaded == null;
-            final effectiveState = state is ContratsTravailLoaded
-                ? state
-                : (state is! ContratTravailError && _lastLoaded != null)
-                    ? _lastLoaded!
-                    : state;
-            final contrats = effectiveState is ContratsTravailLoaded
-                ? effectiveState.contrats
+            final isLoading = state is ContratTravailLoading;
+            final contrats = state is ContratsTravailLoaded
+                ? state.contrats
                 : <ContratTravail>[];
+            final isRefreshing = state is ContratsTravailLoaded && state.isRefreshing;
 
             return Column(
               children: [
                 _buildTopBar(),
                 Expanded(
                   child: isLoading
-                      ? const Center(child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5))
+                      ? const ShimmerList()
                       : state is ContratTravailError && contrats.isEmpty
                           ? _buildError(state.message)
                           : RefreshIndicator(
                               color: Colors.black87,
-                              onRefresh: () async {
-                                context.read<ContratTravailBloc>().add(LoadContratsTravail());
-                                _loadStats();
-                              },
+                              onRefresh: () async => _refreshAll(),
                               child: contrats.isEmpty
                                   ? _buildEmpty()
                                   : ListView.separated(
@@ -226,10 +210,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CreationContratTravailPage()),
-        ).then((_) {
-          context.read<ContratTravailBloc>().add(LoadContratsTravail());
-          _loadStats();
-        }),
+        ).then((_) => _refreshAll()),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Nouveau', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
@@ -319,11 +300,11 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
           // ── Stats depuis API ──────────────────────────────
           Row(
             children: [
-              _statBadge('Total', _statsTotal, Colors.white.withOpacity(0.12), Colors.white),
+              _statBadge('Total', _stats.total, Colors.white.withOpacity(0.12), Colors.white),
               const SizedBox(width: 10),
-              _statBadge('Signés', _statsSignes, const Color(0xFF00C896).withOpacity(0.25), const Color(0xFF00C896)),
+              _statBadge('Signés', _stats.signes, const Color(0xFF00C896).withOpacity(0.25), const Color(0xFF00C896)),
               const SizedBox(width: 10),
-              _statBadge('En attente', _statsEnAttente, const Color(0xFFFFB347).withOpacity(0.25), const Color(0xFFFFB347)),
+              _statBadge('En attente', _stats.enAttente, const Color(0xFFFFB347).withOpacity(0.25), const Color(0xFFFFB347)),
             ],
           ),
         ],
@@ -555,31 +536,11 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
     }
   }
 
-  Widget _buildEmpty() {
-    return ListView(
-      children: [
-        const SizedBox(height: 80),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72, height: 72,
-                decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
-                child: Icon(Icons.work_outline_rounded, size: 36, color: Colors.grey[400]),
-              ),
-              const SizedBox(height: 16),
-              Text('Aucun contrat de travail',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 16, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 4),
-              Text('Créez votre premier contrat',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 13)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildEmpty() => const EmptyState(
+    icon: Icons.work_outline_rounded,
+    title: 'Aucun contrat de travail',
+    subtitle: 'Créez votre premier contrat en appuyant sur le bouton +',
+  );
 
   Widget _buildError(String message) {
     return Center(
@@ -598,10 +559,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
           Text(message, style: const TextStyle(color: Colors.grey, fontSize: 12), textAlign: TextAlign.center),
           const SizedBox(height: 20),
           GestureDetector(
-            onTap: () {
-              context.read<ContratTravailBloc>().add(LoadContratsTravail());
-              _loadStats();
-            },
+            onTap: _refreshAll,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),

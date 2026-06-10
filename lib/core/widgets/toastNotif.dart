@@ -9,9 +9,8 @@ void showToast(
 ) {
   final cfg = _toastConfig(type);
 
-  toastification.show(
+  toastification.showCustom(
     context: context,
-    type: type,
     alignment: Alignment.topCenter,
     autoCloseDuration: const Duration(milliseconds: 3800),
     animationDuration: const Duration(milliseconds: 320),
@@ -22,10 +21,6 @@ void showToast(
       ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
       child: FadeTransition(opacity: animation, child: child),
     ),
-    showProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    dragToClose: true,
     builder: (ctx, holder) => _ToastCard(
       title: title,
       description: description,

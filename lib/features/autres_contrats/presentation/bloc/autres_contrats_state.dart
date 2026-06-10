@@ -9,7 +9,8 @@ class AutresContratsLoading extends AutresContratsState {}
 class AutresContratsListLoaded extends AutresContratsState {
   final String type;
   final List<AutreContrat> contrats;
-  AutresContratsListLoaded({required this.type, required this.contrats});
+  final bool isRefreshing;
+  AutresContratsListLoaded({required this.type, required this.contrats, this.isRefreshing = false});
 }
 
 class AutresContratsDetailLoaded extends AutresContratsState {
@@ -25,7 +26,8 @@ class AutresContratsSuccess extends AutresContratsState {
 class AutresContratsBytes extends AutresContratsState {
   final List<int> bytes;
   final String id;
-  AutresContratsBytes({required this.bytes, required this.id});
+  final String titre;
+  AutresContratsBytes({required this.bytes, required this.id, this.titre = ''});
 }
 
 class AutresContratsError extends AutresContratsState {

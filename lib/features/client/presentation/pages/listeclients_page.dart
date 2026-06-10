@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/widgets/empty_state.dart';
+import 'package:sign_application/core/widgets/shimmer_list.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
@@ -236,9 +238,7 @@ class _ClientsPageState extends State<ClientsPage> {
   // ── Contenu principal ──────────────────────────────────────────────────────
   Widget _buildContent(ClientState state, bool isLoading) {
     if (isLoading && _all.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5),
-      );
+      return const ShimmerList(padding: EdgeInsets.fromLTRB(16, 0, 16, 24));
     }
 
     if (state is ClientError && _all.isEmpty) {
@@ -416,43 +416,13 @@ class _ClientsPageState extends State<ClientsPage> {
   // ── État vide ──────────────────────────────────────────────────────────────
   Widget _buildEmpty() {
     final isSearching = _searchCtrl.text.isNotEmpty;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              isSearching
-                  ? Icons.search_off_rounded
-                  : Icons.people_outline_rounded,
-              size: 36,
-              color: Colors.grey[400],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isSearching ? 'Aucun résultat' : 'Aucun client',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            isSearching
-                ? 'Essayez un autre terme de recherche'
-                : 'Vos clients apparaîtront ici',
-            style: TextStyle(color: Colors.grey[400], fontSize: 13),
-          ),
-        ],
-      ),
+    return EmptyState(
+      icon: isSearching ? Icons.search_off_rounded : Icons.people_outline_rounded,
+      title: isSearching ? 'Aucun résultat' : 'Aucun client',
+      subtitle: isSearching
+          ? 'Essayez un autre terme de recherche'
+          : 'Ajoutez votre premier client pour commencer',
+      scrollable: false,
     );
   }
 

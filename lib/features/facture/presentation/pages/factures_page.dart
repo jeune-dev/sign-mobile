@@ -7,6 +7,8 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sign_application/core/config/env.dart';
 import 'package:sign_application/core/utils/download_helper.dart';
+import 'package:sign_application/core/widgets/empty_state.dart';
+import 'package:sign_application/core/widgets/shimmer_list.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import 'package:sign_application/features/facture/domain/entities/facture.dart';
 import 'package:sign_application/features/facture/presentation/bloc/facture_bloc.dart';
@@ -26,9 +28,6 @@ class FacturesPage extends StatefulWidget {
 
 class _FacturesPageState extends State<FacturesPage> {
   final Set<String> _downloading = {};
-
-  // Référence mémorisée pour le titre du PDF viewer
-  String _pendingTitreDocument = '';
 
   @override
   void initState() {
@@ -101,15 +100,12 @@ class _FacturesPageState extends State<FacturesPage> {
   }
 
   void _ouvrirDocument(String documentId, String numeroFacture) {
-    _pendingTitreDocument = numeroFacture;
-
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: _LoadingDialog()),
     );
-
-    context.read<FactureBloc>().add(OuvrirDocumentEvent(documentId));
+    context.read<FactureBloc>().add(OuvrirDocumentEvent(documentId, titre: numeroFacture));
   }
 
   Future<void> _saveAndOpenPdf(List<int> bytes, String documentId) async {
@@ -123,9 +119,7 @@ class _FacturesPageState extends State<FacturesPage> {
         MaterialPageRoute(
           builder: (_) => PdfViewerPage(
             filePath: file.path,
-            titre: _pendingTitreDocument.isNotEmpty
-                ? _pendingTitreDocument
-                : documentId,
+            titre: documentId,
           ),
         ),
       );
@@ -190,7 +184,7 @@ class _FacturesPageState extends State<FacturesPage> {
       listener: (context, state) {
         if (state is DocumentBytes) {
           if (Navigator.canPop(context)) Navigator.pop(context);
-          _saveAndOpenPdf(state.bytes, _pendingTitreDocument);
+          _saveAndOpenPdf(state.bytes, state.titre);
         }
         if (state is FactureMiseAJourSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -425,9 +419,7 @@ class _FacturesPageState extends State<FacturesPage> {
   Widget _buildBody(
       FactureState state, List<Facture> factures, bool isLoading) {
     if (isLoading && factures.isEmpty) {
-      return const Center(
-          child: CircularProgressIndicator(
-              color: Colors.black87, strokeWidth: 2.5));
+      return const ShimmerList();
     }
 
     if (state is FactureError && factures.isEmpty) {
@@ -813,31 +805,12 @@ class _FacturesPageState extends State<FacturesPage> {
   }
 
   // ── Vide ──────────────────────────────────────────────────────────────────
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration:
-                BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
-            child: Icon(Icons.receipt_outlined, size: 36, color: Colors.grey[400]),
-          ),
-          const SizedBox(height: 16),
-          Text('Aucune facture',
-              style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700)),
-          const SizedBox(height: 4),
-          Text('Vos factures apparaîtront ici',
-              style: TextStyle(color: Colors.grey[400], fontSize: 13)),
-        ],
-      ),
-    );
-  }
+  Widget _buildEmpty() => const EmptyState(
+    icon: Icons.receipt_outlined,
+    title: 'Aucune facture',
+    subtitle: 'Vos factures créées apparaîtront ici',
+    scrollable: false,
+  );
 
   // ── Erreur ────────────────────────────────────────────────────────────────
   Widget _buildError(String message) {

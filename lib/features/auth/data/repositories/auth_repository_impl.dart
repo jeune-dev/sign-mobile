@@ -24,8 +24,10 @@ class AuthRepositoryImpl implements AuthRepository {
       final authResponse =
           await remoteDataSource.login(identifiant, motDePasse);
 
-      // Stocker le JWT
-      await sl<TokenService>().setToken(authResponse.token);
+      // Stocker le JWT (et le refresh token si présent)
+      final tokenService = sl<TokenService>();
+      await tokenService.setToken(authResponse.token);
+      await tokenService.setRefreshToken(authResponse.refreshToken);
 
       // Stocker l'ID et le rôle (pour la reprise de session)
       final storage = sl<FlutterSecureStorage>();
@@ -87,7 +89,9 @@ class AuthRepositoryImpl implements AuthRepository {
         emailEntreprise: emailEntreprise,
       );
 
-      await sl<TokenService>().setToken(authResponse.token);
+      final tokenService = sl<TokenService>();
+      await tokenService.setToken(authResponse.token);
+      await tokenService.setRefreshToken(authResponse.refreshToken);
 
       // Stocker le rôle pour la reprise de session
       await sl<FlutterSecureStorage>().write(

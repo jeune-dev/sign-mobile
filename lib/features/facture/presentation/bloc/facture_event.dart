@@ -20,7 +20,8 @@ class CreerFactureEvent extends FactureEvent {
 
 class OuvrirDocumentEvent extends FactureEvent {
   final String documentId;
-  OuvrirDocumentEvent(this.documentId);
+  final String titre;
+  OuvrirDocumentEvent(this.documentId, {this.titre = ''});
 }
 
 class ResetFactureState extends FactureEvent {}

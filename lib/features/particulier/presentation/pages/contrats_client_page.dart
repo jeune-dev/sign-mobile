@@ -1,24 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:sign_application/core/widgets/empty_state.dart';
+import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:sign_application/core/config/contrat_type.dart';
 import '../bloc/particulier_bloc.dart';
 import '../bloc/particulier_event.dart';
 import '../bloc/particulier_state.dart';
 import '../../domain/entities/particulier_contrat.dart';
 import 'detail_contrat_client_page.dart';
 
-// Types de contrats disponibles pour le particulier
-const _kContractTypes = [
-  {'type': null,                     'label': 'Tous'},
-  {'type': 'contrat-travail',        'label': 'Travail'},
-  {'type': 'contrat-prestation',     'label': 'Prestation'},
-  {'type': 'contrat-bail',           'label': 'Bail'},
-  {'type': 'contrat-partenariat',    'label': 'Partenariat'},
-  {'type': 'contrat-location',       'label': 'Location'},
-  {'type': 'reconnaissance-dette',   'label': 'Reconnaissance dette'},
-  {'type': 'procuration',            'label': 'Procuration'},
-  {'type': 'contrat-caution',        'label': 'Caution'},
-  {'type': 'contrat-confidentialite','label': 'Confidentialité'},
+// Types de contrats disponibles pour le particulier.
+// contrat-travail et contrat-bail sont des features séparées — pas dans ContratType.
+final _kContractTypes = <Map<String, String?>>[
+  {'type': null,                                             'label': 'Tous'},
+  {'type': 'contrat-travail',                               'label': 'Travail'},
+  {'type': ContratType.prestation.apiValue,                 'label': 'Prestation'},
+  {'type': 'contrat-bail',                                  'label': 'Bail'},
+  {'type': ContratType.partenariat.apiValue,                'label': 'Partenariat'},
+  {'type': ContratType.location.apiValue,                   'label': 'Location'},
+  {'type': ContratType.reconnaissanceDette.apiValue,        'label': 'Reconnaissance dette'},
+  {'type': ContratType.procuration.apiValue,                'label': 'Procuration'},
+  {'type': ContratType.caution.apiValue,                    'label': 'Caution'},
+  {'type': ContratType.confidentialite.apiValue,            'label': 'Confidentialité'},
 ];
 
 class ContratsClientPage extends StatefulWidget {
@@ -123,7 +127,7 @@ class _ContratsClientPageState extends State<ContratsClientPage> {
                 curr is ContratsLoaded || curr is ParticulierLoading || curr is ParticulierError,
             builder: (context, state) {
               if (state is ParticulierLoading) {
-                return const Center(child: CircularProgressIndicator(color: Colors.black));
+                return const ShimmerList(itemCount: 4, padding: EdgeInsets.fromLTRB(16, 4, 16, 16));
               }
               if (state is ParticulierError) {
                 return _buildError(state.message);
@@ -164,21 +168,12 @@ class _ContratsClientPageState extends State<ContratsClientPage> {
     ).then((_) => _load()); // Recharger après retour (cas signature)
   }
 
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.description_outlined, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            'Aucun contrat trouvé',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _buildEmpty() => const EmptyState(
+    icon: Icons.description_outlined,
+    title: 'Aucun contrat trouvé',
+    subtitle: 'Vos contrats signés apparaîtront ici',
+    scrollable: false,
+  );
 
   Widget _buildError(String message) {
     return Center(
