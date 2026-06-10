@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/services/token_service.dart';
 import '../../../../injection_container.dart';
+import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_user.dart';
 import '../../domain/usecases/register_user.dart';
 import 'auth_event.dart';
@@ -10,15 +11,19 @@ import 'auth_state.dart';
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUser loginUser;
   final RegisterUser registerUser;
+  final AuthRepository authRepository;
 
   AuthBloc({
     required this.loginUser,
     required this.registerUser,
+    required this.authRepository,
   }) : super(AuthInitial()) {
     on<LoginRequested>(_onLoginRequested);
     on<RegisterRequested>(_onRegisterRequested);
     on<LogoutRequested>(_onLogoutRequested);
     on<ResetAuthState>((_, emit) => emit(AuthInitial()));
+    on<ForgotPasswordRequested>(_onForgotPasswordRequested);
+    on<ResetPasswordRequested>(_onResetPasswordRequested);
   }
 
   Future<void> _onLoginRequested(
@@ -67,6 +72,32 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     result.fold(
           (failure) => emit(AuthFailure(message: failure.errorMessage)),
           (user) => emit(AuthSuccess(user: user)),
+    );
+  }
+
+  Future<void> _onForgotPasswordRequested(
+    ForgotPasswordRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final result = await authRepository.forgotPassword(event.email);
+    result.fold(
+      (failure) => emit(AuthFailure(message: failure.errorMessage)),
+      (_) => emit(const ForgotPasswordSuccess(
+          message: 'Un code de réinitialisation a été envoyé à votre adresse email.')),
+    );
+  }
+
+  Future<void> _onResetPasswordRequested(
+    ResetPasswordRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    final result = await authRepository.resetPassword(
+        event.email, event.otpRecu, event.newPassword);
+    result.fold(
+      (failure) => emit(AuthFailure(message: failure.errorMessage)),
+      (_) => emit(ResetPasswordSuccess()),
     );
   }
 

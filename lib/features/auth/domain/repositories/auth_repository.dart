@@ -4,6 +4,9 @@ import '../../../../core/errors/failure.dart';
 import '../entities/user.dart';
 
 abstract class AuthRepository {
+  Future<Either<Failure, void>> forgotPassword(String email);
+  Future<Either<Failure, void>> resetPassword(String email, String otpRecu, String newPassword);
+
   Future<Either<Failure, User>> login(
       String identifiant,
       String motDePasse,

@@ -46,6 +46,10 @@ class Env {
         return const String.fromEnvironment('ACCOUNT_MODIFIER_INFO_PATH');
       case 'ACCOUNT_CHANGE_PASSWORD_PATH':
         return const String.fromEnvironment('ACCOUNT_CHANGE_PASSWORD_PATH');
+      case 'ACCOUNT_FORGOT_PASSWORD_PATH':
+        return const String.fromEnvironment('ACCOUNT_FORGOT_PASSWORD_PATH');
+      case 'ACCOUNT_RESET_PASSWORD_PATH':
+        return const String.fromEnvironment('ACCOUNT_RESET_PASSWORD_PATH');
       case 'CLIENT_LISTE_PATH':
         return const String.fromEnvironment('CLIENT_LISTE_PATH');
       case 'CLIENT_AJOUT_PATH':
@@ -126,6 +130,10 @@ class Env {
       _get('ACCOUNT_MODIFIER_INFO_PATH', fallback: '/account/modifier-info-personnelles');
   static String get accountChangePassword =>
       _get('ACCOUNT_CHANGE_PASSWORD_PATH', fallback: '/account/change-password');
+  static String get accountForgotPassword =>
+      _get('ACCOUNT_FORGOT_PASSWORD_PATH', fallback: '/account/forgot-password');
+  static String get accountResetPassword =>
+      _get('ACCOUNT_RESET_PASSWORD_PATH', fallback: '/account/reset-password');
 
   // ─── Client ──────────────────────────────────────────────────────────────────
   static String get clientListe =>

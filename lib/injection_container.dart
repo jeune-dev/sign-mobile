@@ -316,7 +316,7 @@ Future<void> init() async {
       () => AuthRepositoryImpl(remoteDataSource: sl()));
   sl.registerLazySingleton(() => LoginUser(sl()));
   sl.registerLazySingleton(() => RegisterUser(sl()));
-  sl.registerFactory(() => AuthBloc(loginUser: sl(), registerUser: sl()));
+  sl.registerFactory(() => AuthBloc(loginUser: sl(), registerUser: sl(), authRepository: sl()));
 
   //================================================
   // FEATURE — FICHE DE PAIE

@@ -16,6 +16,32 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.remoteDataSource});
 
   @override
+  Future<Either<Failure, void>> forgotPassword(String email) async {
+    try {
+      await remoteDataSource.forgotPassword(email);
+      return const Right(null);
+    } on DioException catch (e) {
+      final message = e.error?.toString() ?? 'Erreur lors de la demande';
+      return Left(ServerFailure(errorMessage: message));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resetPassword(String email, String otpRecu, String newPassword) async {
+    try {
+      await remoteDataSource.resetPassword(email, otpRecu, newPassword);
+      return const Right(null);
+    } on DioException catch (e) {
+      final message = e.error?.toString() ?? 'Erreur lors de la réinitialisation';
+      return Left(ServerFailure(errorMessage: message));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, User>> login(
       String identifiant,
       String motDePasse,

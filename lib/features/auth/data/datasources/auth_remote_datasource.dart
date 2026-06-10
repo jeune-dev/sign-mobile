@@ -6,6 +6,8 @@ import 'package:sign_application/core/config/env.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthResponseModel> login(String identifiant, String motDePasse);
+  Future<void> forgotPassword(String email);
+  Future<void> resetPassword(String email, String otpRecu, String newPassword);
   Future<AuthResponseModel> register({
     required String nom,
     required String prenom,
@@ -33,9 +35,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final String _loginPath;
   final String _registerPath;
 
+  final String _forgotPasswordPath;
+  final String _resetPasswordPath;
+
   AuthRemoteDataSourceImpl({required this.dio})
       : _loginPath = _normalisePath(Env.login),
-        _registerPath = _normalisePath(Env.register);
+        _registerPath = _normalisePath(Env.register),
+        _forgotPasswordPath = _normalisePath(Env.accountForgotPassword),
+        _resetPasswordPath = _normalisePath(Env.accountResetPassword);
 
   static String _normalisePath(String value) {
     final trimmed = value.trim();
@@ -70,6 +77,44 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       type: DioExceptionType.badResponse,
       error: response.data['message'] ?? 'Erreur de connexion',
     );
+  }
+
+  @override
+  Future<void> forgotPassword(String email) async {
+    try {
+      await dio.post(_forgotPasswordPath, data: {'email': email});
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map
+          ? e.response!.data['message'] ?? 'Erreur lors de la demande'
+          : 'Erreur lors de la demande';
+      throw DioException(
+        requestOptions: e.requestOptions,
+        response: e.response,
+        type: DioExceptionType.badResponse,
+        error: msg,
+      );
+    }
+  }
+
+  @override
+  Future<void> resetPassword(String email, String otpRecu, String newPassword) async {
+    try {
+      await dio.post(_resetPasswordPath, data: {
+        'email': email,
+        'otpRecu': otpRecu,
+        'newPassword': newPassword,
+      });
+    } on DioException catch (e) {
+      final msg = e.response?.data is Map
+          ? e.response!.data['message'] ?? 'Erreur lors de la réinitialisation'
+          : 'Erreur lors de la réinitialisation';
+      throw DioException(
+        requestOptions: e.requestOptions,
+        response: e.response,
+        type: DioExceptionType.badResponse,
+        error: msg,
+      );
+    }
   }
 
   @override

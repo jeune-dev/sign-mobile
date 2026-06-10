@@ -8,6 +8,8 @@ import 'package:sign_application/features/auth/presentation/widgets/ContiditionU
 import 'package:sign_application/features/auth/presentation/widgets/PolitiqueConfidentialite.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import 'package:sign_application/features/fiche_paie/presentation/page/creation_fiche_paie.dart';
+import 'package:sign_application/features/auth/presentation/pages/forgot_password_page.dart';
+import 'package:sign_application/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:sign_application/features/auth/presentation/pages/onboarding_page.dart';
 import 'package:sign_application/injection_container.dart';
 
@@ -23,6 +25,8 @@ class AppRouter {
 
   static const String onboardingRoute = '/onboarding';
   static const String fichePaieRoute = '/fiche-paie';
+  static const String forgotPasswordRoute = '/forgot-password';
+  static const String resetPasswordRoute = '/reset-password';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -64,6 +68,14 @@ class AppRouter {
 
       case onboardingRoute:
         return MaterialPageRoute(builder: (_) => const OnboardingPage1());
+
+      case forgotPasswordRoute:
+        return MaterialPageRoute(builder: (_) => const ForgotPasswordPage());
+
+      case resetPasswordRoute:
+        final email = settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+            builder: (_) => ResetPasswordPage(email: email));
 
       default:
         return MaterialPageRoute(builder: (_) => const LoginPage());

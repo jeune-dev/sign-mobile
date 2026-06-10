@@ -31,6 +31,15 @@ class AuthFailure extends AuthState {
   List<Object?> get props => [message];
 }
 
+class ForgotPasswordSuccess extends AuthState {
+  final String message;
+  const ForgotPasswordSuccess({required this.message});
+  @override
+  List<Object?> get props => [message];
+}
+
+class ResetPasswordSuccess extends AuthState {}
+
 class AuthUploadProgress extends AuthState {
   final double progress; // 0.0 → 1.0
 

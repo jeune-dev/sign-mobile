@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toast Preview — SIGN</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #F3F4F6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    gap: 32px;
+  }
+
+  h1 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #6B7280;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .phone {
+    width: 375px;
+    height: 780px;
+    background: #F9FAFB;
+    border-radius: 48px;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.18), 0 0 0 10px #1C1C1E;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Status bar */
+  .statusbar {
+    height: 44px;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #111;
+    flex-shrink: 0;
+  }
+
+  /* Fake screen content */
+  .screen-content {
+    flex: 1;
+    background: #F3F4F6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    color: #9CA3AF;
+    font-size: 14px;
+  }
+  .screen-content svg { opacity: 0.3; }
+
+  /* Toast container (top of phone) */
+  .toast-area {
+    position: absolute;
+    top: 44px;
+    left: 0; right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 16px 0;
+    z-index: 100;
+  }
+
+  /* ── TOAST CARD ── */
+  .toast {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #F3F4F6;
+    box-shadow:
+      0 6px 20px rgba(0,0,0,0.10),
+      0 2px 12px var(--accent-shadow);
+    overflow: hidden;
+    position: relative;
+    transform: translateY(-120%);
+    opacity: 0;
+    transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.38s ease;
+  }
+  .toast.visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  /* Left accent bar */
+  .toast::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--accent);
+    border-radius: 0;
+  }
+
+  .toast-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 12px 16px 16px;
+  }
+
+  .toast-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: var(--icon-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .toast-icon svg {
+    width: 20px;
+    height: 20px;
+    color: var(--accent);
+    fill: var(--accent);
+  }
+
+  .toast-text { flex: 1; }
+  .toast-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+  }
+  .toast-desc {
+    font-size: 12px;
+    color: #6B7280;
+    line-height: 1.4;
+    margin-top: 3px;
+  }
+
+  .toast-close {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: #F3F4F6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .toast-close svg {
+    width: 14px;
+    height: 14px;
+    fill: #9CA3AF;
+  }
+
+  /* Progress bar */
+  .toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 4px; right: 0;
+    height: 2px;
+    background: #F3F4F6;
+    overflow: hidden;
+  }
+  .toast-progress-fill {
+    height: 100%;
+    background: var(--accent);
+    opacity: 0.5;
+    border-radius: 0 2px 2px 0;
+    width: 100%;
+    transform-origin: left;
+    transition: none;
+  }
+  .toast.animating .toast-progress-fill {
+    animation: progress-shrink var(--duration) linear forwards;
+  }
+
+  @keyframes progress-shrink {
+    from { width: 100%; }
+    to   { width: 0%; }
+  }
+
+  /* Types */
+  .toast-success {
+    --accent: #16A34A;
+    --accent-shadow: rgba(22,163,74,0.08);
+    --icon-bg: #DCFCE7;
+    --duration: 3.8s;
+  }
+  .toast-error {
+    --accent: #DC2626;
+    --accent-shadow: rgba(220,38,38,0.08);
+    --icon-bg: #FEE2E2;
+    --duration: 3.8s;
+  }
+  .toast-warning {
+    --accent: #D97706;
+    --accent-shadow: rgba(217,119,6,0.08);
+    --icon-bg: #FEF3C7;
+    --duration: 3.8s;
+  }
+  .toast-info {
+    --accent: #2563EB;
+    --accent-shadow: rgba(37,99,235,0.08);
+    --icon-bg: #DBEAFE;
+    --duration: 3.8s;
+  }
+
+  /* Buttons grid */
+  .buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    width: 375px;
+  }
+  .btn {
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .btn:active { transform: scale(0.97); opacity: 0.85; }
+  .btn-success { background: #DCFCE7; color: #16A34A; }
+  .btn-error   { background: #FEE2E2; color: #DC2626; }
+  .btn-warning { background: #FEF3C7; color: #D97706; }
+  .btn-info    { background: #DBEAFE; color: #2563EB; }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+</style>
+</head>
+<body>
+
+<h1>Toast Notifications — SIGN App</h1>
+
+<div class="phone">
+  <div class="statusbar">
+    <span>9:41</span>
+    <span style="display:flex;gap:6px;align-items:center">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="0" width="3" height="12" rx="1"/><rect x="13.5" y="1" width="2.5" height="11" rx="1" opacity=".3"/></svg>
+      <svg width="16" height="12" viewBox="0 0 24 12" fill="currentColor"><rect x="0" y="0" width="22" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="22.5" y="3.5" width="1.5" height="5" rx="1"/><rect x="2" y="2" width="15" height="8" rx="1.5"/></svg>
+    </span>
+  </div>
+
+  <div class="toast-area" id="toastArea"></div>
+
+  <div class="screen-content">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="1.5"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+    <span>Cliquer sur un bouton ci-dessous</span>
+  </div>
+</div>
+
+<div class="buttons">
+  <button class="btn btn-success" onclick="showToast('success')">
+    <div class="dot"></div> Succès
+  </button>
+  <button class="btn btn-error" onclick="showToast('error')">
+    <div class="dot"></div> Erreur
+  </button>
+  <button class="btn btn-warning" onclick="showToast('warning')">
+    <div class="dot"></div> Avertissement
+  </button>
+  <button class="btn btn-info" onclick="showToast('info')">
+    <div class="dot"></div> Info
+  </button>
+</div>
+
+<script>
+const configs = {
+  success: {
+    title: 'Inscription réussie',
+    desc: 'Vous pouvez maintenant vous connecter !',
+    icon: `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
+  },
+  error: {
+    title: 'Échec de l\'inscription',
+    desc: 'Cet email est déjà utilisé.',
+    icon: `<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" fill="none"/></svg>`,
+  },
+  warning: {
+    title: 'Session expirée',
+    desc: 'Veuillez vous reconnecter pour continuer.',
+    icon: `<svg viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>`,
+  },
+  info: {
+    title: 'Nouveau contrat disponible',
+    desc: 'Un contrat vous a été soumis pour signature.',
+    icon: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 8v4m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`,
+  },
+};
+
+let toastCount = 0;
+
+function showToast(type) {
+  const cfg = configs[type];
+  const area = document.getElementById('toastArea');
+
+  const id = 'toast-' + (++toastCount);
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.id = id;
+  el.innerHTML = `
+    <div class="toast-inner">
+      <div class="toast-icon">${cfg.icon}</div>
+      <div class="toast-text">
+        <div class="toast-title">${cfg.title}</div>
+        <div class="toast-desc">${cfg.desc}</div>
+      </div>
+      <div class="toast-close" onclick="dismissToast('${id}')">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </div>
+    </div>
+    <div class="toast-progress"><div class="toast-progress-fill"></div></div>
+  `;
+
+  area.prepend(el);
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      el.classList.add('visible');
+      setTimeout(() => el.classList.add('animating'), 50);
+    });
+  });
+
+  setTimeout(() => dismissToast(id), 3800);
+}
+
+function dismissToast(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.transform = 'translateY(-120%)';
+  el.style.opacity = '0';
+  el.style.transition = 'transform 0.28s ease-in, opacity 0.28s ease-in';
+  setTimeout(() => el.remove(), 300);
+}
+</script>
+</body>
+</html>
