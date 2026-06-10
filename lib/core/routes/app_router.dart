@@ -7,6 +7,7 @@ import 'package:sign_application/features/home/presentation/pages/professionnel/
 import 'package:sign_application/features/auth/presentation/widgets/ContiditionUtilisation.dart';
 import 'package:sign_application/features/auth/presentation/widgets/PolitiqueConfidentialite.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
+import 'package:sign_application/core/services/fcm_service.dart';
 import 'package:sign_application/features/fiche_paie/presentation/page/creation_fiche_paie.dart';
 import 'package:sign_application/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:sign_application/features/auth/presentation/pages/reset_password_page.dart';
@@ -37,18 +38,22 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const RegisterPage());
 
       case clientRoute:
-        final user = settings.arguments as User?;
+        final args = settings.arguments;
+        final User? clientUser = args is User ? args : null;
+        final int clientTab = args is NotificationNavArgs ? args.initialTabIndex : 0;
         return MaterialPageRoute(
           builder: (_) => _AuthGuard(
-            child: ClientPage(user: user),
+            child: ClientPage(user: clientUser, initialTabIndex: clientTab),
           ),
         );
 
       case professionnelRoute:
-        final user = settings.arguments as User?;
+        final args = settings.arguments;
+        final User? profUser = args is User ? args : null;
+        final int profTab = args is NotificationNavArgs ? args.initialTabIndex : 0;
         return MaterialPageRoute(
           builder: (_) => _AuthGuard(
-            child: ProfessionnelPage(user: user),
+            child: ProfessionnelPage(user: profUser, initialTabIndex: profTab),
           ),
         );
 

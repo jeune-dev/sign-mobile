@@ -20,10 +20,15 @@ import 'package:sign_application/features/facture/presentation/bloc/facture_bloc
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_bloc.dart';
 import 'package:sign_application/features/quittance_loyer/presentation/bloc/quittance_loyer_bloc.dart';
 import 'package:sign_application/features/autres_contrats/presentation/bloc/autres_contrats_bloc.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:sign_application/core/services/fcm_service.dart';
 import 'package:sign_application/injection_container.dart' as di;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Enregistrer le handler background FCM avant Firebase.initializeApp()
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // IMP-06 : Désactive le téléchargement runtime des polices Google Fonts.
   // Les fichiers .ttf doivent être bundlés dans assets/fonts/ (voir pubspec.yaml).

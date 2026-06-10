@@ -12,22 +12,28 @@ import 'package:sign_application/features/client/presentation/pages/listeclients
 import 'package:sign_application/features/facture/presentation/pages/factures_page.dart';
 import 'package:sign_application/features/contrat/presentation/pages/contrats_page.dart';
 import 'package:sign_application/core/widgets/network_banner.dart';
+import 'package:sign_application/core/services/fcm_service.dart';
 
 class ProfessionnelPage extends StatefulWidget {
   final User? user;
-  const ProfessionnelPage({super.key, this.user});
+  final int initialTabIndex;
+  const ProfessionnelPage({super.key, this.user, this.initialTabIndex = 0});
 
   @override
   State<ProfessionnelPage> createState() => _ProfessionnelPageState();
 }
 
 class _ProfessionnelPageState extends State<ProfessionnelPage> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTabIndex;
     context.read<AccountBloc>().add(LoadMe());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FcmService.init(context);
+    });
   }
 
   // ─── URL de la photo — Cloudinary retourne déjà une URL complète ──────────

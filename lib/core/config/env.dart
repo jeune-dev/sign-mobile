@@ -50,6 +50,8 @@ class Env {
         return const String.fromEnvironment('ACCOUNT_FORGOT_PASSWORD_PATH');
       case 'ACCOUNT_RESET_PASSWORD_PATH':
         return const String.fromEnvironment('ACCOUNT_RESET_PASSWORD_PATH');
+      case 'ACCOUNT_DEVICE_TOKEN_PATH':
+        return const String.fromEnvironment('ACCOUNT_DEVICE_TOKEN_PATH');
       case 'CLIENT_LISTE_PATH':
         return const String.fromEnvironment('CLIENT_LISTE_PATH');
       case 'CLIENT_AJOUT_PATH':
@@ -134,6 +136,8 @@ class Env {
       _get('ACCOUNT_FORGOT_PASSWORD_PATH', fallback: '/account/forgot-password');
   static String get accountResetPassword =>
       _get('ACCOUNT_RESET_PASSWORD_PATH', fallback: '/account/reset-password');
+  static String get accountDeviceToken =>
+      _get('ACCOUNT_DEVICE_TOKEN_PATH', fallback: '/account/device-token');
 
   // ─── Client ──────────────────────────────────────────────────────────────────
   static String get clientListe =>

@@ -10,18 +10,29 @@ import '../../../../particulier/presentation/pages/dashboard_client_page.dart';
 import '../../../../particulier/presentation/pages/factures_client_page.dart';
 import '../../../../particulier/presentation/pages/contrats_client_page.dart';
 import 'package:sign_application/core/widgets/network_banner.dart';
+import 'package:sign_application/core/services/fcm_service.dart';
 
 class ClientPage extends StatefulWidget {
   final User? user;
+  final int initialTabIndex;
 
-  const ClientPage({super.key, this.user});
+  const ClientPage({super.key, this.user, this.initialTabIndex = 0});
 
   @override
   State<ClientPage> createState() => _ClientPageState();
 }
 
 class _ClientPageState extends State<ClientPage> {
-  int _currentIndex = 0;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTabIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FcmService.init(context);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
