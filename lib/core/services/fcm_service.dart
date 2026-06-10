@@ -54,13 +54,15 @@ class FcmService {
     _messaging.onTokenRefresh.listen((_) => _uploadToken());
   }
 
-  /// Envoie le token FCM au backend (best-effort)
-  static Future<void> _uploadToken() async {
+  /// Envoie le token FCM au backend (best-effort).
+  /// Public — appelé aussi depuis AuthBloc juste après un login réussi,
+  /// sans avoir besoin de BuildContext.
+  static Future<void> uploadToken() async {
     try {
       final token = await _messaging.getToken();
       if (token == null) return;
 
-      // Vérifier que l'utilisateur est connecté
+      // Vérifier que le JWT est valide avant d'envoyer
       final isAuth = await sl<TokenService>().isAuthenticated;
       if (!isAuth) return;
 
@@ -73,6 +75,9 @@ class FcmService {
       // Best-effort — ne pas bloquer si le backend est down
     }
   }
+
+  // Alias privé pour l'usage interne (init + onTokenRefresh)
+  static Future<void> _uploadToken() => uploadToken();
 
   /// Navigation basée sur le type de contrat reçu dans la notification
   static Future<void> _handleNotificationTap(BuildContext context, Map<String, dynamic> data) async {

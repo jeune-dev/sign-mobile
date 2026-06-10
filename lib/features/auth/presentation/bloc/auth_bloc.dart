@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/services/token_service.dart';
+import '../../../../core/services/fcm_service.dart';
 import '../../../../injection_container.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_user.dart';
@@ -34,9 +35,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     final result = await loginUser(event.identifiant, event.mot_de_passe);
 
-    result.fold(
-          (failure) => emit(AuthFailure(message: failure.errorMessage)),
-          (user) => emit(AuthSuccess(user: user)),
+    await result.fold(
+      (failure) async => emit(AuthFailure(message: failure.errorMessage)),
+      (user) async {
+        emit(AuthSuccess(user: user));
+        // Enregistrer le token FCM dès la connexion, sans attendre la home page
+        FcmService.uploadToken().catchError((_) {});
+      },
     );
   }
 
