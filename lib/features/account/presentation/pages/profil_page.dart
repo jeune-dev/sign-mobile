@@ -28,7 +28,7 @@ class _ProfilPageState extends State<ProfilPage> {
     }
   }
 
-  // Photos hébergées sur Cloudinary → URL complète directement utilisable
+  // Photos hébergées sur Cloudflare R2 → URL complète directement utilisable
   String? _buildUrl(String? path) {
     if (path == null || path.trim().isEmpty) return null;
     return path.trim();
