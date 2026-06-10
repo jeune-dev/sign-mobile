@@ -13,6 +13,8 @@ import 'package:sign_application/features/contrat/presentation/bloc/contrat_stat
 import 'package:sign_application/features/client/presentation/widgets/client_avatar.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/widgets/confirmation_dialog.dart';
+import 'package:sign_application/core/services/form_draft_service.dart';
 
 class CreationContratPage extends StatefulWidget {
   final User? user;
@@ -107,6 +109,47 @@ class _CreationContratPageState extends State<CreationContratPage>
   bool _sousLocation = false, _animaux = false, _travaux = false;
   final _clausesCtrl = TextEditingController();
 
+  static const _draftKey = 'draft_contrat_bail';
+  Timer? _draftSaveTimer;
+
+  List<TextEditingController> get _allTextControllers => [
+    _bienAdresseCtrl, _bienVilleCtrl, _bienCodePostalCtrl, _bienPaysCtrl,
+    _bienSuperficieCtrl, _bienNbPiecesCtrl, _bienEtageCtrl, _bienDescriptionCtrl,
+    _bailDureeCtrl, _bailDureePreavisCtrl, _loyerCtrl, _montantChargesCtrl,
+    _jourPaiementCtrl, _depotMontantCtrl, _clausesCtrl,
+  ];
+
+  static const _draftFieldNames = [
+    'bienAdresse', 'bienVille', 'bienCodePostal', 'bienPays',
+    'bienSuperficie', 'bienNbPieces', 'bienEtage', 'bienDescription',
+    'bailDuree', 'bailDureePreavis', 'loyer', 'montantCharges',
+    'jourPaiement', 'depotMontant', 'clauses',
+  ];
+
+  void _scheduleSave() {
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(const Duration(milliseconds: 600), _saveDraft);
+  }
+
+  Future<void> _saveDraft() async {
+    final ctrls = _allTextControllers;
+    final fields = <String, String>{};
+    for (int i = 0; i < _draftFieldNames.length; i++) {
+      fields[_draftFieldNames[i]] = ctrls[i].text;
+    }
+    await FormDraftService.save(_draftKey, fields);
+  }
+
+  Future<void> _restoreDraft() async {
+    final fields = await FormDraftService.restore(_draftKey, _draftFieldNames);
+    if (fields.isEmpty) return;
+    final ctrls = _allTextControllers;
+    for (int i = 0; i < _draftFieldNames.length; i++) {
+      final v = fields[_draftFieldNames[i]];
+      if (v != null && v.isNotEmpty) ctrls[i].text = v;
+    }
+  }
+
   // ──────────────────────────────────────────────────────────────
   @override
   void initState() {
@@ -115,10 +158,15 @@ class _CreationContratPageState extends State<CreationContratPage>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat();
+    for (final ctrl in _allTextControllers) {
+      ctrl.addListener(_scheduleSave);
+    }
+    _restoreDraft();
   }
 
   @override
   void dispose() {
+    _draftSaveTimer?.cancel();
     _scrollCtrl.dispose();
     _shimmerCtrl.dispose();
     _rechercheCtrl.dispose();
@@ -233,8 +281,19 @@ class _CreationContratPageState extends State<CreationContratPage>
     setState(() => _clientsTrouves = []);
   }
 
-  void _retirerLocataire(dynamic c) =>
-      setState(() => _locatairesSelectionnes.removeWhere((l) => l['id'] == c['id']));
+  void _retirerLocataire(dynamic c) {
+    showConfirmationDialog(
+      context,
+      title: 'Retirer le locataire',
+      message: '${c['prenom']} ${c['nom']} sera retiré de ce contrat.',
+      confirmLabel: 'Retirer',
+      icon: Icons.person_remove_outlined,
+    ).then((confirmed) {
+      if (confirmed && mounted) {
+        setState(() => _locatairesSelectionnes.removeWhere((l) => l['id'] == c['id']));
+      }
+    });
+  }
 
   // ── Soumission ────────────────────────────────────────────
   void _submit() {
@@ -323,6 +382,7 @@ class _CreationContratPageState extends State<CreationContratPage>
           listener: (context, state) {
             if (state is ContratSuccess) {
               setState(() => _submitting = false);
+              FormDraftService.clear(_draftKey);
               _showSuccess();
             }
             if (state is ContratError) {

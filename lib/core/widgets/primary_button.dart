@@ -2,6 +2,7 @@
 
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 class PrimaryButton extends StatefulWidget {
   final VoidCallback onTap;
@@ -58,6 +59,7 @@ class _PrimaryButtonState extends State<PrimaryButton>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        HapticFeedback.lightImpact();
         _controller.forward().then((_) {
           _controller.reverse();
         });

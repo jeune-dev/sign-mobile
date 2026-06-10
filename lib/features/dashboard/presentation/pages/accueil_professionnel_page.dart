@@ -14,6 +14,8 @@ import 'package:sign_application/features/facture/presentation/bloc/facture_bloc
 import 'package:sign_application/features/contrat/presentation/widgets/contract_type_modal.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/injection_container.dart' as di;
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class HomeProfessionnelPage extends StatefulWidget {
   final User? user;
@@ -98,14 +100,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
         }
         if (state is DashboardError) {
           if (Navigator.canPop(context)) Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
+          showToast(context, 'Erreur', state.message, ToastificationType.error);
         }
       },
       child: BlocBuilder<DashboardBloc, DashboardState>(
@@ -154,9 +149,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur ouverture: $e'), backgroundColor: Colors.red[400]),
-        );
+        showToast(context, 'Erreur', 'Erreur ouverture: $e', ToastificationType.error);
       }
     }
   }

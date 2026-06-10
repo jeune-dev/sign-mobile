@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 /// Sauvegarde un PDF dans les Téléchargements du téléphone.
 /// Retourne le chemin du fichier sauvegardé.
@@ -51,73 +53,29 @@ Future<String> savePdfToDownloads(Uint8List bytes, String fileName) async {
   return file.path;
 }
 
-/// Affiche un SnackBar de succès après téléchargement.
+/// Affiche un toast de succès après téléchargement.
 void showDownloadSuccessSnackBar(
   BuildContext context,
   String fileName,
   String savedPath, {
   bool isIos = false,
 }) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      backgroundColor: const Color(0xFF00C896),
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      duration: const Duration(seconds: 5),
-      content: Row(
-        children: [
-          const Icon(Icons.check_circle_outline, color: Colors.white, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Téléchargé avec succès',
-                  style: TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w700),
-                ),
-                Text(
-                  fileName,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      action: SnackBarAction(
-        label: 'Ouvrir',
-        textColor: Colors.white,
-        onPressed: () => OpenFile.open(savedPath),
-      ),
-    ),
+  showToast(
+    context,
+    'Téléchargé avec succès',
+    fileName,
+    ToastificationType.success,
   );
+  OpenFile.open(savedPath);
 }
 
-/// Affiche un SnackBar d'erreur.
+/// Affiche un toast d'erreur.
 void showDownloadErrorSnackBar(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      backgroundColor: Colors.red[400],
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      content: Row(
-        children: [
-          const Icon(Icons.error_outline, color: Colors.white),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message.replaceAll('Exception: ', ''),
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    ),
+  showToast(
+    context,
+    'Erreur de téléchargement',
+    message.replaceAll('Exception: ', ''),
+    ToastificationType.error,
   );
 }
 

@@ -273,9 +273,13 @@ class _RegisterPageState extends State<RegisterPage> {
           }
         },
         builder: (context, state) {
-          final isLoading = state is AuthLoading;
+          final isLoading = state is AuthLoading || state is AuthUploadProgress;
+          final uploadProgress = state is AuthUploadProgress ? state.progress : null;
           return SafeArea(
-            child: SingleChildScrollView(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,6 +327,44 @@ class _RegisterPageState extends State<RegisterPage> {
                   const SizedBox(height: 24),
                 ],
               ),
+            ),
+                if (uploadProgress != null)
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        LinearProgressIndicator(
+                          value: uploadProgress,
+                          backgroundColor: Colors.grey.shade200,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                          minHeight: 3,
+                        ),
+                        if (uploadProgress < 1.0)
+                          Container(
+                            color: Colors.white.withValues(alpha: 0.85),
+                            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(
+                                  width: 14, height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  'Envoi en cours… ${(uploadProgress * 100).toInt()}%',
+                                  style: const TextStyle(fontSize: 12, color: Color(0xFF2563EB), fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           );
         },

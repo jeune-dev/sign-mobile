@@ -30,3 +30,12 @@ class AuthFailure extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+class AuthUploadProgress extends AuthState {
+  final double progress; // 0.0 → 1.0
+
+  const AuthUploadProgress(this.progress);
+
+  @override
+  List<Object?> get props => [progress];
+}

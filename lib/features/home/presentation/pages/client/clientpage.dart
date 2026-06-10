@@ -9,6 +9,7 @@ import '../../../../particulier/presentation/bloc/particulier_bloc.dart';
 import '../../../../particulier/presentation/pages/dashboard_client_page.dart';
 import '../../../../particulier/presentation/pages/factures_client_page.dart';
 import '../../../../particulier/presentation/pages/contrats_client_page.dart';
+import 'package:sign_application/core/widgets/network_banner.dart';
 
 class ClientPage extends StatefulWidget {
   final User? user;
@@ -68,9 +69,11 @@ class _ClientPageState extends State<ClientPage> {
                 ),
               ],
             ),
-            body: IndexedStack(
-              index: _currentIndex,
-              children: pages,
+            body: NetworkBanner(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: pages,
+              ),
             ),
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: _currentIndex,

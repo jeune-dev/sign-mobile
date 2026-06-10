@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:signature/signature.dart';
 import '../bloc/particulier_bloc.dart';
 import '../bloc/particulier_event.dart';
@@ -32,21 +34,11 @@ class _SignerContratPageState extends State<SignerContratPage> {
 
   Future<void> _submit(BuildContext ctx) async {
     if (!_consentAccepted) {
-      ScaffoldMessenger.of(ctx).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez accepter les conditions avant de signer.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      showToast(ctx, 'Consentement requis', 'Veuillez accepter les conditions avant de signer.', ToastificationType.warning);
       return;
     }
     if (_signatureController.isEmpty) {
-      ScaffoldMessenger.of(ctx).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez tracer votre signature.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      showToast(ctx, 'Signature manquante', 'Veuillez tracer votre signature.', ToastificationType.warning);
       return;
     }
 
@@ -70,18 +62,11 @@ class _SignerContratPageState extends State<SignerContratPage> {
     return BlocListener<ParticulierBloc, ParticulierState>(
       listener: (ctx, state) {
         if (state is ContratSigne) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            const SnackBar(
-              content: Text('Contrat signé avec succès ✓'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          showToast(ctx, 'Contrat signé', 'Votre signature a été enregistrée avec succès', ToastificationType.success);
           Navigator.of(ctx).pop();
         }
         if (state is ParticulierError) {
-          ScaffoldMessenger.of(ctx).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-          );
+          showToast(ctx, 'Erreur', state.message, ToastificationType.error);
         }
       },
       child: Scaffold(

@@ -24,6 +24,7 @@ abstract class AuthRemoteDataSource {
     String? adresseEntreprise,
     String? telephoneEntreprise,
     String? emailEntreprise,
+    void Function(int sent, int total)? onSendProgress,
   });
 }
 
@@ -90,6 +91,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     String? adresseEntreprise,
     String? telephoneEntreprise,
     String? emailEntreprise,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     // VULN-H02 : Aucun print() — données sensibles jamais loggées
     final formData = FormData.fromMap({
@@ -143,6 +145,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       final response = await dio.post(
         _registerPath,
         data: formData,
+        onSendProgress: onSendProgress,
         options: Options(contentType: 'multipart/form-data'),
       );
       return AuthResponseModel.fromJson(response.data);

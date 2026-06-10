@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:intl/intl.dart';
 import 'package:sign_application/core/config/contrat_type.dart';
 import '../bloc/particulier_bloc.dart';
@@ -27,9 +29,7 @@ class DetailContratClientPage extends StatelessWidget {
       body: BlocListener<ParticulierBloc, ParticulierState>(
         listener: (context, state) {
           if (state is ParticulierError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         child: ListView(
@@ -149,9 +149,7 @@ class DetailContratClientPage extends StatelessWidget {
               ),
               onPressed: () {
                 // Affichage PDF — extension future
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Aperçu PDF disponible prochainement')),
-                );
+                showToast(context, 'Bientôt disponible', 'Aperçu PDF disponible prochainement', ToastificationType.info);
               },
             ),
           ),

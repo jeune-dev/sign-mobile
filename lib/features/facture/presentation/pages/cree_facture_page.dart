@@ -10,6 +10,7 @@ import 'package:sign_application/features/facture/presentation/bloc/facture_stat
 import 'package:sign_application/features/client/presentation/widgets/client_avatar.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/widgets/confirmation_dialog.dart';
 
 class CreeFacture extends StatefulWidget {
   const CreeFacture({super.key});
@@ -60,9 +61,15 @@ class _CreeFactureState extends State<CreeFacture> {
     setState(() => _items.add({'type': type, 'designation': '', 'quantite': 1, 'prix_unitaire': 0.0}));
   }
 
-  void _supprimerItem(int index) {
+  Future<void> _supprimerItem(int index) async {
     if (_items.length > 1) {
-      setState(() => _items.removeAt(index));
+      final confirmed = await showConfirmationDialog(
+        context,
+        title: 'Supprimer la ligne',
+        message: 'Cette ligne sera définitivement retirée de la facture.',
+        confirmLabel: 'Supprimer',
+      );
+      if (confirmed && mounted) setState(() => _items.removeAt(index));
     } else {
       setState(() => _items[0] = {'type': 'service', 'designation': '', 'quantite': 1, 'prix_unitaire': 0.0});
     }

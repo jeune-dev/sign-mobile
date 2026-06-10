@@ -15,6 +15,8 @@ import 'package:sign_application/features/contrat/presentation/bloc/contrat_stat
 import 'package:sign_application/features/contrat/presentation/pages/creation_contrat_bail_page.dart';
 import 'package:sign_application/core/widgets/empty_state.dart';
 import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/injection_container.dart' as di;
 
 class ContratBailListePage extends StatefulWidget {
@@ -148,12 +150,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
           }
           if (state is ContratError) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ));
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         child: BlocBuilder<ContratBloc, ContratState>(

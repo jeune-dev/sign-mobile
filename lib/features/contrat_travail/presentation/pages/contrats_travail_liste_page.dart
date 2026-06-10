@@ -9,6 +9,8 @@ import 'package:sign_application/core/config/env.dart';
 import 'package:sign_application/core/utils/download_helper.dart';
 import 'package:sign_application/core/widgets/empty_state.dart';
 import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import '../bloc/contrat_travail_bloc.dart';
@@ -34,17 +36,35 @@ class ContratsTravailListePage extends StatefulWidget {
 }
 
 class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
-  // Stats snapshot driven by BLoC
   _StatsSnapshot _stats = const _StatsSnapshot();
   bool _statsLoading = true;
-
   final Set<String> _downloading = {};
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     context.read<ContratTravailBloc>().add(LoadContratsTravail());
     context.read<ContratTravailBloc>().add(LoadStatsTravail());
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 150) {
+      final state = context.read<ContratTravailBloc>().state;
+      if (state is ContratsTravailLoaded &&
+          state.hasMore &&
+          !state.isRefreshing) {
+        context.read<ContratTravailBloc>().add(LoadMoreContratsTravail());
+      }
+    }
   }
 
   void _refreshAll() {
@@ -159,12 +179,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
           }
           if (state is ContratTravailError) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ));
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
           if (state is ContratTravailSuccess) {
             _refreshAll();
@@ -176,6 +191,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
             final contrats = state is ContratsTravailLoaded
                 ? state.contrats
                 : <ContratTravail>[];
+            final hasMore = state is ContratsTravailLoaded ? state.hasMore : false;
             final isRefreshing = state is ContratsTravailLoaded && state.isRefreshing;
 
             return Column(
@@ -192,10 +208,16 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                               child: contrats.isEmpty
                                   ? _buildEmpty()
                                   : ListView.separated(
-                                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                                      itemCount: contrats.length,
+                                      controller: _scrollController,
+                                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                                      itemCount: contrats.length + 1,
                                       separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                      itemBuilder: (context, index) => _buildCard(contrats[index]),
+                                      itemBuilder: (context, index) {
+                                        if (index == contrats.length) {
+                                          return _buildPaginationFooter(hasMore, isRefreshing);
+                                        }
+                                        return _buildCard(contrats[index]);
+                                      },
                                     ),
                             ),
                 ),
@@ -534,6 +556,36 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
       case 'Freelance':return const Color(0xFFFFB347);
       default:         return Colors.grey;
     }
+  }
+
+  Widget _buildPaginationFooter(bool hasMore, bool isLoading) {
+    if (isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.black54),
+          ),
+        ),
+      );
+    }
+    if (!hasMore) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Expanded(child: Divider(color: Colors.grey.shade200, endIndent: 12)),
+            Text('Tout est affiché',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade400)),
+            Expanded(child: Divider(color: Colors.grey.shade200, indent: 12)),
+          ],
+        ),
+      );
+    }
+    return const SizedBox(height: 80);
   }
 
   Widget _buildEmpty() => const EmptyState(

@@ -17,6 +17,8 @@ import 'package:sign_application/features/facture/presentation/bloc/facture_stat
 import 'package:sign_application/injection_container.dart' as di;
 import 'package:sign_application/features/facture/presentation/pages/cree_facture_page.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class FacturesPage extends StatefulWidget {
   final User? user;
@@ -127,14 +129,7 @@ class _FacturesPageState extends State<FacturesPage> {
       if (mounted) context.read<FactureBloc>().add(LoadFactures());
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur ouverture: $e'),
-            backgroundColor: Colors.red[400],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        showToast(context, 'Erreur', 'Erreur ouverture: $e', ToastificationType.error);
       }
     }
   }
@@ -187,26 +182,12 @@ class _FacturesPageState extends State<FacturesPage> {
           _saveAndOpenPdf(state.bytes, state.titre);
         }
         if (state is FactureMiseAJourSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Facture mise à jour avec succès'),
-              backgroundColor: Colors.green[600],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
+          showToast(context, 'Mise à jour', 'Facture mise à jour avec succès', ToastificationType.success);
           context.read<FactureBloc>().add(LoadFactures());
         }
         if (state is FactureError) {
           if (Navigator.canPop(context)) Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          );
+          showToast(context, 'Erreur', state.message, ToastificationType.error);
         }
       },
       child: BlocBuilder<FactureBloc, FactureState>(

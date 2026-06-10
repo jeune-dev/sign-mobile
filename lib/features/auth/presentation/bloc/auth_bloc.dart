@@ -42,6 +42,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
 
     final result = await registerUser(
+      onSendProgress: (sent, total) {
+        if (total > 0) emit(AuthUploadProgress(sent / total));
+      },
       nom: event.nom,
       prenom: event.prenom,
       email: event.email,

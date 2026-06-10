@@ -11,6 +11,7 @@ import 'package:sign_application/features/dashboard/presentation/pages/accueil_p
 import 'package:sign_application/features/client/presentation/pages/listeclients_page.dart';
 import 'package:sign_application/features/facture/presentation/pages/factures_page.dart';
 import 'package:sign_application/features/contrat/presentation/pages/contrats_page.dart';
+import 'package:sign_application/core/widgets/network_banner.dart';
 
 class ProfessionnelPage extends StatefulWidget {
   final User? user;
@@ -145,7 +146,7 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
               ),
             ],
           ),
-          body: pages[_currentIndex],
+          body: NetworkBanner(child: pages[_currentIndex]),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentIndex,
             selectedItemColor: Colors.black,

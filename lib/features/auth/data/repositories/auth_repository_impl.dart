@@ -67,6 +67,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String? adresseEntreprise,
     String? telephoneEntreprise,
     String? emailEntreprise,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       final authResponse = await remoteDataSource.register(
@@ -87,6 +88,7 @@ class AuthRepositoryImpl implements AuthRepository {
         adresseEntreprise: adresseEntreprise,
         telephoneEntreprise: telephoneEntreprise,
         emailEntreprise: emailEntreprise,
+        onSendProgress: onSendProgress,
       );
 
       final tokenService = sl<TokenService>();

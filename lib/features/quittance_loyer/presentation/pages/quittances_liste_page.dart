@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/core/widgets/empty_state.dart';
 import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import '../bloc/quittance_loyer_bloc.dart';
 import '../bloc/quittance_loyer_event.dart';
 import '../bloc/quittance_loyer_state.dart';
@@ -49,14 +51,10 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
       body: BlocConsumer<QuittanceLoyerBloc, QuittanceLoyerState>(
         listener: (context, state) {
           if (state is QuittanceBytes) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Téléchargement réussi'), backgroundColor: Colors.green),
-            );
+            showToast(context, 'Téléchargement', 'Quittance téléchargée avec succès', ToastificationType.success);
           }
           if (state is QuittanceLoyerError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         builder: (context, state) {

@@ -7,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sign_application/core/utils/download_helper.dart';
 import 'package:sign_application/core/widgets/empty_state.dart';
 import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/features/fiche_paie/domain/entities/fiche_paie.dart';
 import '../bloc/fiche_paie_bloc.dart';
@@ -125,12 +127,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
           }
           if (state is FichePaieError) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ));
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         child: Column(

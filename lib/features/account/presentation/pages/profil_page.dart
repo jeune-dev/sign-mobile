@@ -16,6 +16,8 @@ class ProfilPage extends StatefulWidget {
 }
 
 class _ProfilPageState extends State<ProfilPage> {
+  final Set<String> _expandedSections = {'Informations personnelles'};
+
   @override
   void initState() {
     super.initState();
@@ -353,17 +355,18 @@ class _ProfilPageState extends State<ProfilPage> {
     );
   }
 
-  // ── Section card ──────────────────────────────────────────────────────────
+  // ── Section card (accordion) ──────────────────────────────────────────────
   Widget _buildSection({
     required String title,
     required IconData icon,
     required List<Widget> children,
   }) {
-    // Filtrer les enfants vides
     final nonEmpty = children
         .where((w) => w is! SizedBox || (w).height != 0)
         .toList();
     if (nonEmpty.isEmpty) return const SizedBox.shrink();
+
+    final isExpanded = _expandedSections.contains(title);
 
     return Container(
       decoration: BoxDecoration(
@@ -379,38 +382,62 @@ class _ProfilPageState extends State<ProfilPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête de section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(10),
+          // En-tête cliquable
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedSections.remove(title);
+                } else {
+                  _expandedSections.add(title);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 18),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 18),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                    letterSpacing: -0.2,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  AnimatedRotation(
+                    turns: isExpanded ? 0 : -0.25,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.grey.shade400,
+                      size: 22,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          Divider(color: Colors.grey[100], height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            child: Column(children: nonEmpty),
-          ),
+          if (isExpanded) ...[
+            Divider(color: Colors.grey[100], height: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              child: Column(children: nonEmpty),
+            ),
+          ],
         ],
       ),
     );

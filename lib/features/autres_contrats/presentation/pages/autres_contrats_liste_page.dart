@@ -10,6 +10,8 @@ import 'package:sign_application/core/config/env.dart';
 import 'package:sign_application/core/utils/download_helper.dart';
 import 'package:sign_application/core/widgets/empty_state.dart';
 import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import '../bloc/autres_contrats_bloc.dart';
@@ -177,13 +179,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
           }
           if (state is AutresContratsError) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ));
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         builder: (ctx, state) {

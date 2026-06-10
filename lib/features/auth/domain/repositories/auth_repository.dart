@@ -29,5 +29,6 @@ abstract class AuthRepository {
     String? adresseEntreprise,
     String? telephoneEntreprise,
     String? emailEntreprise,
+    void Function(int sent, int total)? onSendProgress,
   });
 }
