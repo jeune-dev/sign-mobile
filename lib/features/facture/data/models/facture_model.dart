@@ -13,6 +13,7 @@ class FactureModel extends Facture {
     super.delaisExecution,
     super.items,
     super.client,
+    super.statut,
   });
 
   factory FactureModel.fromJson(Map<String, dynamic> json) {
@@ -28,6 +29,7 @@ class FactureModel extends Facture {
       delaisExecution: json['delais_execution']?.toString(),
       items: json['items'],
       client: json['client'] != null ? Map<String, dynamic>.from(json['client']) : null,
+      statut: json['statut']?.toString(),
     );
   }
 

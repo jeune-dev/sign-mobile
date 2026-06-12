@@ -16,6 +16,32 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.remoteDataSource});
 
   @override
+  Future<Either<Failure, void>> forgotPassword(String email) async {
+    try {
+      await remoteDataSource.forgotPassword(email);
+      return const Right(null);
+    } on DioException catch (e) {
+      final message = e.error?.toString() ?? 'Erreur lors de la demande';
+      return Left(ServerFailure(errorMessage: message));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> resetPassword(String email, String otpRecu, String newPassword) async {
+    try {
+      await remoteDataSource.resetPassword(email, otpRecu, newPassword);
+      return const Right(null);
+    } on DioException catch (e) {
+      final message = e.error?.toString() ?? 'Erreur lors de la réinitialisation';
+      return Left(ServerFailure(errorMessage: message));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, User>> login(
       String identifiant,
       String motDePasse,
@@ -24,8 +50,10 @@ class AuthRepositoryImpl implements AuthRepository {
       final authResponse =
           await remoteDataSource.login(identifiant, motDePasse);
 
-      // Stocker le JWT
-      await sl<TokenService>().setToken(authResponse.token);
+      // Stocker le JWT (et le refresh token si présent)
+      final tokenService = sl<TokenService>();
+      await tokenService.setToken(authResponse.token);
+      await tokenService.setRefreshToken(authResponse.refreshToken);
 
       // Stocker l'ID et le rôle (pour la reprise de session)
       final storage = sl<FlutterSecureStorage>();
@@ -65,6 +93,7 @@ class AuthRepositoryImpl implements AuthRepository {
     String? adresseEntreprise,
     String? telephoneEntreprise,
     String? emailEntreprise,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     try {
       final authResponse = await remoteDataSource.register(
@@ -85,9 +114,12 @@ class AuthRepositoryImpl implements AuthRepository {
         adresseEntreprise: adresseEntreprise,
         telephoneEntreprise: telephoneEntreprise,
         emailEntreprise: emailEntreprise,
+        onSendProgress: onSendProgress,
       );
 
-      await sl<TokenService>().setToken(authResponse.token);
+      final tokenService = sl<TokenService>();
+      await tokenService.setToken(authResponse.token);
+      await tokenService.setRefreshToken(authResponse.refreshToken);
 
       // Stocker le rôle pour la reprise de session
       await sl<FlutterSecureStorage>().write(

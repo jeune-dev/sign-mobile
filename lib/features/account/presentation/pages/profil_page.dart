@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/config/user_role.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/features/account/domain/entities/account_user.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_bloc.dart';
@@ -15,6 +16,8 @@ class ProfilPage extends StatefulWidget {
 }
 
 class _ProfilPageState extends State<ProfilPage> {
+  final Set<String> _expandedSections = {'Informations personnelles'};
+
   @override
   void initState() {
     super.initState();
@@ -25,7 +28,7 @@ class _ProfilPageState extends State<ProfilPage> {
     }
   }
 
-  // Photos hébergées sur Cloudinary → URL complète directement utilisable
+  // Photos hébergées sur Cloudflare R2 → URL complète directement utilisable
   String? _buildUrl(String? path) {
     if (path == null || path.trim().isEmpty) return null;
     return path.trim();
@@ -64,10 +67,9 @@ class _ProfilPageState extends State<ProfilPage> {
     final logoUrl = _buildUrl(user.logo);
     final signatureUrl = _buildUrl(user.signature);
 
-    // isPro      = a accès aux fonctionnalités professionnelles (Professionnel ET Indépendant)
-    // isEntreprise = a un RC et un NINEA (Professionnel uniquement)
-    final isPro       = user.role == 'Professionnel' || user.role == 'Independant';
-    final isEntreprise = user.role == 'Professionnel';
+    final _role       = UserRoleX.fromString(user.role);
+    final isPro       = _role.isPro;
+    final isEntreprise = _role.isEntreprise;
 
     return CustomScrollView(
       slivers: [
@@ -331,21 +333,9 @@ class _ProfilPageState extends State<ProfilPage> {
   Widget _buildRoleBadge(String? role) {
     if (role == null || role.isEmpty) return const SizedBox.shrink();
 
-    // Labels et couleurs selon le type de compte
-    final label = switch (role) {
-      'Professionnel' => '🏢 Professionnel',
-      'Independant'   => '💼 Indépendant',
-      'Particulier'   => '👤 Particulier',
-      'Admin'         => '⚙️ Admin',
-      _               => role,
-    };
-
-    final badgeColor = switch (role) {
-      'Professionnel' => Colors.blue.withValues(alpha: 0.25),
-      'Independant'   => Colors.orange.withValues(alpha: 0.25),
-      'Particulier'   => Colors.green.withValues(alpha: 0.20),
-      _               => Colors.white.withValues(alpha: 0.15),
-    };
+    final r = UserRoleX.fromString(role);
+    final label = r == UserRole.unknown ? role : r.label;
+    final badgeColor = r.badgeColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
@@ -365,17 +355,18 @@ class _ProfilPageState extends State<ProfilPage> {
     );
   }
 
-  // ── Section card ──────────────────────────────────────────────────────────
+  // ── Section card (accordion) ──────────────────────────────────────────────
   Widget _buildSection({
     required String title,
     required IconData icon,
     required List<Widget> children,
   }) {
-    // Filtrer les enfants vides
     final nonEmpty = children
         .where((w) => w is! SizedBox || (w).height != 0)
         .toList();
     if (nonEmpty.isEmpty) return const SizedBox.shrink();
+
+    final isExpanded = _expandedSections.contains(title);
 
     return Container(
       decoration: BoxDecoration(
@@ -391,38 +382,62 @@ class _ProfilPageState extends State<ProfilPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // En-tête de section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(10),
+          // En-tête cliquable
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                if (isExpanded) {
+                  _expandedSections.remove(title);
+                } else {
+                  _expandedSections.add(title);
+                }
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: Colors.white, size: 18),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 18),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.black87,
-                    letterSpacing: -0.2,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  AnimatedRotation(
+                    turns: isExpanded ? 0 : -0.25,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.grey.shade400,
+                      size: 22,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          Divider(color: Colors.grey[100], height: 1),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            child: Column(children: nonEmpty),
-          ),
+          if (isExpanded) ...[
+            Divider(color: Colors.grey[100], height: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              child: Column(children: nonEmpty),
+            ),
+          ],
         ],
       ),
     );

@@ -11,6 +11,10 @@ import 'package:sign_application/features/contrat/presentation/bloc/contrat_bloc
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_event.dart';
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_state.dart';
 import 'package:sign_application/features/client/presentation/widgets/client_avatar.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/widgets/confirmation_dialog.dart';
+import 'package:sign_application/core/services/form_draft_service.dart';
 
 class CreationContratPage extends StatefulWidget {
   final User? user;
@@ -91,6 +95,7 @@ class _CreationContratPageState extends State<CreationContratPage>
     'Virement bancaire',
     'Mobile Money',
     'Chèque',
+    'ALL',
     'Autre',
   ];
 
@@ -104,6 +109,47 @@ class _CreationContratPageState extends State<CreationContratPage>
   bool _sousLocation = false, _animaux = false, _travaux = false;
   final _clausesCtrl = TextEditingController();
 
+  static const _draftKey = 'draft_contrat_bail';
+  Timer? _draftSaveTimer;
+
+  List<TextEditingController> get _allTextControllers => [
+    _bienAdresseCtrl, _bienVilleCtrl, _bienCodePostalCtrl, _bienPaysCtrl,
+    _bienSuperficieCtrl, _bienNbPiecesCtrl, _bienEtageCtrl, _bienDescriptionCtrl,
+    _bailDureeCtrl, _bailDureePreavisCtrl, _loyerCtrl, _montantChargesCtrl,
+    _jourPaiementCtrl, _depotMontantCtrl, _clausesCtrl,
+  ];
+
+  static const _draftFieldNames = [
+    'bienAdresse', 'bienVille', 'bienCodePostal', 'bienPays',
+    'bienSuperficie', 'bienNbPieces', 'bienEtage', 'bienDescription',
+    'bailDuree', 'bailDureePreavis', 'loyer', 'montantCharges',
+    'jourPaiement', 'depotMontant', 'clauses',
+  ];
+
+  void _scheduleSave() {
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(const Duration(milliseconds: 600), _saveDraft);
+  }
+
+  Future<void> _saveDraft() async {
+    final ctrls = _allTextControllers;
+    final fields = <String, String>{};
+    for (int i = 0; i < _draftFieldNames.length; i++) {
+      fields[_draftFieldNames[i]] = ctrls[i].text;
+    }
+    await FormDraftService.save(_draftKey, fields);
+  }
+
+  Future<void> _restoreDraft() async {
+    final fields = await FormDraftService.restore(_draftKey, _draftFieldNames);
+    if (fields.isEmpty) return;
+    final ctrls = _allTextControllers;
+    for (int i = 0; i < _draftFieldNames.length; i++) {
+      final v = fields[_draftFieldNames[i]];
+      if (v != null && v.isNotEmpty) ctrls[i].text = v;
+    }
+  }
+
   // ──────────────────────────────────────────────────────────────
   @override
   void initState() {
@@ -112,10 +158,15 @@ class _CreationContratPageState extends State<CreationContratPage>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat();
+    for (final ctrl in _allTextControllers) {
+      ctrl.addListener(_scheduleSave);
+    }
+    _restoreDraft();
   }
 
   @override
   void dispose() {
+    _draftSaveTimer?.cancel();
     _scrollCtrl.dispose();
     _shimmerCtrl.dispose();
     _rechercheCtrl.dispose();
@@ -230,8 +281,19 @@ class _CreationContratPageState extends State<CreationContratPage>
     setState(() => _clientsTrouves = []);
   }
 
-  void _retirerLocataire(dynamic c) =>
-      setState(() => _locatairesSelectionnes.removeWhere((l) => l['id'] == c['id']));
+  void _retirerLocataire(dynamic c) {
+    showConfirmationDialog(
+      context,
+      title: 'Retirer le locataire',
+      message: '${c['prenom']} ${c['nom']} sera retiré de ce contrat.',
+      confirmLabel: 'Retirer',
+      icon: Icons.person_remove_outlined,
+    ).then((confirmed) {
+      if (confirmed && mounted) {
+        setState(() => _locatairesSelectionnes.removeWhere((l) => l['id'] == c['id']));
+      }
+    });
+  }
 
   // ── Soumission ────────────────────────────────────────────
   void _submit() {
@@ -305,31 +367,11 @@ class _CreationContratPageState extends State<CreationContratPage>
   }
 
   void _showSuccess() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _SuccessDialog(
-        onRetour: () {
-          Navigator.pop(context);       // ferme le dialog
-          Navigator.pop(context, true); // revient à la liste des contrats
-        },
-      ),
-    );
+    showToast(context, 'Contrat créé', 'Le contrat de bail a été créé avec succès.', ToastificationType.success);
+    Navigator.pop(context, true);
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        const Icon(Icons.error_outline, color: Colors.white, size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(msg)),
-      ]),
-      backgroundColor: Colors.red[400],
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(12),
-    ));
-  }
+  void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   // ──────────────────────────────────────────────────────────────
   @override
@@ -340,6 +382,7 @@ class _CreationContratPageState extends State<CreationContratPage>
           listener: (context, state) {
             if (state is ContratSuccess) {
               setState(() => _submitting = false);
+              FormDraftService.clear(_draftKey);
               _showSuccess();
             }
             if (state is ContratError) {
@@ -735,7 +778,7 @@ class _CreationContratPageState extends State<CreationContratPage>
 
   // ── Dropdown ───────────────────────────────────────────────
   Widget _dropdown<T>(String label, T value, List<T> items,
-      void Function(T?) onChanged, {bool required = false}) {
+      void Function(T?) onChanged, {bool required = false, String Function(T)? labelBuilder}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -767,7 +810,8 @@ class _CreationContratPageState extends State<CreationContratPage>
             ),
             items: items
                 .map((e) => DropdownMenuItem(
-                    value: e, child: Text(e.toString())))
+                    value: e,
+                    child: Text(labelBuilder != null ? labelBuilder(e) : e.toString())))
                 .toList(),
           ),
         ],
@@ -1245,9 +1289,10 @@ class _CreationContratPageState extends State<CreationContratPage>
           _dropdown('Périodicité', _periodicite, _periodicites,
               (v) => setState(() => _periodicite = v!)),
         ),
-        // Mode de paiement — enum exact du backend
         _dropdown('Mode de paiement', _moyen, _moyens,
-            (v) => setState(() => _moyen = v!), required: true),
+            (v) => setState(() => _moyen = v!),
+            required: true,
+            labelBuilder: (e) => e == 'ALL' ? 'Tout mode de paiement' : e),
         const SizedBox(height: 8),
         // Autres charges
         Row(
@@ -1363,7 +1408,7 @@ class _CreationContratPageState extends State<CreationContratPage>
     return _section(
       Icons.shield_outlined,
       const Color(0xFF45B7D1),
-      'Dépôt de garantie',
+      'Dépôt de garantie / Caution',
       [
         _toggle('Dépôt de garantie prévu', _depotPrevu,
             (v) => setState(() => _depotPrevu = v),
@@ -1378,7 +1423,8 @@ class _CreationContratPageState extends State<CreationContratPage>
                 onPicked: (dt) =>
                     setState(() => _depotDateValue = dt)),
             _dropdown('Mode de paiement', _depotMode, _moyens,
-                (v) => setState(() => _depotMode = v!)),
+                (v) => setState(() => _depotMode = v!),
+                labelBuilder: (e) => e == 'ALL' ? 'Tout mode de paiement' : e),
           ),
         ],
       ],

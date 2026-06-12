@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sign_application/core/config/contrat_type.dart';
 import 'package:sign_application/core/config/env.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import 'package:sign_application/features/autres_contrats/presentation/bloc/autres_contrats_bloc.dart';
@@ -21,6 +22,8 @@ import 'package:sign_application/features/contrat_travail/presentation/bloc/cont
 import 'package:sign_application/features/contrat_travail/presentation/pages/contrats_travail_liste_page.dart';
 import 'package:sign_application/features/contrat_travail/presentation/pages/creation_contrat_travail_page.dart';
 import 'package:sign_application/injection_container.dart' as di;
+import 'package:sign_application/features/particulier/presentation/pages/contrats_a_signer_page.dart';
+import 'package:sign_application/features/particulier/presentation/bloc/particulier_bloc.dart';
 
 class _Stats {
   final int total;
@@ -46,16 +49,16 @@ class _ContratType {
   });
 }
 
-const List<_ContratType> _allContractTypes = [
-  _ContratType(id: 'bail',                    titre: 'Contrat de bail',            shortLabel: 'Bail',        description: 'Location immobilière',           icon: Icons.home_work_outlined,        color: Color(0xFF2563EB)), // Bleu
-  _ContratType(id: 'travail',                 titre: 'Contrat de travail',          shortLabel: 'Travail',     description: 'CDI, CDD, Stage, Freelance',     icon: Icons.work_outline_rounded,      color: Color(0xFF4F46E5)), // Indigo
-  _ContratType(id: Env.typePrestation,        titre: 'Contrat de prestation',       shortLabel: 'Prestation',  description: 'Mission de service',             icon: Icons.handshake_outlined,        color: Color(0xFF2563EB)),
-  _ContratType(id: Env.typePartenariat,       titre: 'Contrat de partenariat',      shortLabel: 'Partenariat', description: 'Accord de collaboration',        icon: Icons.people_outline_rounded,    color: Color(0xFF4F46E5)),
-  _ContratType(id: Env.typeLocation,         titre: 'Contrat de location',         shortLabel: 'Location',    description: 'Location de véhicule/matériel',  icon: Icons.directions_car_outlined,   color: Color(0xFF2563EB)),
-  _ContratType(id: Env.typeCaution,          titre: 'Contrat de caution',          shortLabel: 'Caution',     description: 'Garantie de paiement',           icon: Icons.shield_outlined,           color: Color(0xFF4F46E5)),
-  _ContratType(id: Env.typeConfidentialite,  titre: 'Accord de confidentialité',   shortLabel: 'NDA',         description: 'Protection des informations',    icon: Icons.lock_outline_rounded,      color: Color(0xFF2563EB)),
-  _ContratType(id: Env.typeProcuration,      titre: 'Procuration',                  shortLabel: 'Procuration', description: 'Délégation de pouvoirs',         icon: Icons.assignment_ind_outlined,   color: Color(0xFF4F46E5)),
-  _ContratType(id: Env.typeReconnaissanceDette, titre: 'Reconnaissance de dette',  shortLabel: 'Dette',       description: 'Engagement de remboursement',    icon: Icons.account_balance_outlined,  color: Color(0xFF2563EB)),
+List<_ContratType> get _allContractTypes => [
+  const _ContratType(id: 'bail',    titre: 'Contrat de bail',            shortLabel: 'Bail',        description: 'Location immobilière',           icon: Icons.home_work_outlined,        color: Color(0xFF2563EB)),
+  const _ContratType(id: 'travail', titre: 'Contrat de travail',          shortLabel: 'Travail',     description: 'CDI, CDD, Stage, Freelance',     icon: Icons.work_outline_rounded,      color: Color(0xFF4F46E5)),
+  _ContratType(id: ContratType.prestation.apiValue,         titre: 'Contrat de prestation',      shortLabel: 'Prestation',      description: 'Mission de service',             icon: Icons.handshake_outlined,        color: const Color(0xFF2563EB)),
+  _ContratType(id: ContratType.partenariat.apiValue,        titre: 'Contrat de partenariat',     shortLabel: 'Partenariat',     description: 'Accord de collaboration',        icon: Icons.people_outline_rounded,    color: const Color(0xFF4F46E5)),
+  _ContratType(id: ContratType.location.apiValue,           titre: 'Contrat de location',        shortLabel: 'Location',        description: 'Location de véhicule/matériel',  icon: Icons.directions_car_outlined,   color: const Color(0xFF2563EB)),
+  _ContratType(id: ContratType.caution.apiValue,            titre: 'Contrat de caution',         shortLabel: 'Caution',         description: 'Garantie de paiement',           icon: Icons.shield_outlined,           color: const Color(0xFF4F46E5)),
+  _ContratType(id: ContratType.confidentialite.apiValue,    titre: 'Contrat de Confidentialité', shortLabel: 'Confidentialité', description: 'Protection des informations',    icon: Icons.lock_outline_rounded,      color: const Color(0xFF2563EB)),
+  _ContratType(id: ContratType.procuration.apiValue,        titre: 'Procuration',                shortLabel: 'Procuration',     description: 'Délégation de pouvoirs',         icon: Icons.assignment_ind_outlined,   color: const Color(0xFF4F46E5)),
+  _ContratType(id: ContratType.reconnaissanceDette.apiValue,titre: 'Reconnaissance de dette',    shortLabel: 'Dette',           description: 'Engagement de remboursement',    icon: Icons.account_balance_outlined,  color: const Color(0xFF2563EB)),
 ];
 
 class ContratsPage extends StatefulWidget {
@@ -123,13 +126,14 @@ class _ContratsPageState extends State<ContratsPage> {
     switch (type.id) {
       case 'bail':                      page = CreationContratPage(user: widget.user); break;
       case 'travail':                   page = const CreationContratTravailPage(); break;
-      case Env.typePrestation:          page = const CreationContratPrestationPage(); break;
-      case Env.typePartenariat:         page = const CreationContratPartenariatPage(); break;
-      case Env.typeLocation:            page = const CreationContratLocationPage(); break;
-      case Env.typeCaution:             page = const CreationContratCautionPage(); break;
-      case Env.typeConfidentialite:     page = const CreationContratConfidentialitePage(); break;
-      case Env.typeProcuration:         page = const CreationProcurationPage(); break;
-      case Env.typeReconnaissanceDette: page = const CreationReconnaissanceDettePage(); break;
+      default:
+        if (type.id == ContratType.prestation.apiValue)         page = const CreationContratPrestationPage();
+        else if (type.id == ContratType.partenariat.apiValue)   page = const CreationContratPartenariatPage();
+        else if (type.id == ContratType.location.apiValue)      page = const CreationContratLocationPage();
+        else if (type.id == ContratType.caution.apiValue)       page = const CreationContratCautionPage();
+        else if (type.id == ContratType.confidentialite.apiValue) page = const CreationContratConfidentialitePage();
+        else if (type.id == ContratType.procuration.apiValue)   page = const CreationProcurationPage();
+        else if (type.id == ContratType.reconnaissanceDette.apiValue) page = const CreationReconnaissanceDettePage();
     }
     if (page != null) {
       await Navigator.push(context, MaterialPageRoute(
@@ -165,16 +169,14 @@ class _ContratsPageState extends State<ContratsPage> {
   }
 
   Widget _getCreationPage(String id) {
-    switch (id) {
-      case Env.typePrestation:          return const CreationContratPrestationPage();
-      case Env.typePartenariat:         return const CreationContratPartenariatPage();
-      case Env.typeLocation:            return const CreationContratLocationPage();
-      case Env.typeCaution:             return const CreationContratCautionPage();
-      case Env.typeConfidentialite:     return const CreationContratConfidentialitePage();
-      case Env.typeProcuration:         return const CreationProcurationPage();
-      case Env.typeReconnaissanceDette: return const CreationReconnaissanceDettePage();
-      default:                          return const SizedBox.shrink();
-    }
+    if (id == ContratType.prestation.apiValue)          return const CreationContratPrestationPage();
+    if (id == ContratType.partenariat.apiValue)         return const CreationContratPartenariatPage();
+    if (id == ContratType.location.apiValue)            return const CreationContratLocationPage();
+    if (id == ContratType.caution.apiValue)             return const CreationContratCautionPage();
+    if (id == ContratType.confidentialite.apiValue)     return const CreationContratConfidentialitePage();
+    if (id == ContratType.procuration.apiValue)         return const CreationProcurationPage();
+    if (id == ContratType.reconnaissanceDette.apiValue) return const CreationReconnaissanceDettePage();
+    return const SizedBox.shrink();
   }
 
   void _showContractTypeModal() {
@@ -196,7 +198,7 @@ class _ContratsPageState extends State<ContratsPage> {
           SliverToBoxAdapter(child: _buildHeader()),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: ElevatedButton.icon(
                 onPressed: _showContractTypeModal,
                 icon: const Icon(Icons.add_rounded, size: 20),
@@ -204,6 +206,29 @@ class _ContratsPageState extends State<ContratsPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black, foregroundColor: Colors.white,
                   elevation: 0, padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => BlocProvider(
+                      create: (_) => di.sl<ParticulierBloc>(),
+                      child: const ContratsASignerPage(),
+                    ),
+                  ));
+                },
+                icon: const Icon(Icons.draw_outlined, size: 20, color: Colors.black87),
+                label: const Text('Mes contrats à signer', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.black87, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   minimumSize: const Size(double.infinity, 48),
                 ),

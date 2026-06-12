@@ -41,3 +41,11 @@ class SignerContrat extends ParticulierEvent {
   @override
   List<Object?> get props => [type, contratId];
 }
+
+class DownloadContratPdf extends ParticulierEvent {
+  final String type;
+  final String contratId;
+  const DownloadContratPdf({required this.type, required this.contratId});
+  @override
+  List<Object?> get props => [type, contratId];
+}

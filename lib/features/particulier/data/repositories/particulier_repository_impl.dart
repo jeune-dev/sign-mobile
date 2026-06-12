@@ -1,3 +1,7 @@
+import 'dart:typed_data';
+import 'package:dartz/dartz.dart';
+import 'package:dio/dio.dart';
+import 'package:sign_application/core/errors/failure.dart';
 import '../../domain/entities/particulier_facture.dart';
 import '../../domain/entities/particulier_contrat.dart';
 import '../../domain/repositories/particulier_repository.dart';
@@ -8,43 +12,114 @@ class ParticulierRepositoryImpl implements ParticulierRepository {
 
   ParticulierRepositoryImpl({required this.remoteDataSource});
 
-  @override
-  Future<Map<String, dynamic>> getDashboardStats() =>
-      remoteDataSource.getDashboardStats();
+  String _mapDioError(DioException e) {
+    if (e.response?.data is Map && e.response?.data['message'] != null) {
+      return e.response!.data['message'] as String;
+    }
+    return e.message ?? 'Une erreur est survenue';
+  }
 
   @override
-  Future<List<ParticulierFacture>> getFactures({
+  Future<Either<Failure, Map<String, dynamic>>> getDashboardStats() async {
+    try {
+      final data = await remoteDataSource.getDashboardStats();
+      return Right(data);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _mapDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ParticulierFacture>>> getFactures({
     String? statut,
     int page  = 1,
     int limit = 20,
-  }) =>
-      remoteDataSource.getFactures(statut: statut, page: page, limit: limit);
+  }) async {
+    try {
+      final factures = await remoteDataSource.getFactures(statut: statut, page: page, limit: limit);
+      return Right(factures);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _mapDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
 
   @override
-  Future<List<ParticulierContrat>> getTousContrats({String? statut}) =>
-      remoteDataSource.getTousContrats(statut: statut);
+  Future<Either<Failure, List<ParticulierContrat>>> getTousContrats({String? statut}) async {
+    try {
+      final contrats = await remoteDataSource.getTousContrats(statut: statut);
+      return Right(contrats);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _mapDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
 
   @override
-  Future<List<ParticulierContrat>> getContratsByType({
+  Future<Either<Failure, List<ParticulierContrat>>> getContratsByType({
     required String type,
     String? statut,
     int page  = 1,
     int limit = 20,
-  }) =>
-      remoteDataSource.getContratsByType(type: type, statut: statut, page: page, limit: limit);
+  }) async {
+    try {
+      final contrats = await remoteDataSource.getContratsByType(
+          type: type, statut: statut, page: page, limit: limit);
+      return Right(contrats);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _mapDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
 
   @override
-  Future<ParticulierContrat> getContratDetail({
+  Future<Either<Failure, ParticulierContrat>> getContratDetail({
     required String type,
     required String contratId,
-  }) =>
-      remoteDataSource.getContratDetail(type: type, contratId: contratId);
+  }) async {
+    try {
+      final contrat = await remoteDataSource.getContratDetail(type: type, contratId: contratId);
+      return Right(contrat);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _mapDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
 
   @override
-  Future<void> signerContrat({
+  Future<Either<Failure, void>> signerContrat({
     required String type,
     required String contratId,
     required String signature,
-  }) =>
-      remoteDataSource.signerContrat(type: type, contratId: contratId, signature: signature);
+  }) async {
+    try {
+      await remoteDataSource.signerContrat(type: type, contratId: contratId, signature: signature);
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _mapDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Uint8List>> downloadContratPdf({
+    required String type,
+    required String contratId,
+  }) async {
+    try {
+      final bytes = await remoteDataSource.downloadContratPdf(type: type, contratId: contratId);
+      return Right(bytes);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _mapDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
 }

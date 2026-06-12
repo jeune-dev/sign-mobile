@@ -5,8 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sign_application/core/config/contrat_type.dart';
 import 'package:sign_application/core/config/env.dart';
 import 'package:sign_application/core/utils/download_helper.dart';
+import 'package:sign_application/core/widgets/empty_state.dart';
+import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import '../bloc/autres_contrats_bloc.dart';
@@ -35,14 +40,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   int _statsTotal = 0, _statsSignes = 0, _statsEnAttente = 0;
   bool _statsLoading = true;
 
-  // Téléchargements en cours
   final Set<String> _downloading = {};
-
-  // Titre en attente pour l'ouverture PDF
-  String _pendingTitre = '';
-
-  // Cache liste
-  AutresContratsListLoaded? _lastLoaded;
 
   @override
   void initState() {
@@ -71,7 +69,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
 
   // ── Ouvrir PDF ────────────────────────────────────────────────────────────
   void _ouvrirContrat(AutreContrat c) {
-    _pendingTitre = c.numeroContrat ?? c.id;
+    final titre = c.numeroContrat ?? c.id;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -98,22 +96,19 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
         ),
       ),
     );
-    context.read<AutresContratsBloc>().add(TelechargerContrat(widget.type, c.id));
+    context.read<AutresContratsBloc>().add(TelechargerContrat(widget.type, c.id, titre: titre));
   }
 
-  Future<void> _saveAndOpen(List<int> bytes, String id) async {
+  Future<void> _saveAndOpen(List<int> bytes, String titre) async {
     try {
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/${widget.type}_$id.pdf');
+      final file = File('${dir.path}/${widget.type}_$titre.pdf');
       await file.writeAsBytes(bytes);
       if (!mounted) return;
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => PdfViewerPage(
-            filePath: file.path,
-            titre: _pendingTitre.isNotEmpty ? _pendingTitre : id,
-          ),
+          builder: (_) => PdfViewerPage(filePath: file.path, titre: titre),
         ),
       );
       if (mounted) {
@@ -153,32 +148,15 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   }
 
   // ── Icône selon le type ───────────────────────────────────────────────────
-  IconData _iconForType(String type) {
-    switch (type) {
-      case 'contrat-prestation':      return Icons.handshake_outlined;
-      case 'contrat-partenariat':     return Icons.people_outline;
-      case 'contrat-location':        return Icons.directions_car_outlined;
-      case 'reconnaissance-dette':    return Icons.receipt_long_outlined;
-      case 'procuration':             return Icons.gavel_outlined;
-      case 'contrat-caution':         return Icons.verified_user_outlined;
-      case 'contrat-confidentialite': return Icons.lock_outline;
-      default:                        return Icons.description_outlined;
-    }
-  }
+  IconData _iconForType(String type) =>
+      ContratTypeX.fromString(type)?.icon ?? Icons.description_outlined;
 
   // ── Sous-titre selon le type ──────────────────────────────────────────────
-  String _subtitleForType(String type) {
-    switch (type) {
-      case 'contrat-prestation':      return 'Services & missions';
-      case 'contrat-partenariat':     return 'Accord de partenariat';
-      case 'contrat-location':        return 'Location de bien';
-      case 'reconnaissance-dette':    return 'Reconnaissance de dette';
-      case 'procuration':             return 'Mandat & délégation';
-      case 'contrat-caution':         return 'Engagement de caution';
-      case 'contrat-confidentialite': return 'Clause de confidentialité';
-      default:                        return 'Contrat';
-    }
-  }
+  String _subtitleForType(String type) =>
+      ContratTypeX.fromString(type)?.label ?? 'Contrat';
+
+  String _labelVoirContrat(String type) =>
+      ContratTypeX.fromString(type)?.seeLabel ?? 'Voir Contrat';
 
   String _fmt(String? d) {
     if (d == null || d.isEmpty) return '—';
@@ -195,43 +173,25 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
       backgroundColor: const Color(0xFFF2F2F7),
       body: BlocConsumer<AutresContratsBloc, AutresContratsState>(
         listener: (ctx, state) {
-          if (state is AutresContratsListLoaded) {
-            _lastLoaded = state;
-          }
           if (state is AutresContratsBytes) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            _saveAndOpen(state.bytes, state.id);
+            _saveAndOpen(state.bytes, state.titre.isNotEmpty ? state.titre : state.id);
           }
           if (state is AutresContratsError) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-            ));
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         builder: (ctx, state) {
-          final loading =
-              state is AutresContratsLoading && _lastLoaded == null;
-          final eff = state is AutresContratsListLoaded
-              ? state
-              : (state is! AutresContratsError && _lastLoaded != null)
-                  ? _lastLoaded!
-                  : state;
-          final contrats =
-              eff is AutresContratsListLoaded ? eff.contrats : <AutreContrat>[];
+          final loading = state is AutresContratsLoading;
+          final contrats = state is AutresContratsListLoaded ? state.contrats : <AutreContrat>[];
 
           return Column(
             children: [
               _buildTopBar(),
               Expanded(
                 child: loading
-                    ? const Center(
-                        child: CircularProgressIndicator(
-                            color: Colors.black87, strokeWidth: 2.5))
+                    ? const ShimmerList()
                     : state is AutresContratsError && contrats.isEmpty
                         ? _buildError(state.message)
                         : RefreshIndicator(
@@ -413,7 +373,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   Widget _buildCard(AutreContrat c) {
     final isSign = c.statut == 'signe';
     final statusColor = isSign ? Colors.green : const Color(0xFFFFB347);
-    final statusLabel = isSign ? 'Signé' : (c.statut ?? 'En attente');
+    final statusLabel = isSign ? 'Signé' : 'En attente de signature';
     final isDown = _downloading.contains(c.id);
 
     final autrePartieNom = c.autrePartie != null
@@ -588,14 +548,14 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                         color: Colors.black,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.open_in_new_rounded,
+                          const Icon(Icons.open_in_new_rounded,
                               color: Colors.white, size: 16),
-                          SizedBox(width: 6),
-                          Text('Voir le doc',
-                              style: TextStyle(
+                          const SizedBox(width: 6),
+                          Text(_labelVoirContrat(widget.type),
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700)),
@@ -649,25 +609,11 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
     );
   }
 
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(_iconForType(widget.type), size: 64, color: Colors.grey[300]),
-          const SizedBox(height: 16),
-          Text('Aucun contrat',
-              style: TextStyle(
-                  color: Colors.grey[500],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text('Appuyez sur + pour créer votre premier contrat',
-              style: TextStyle(color: Colors.grey[400], fontSize: 12)),
-        ],
-      ),
-    );
-  }
+  Widget _buildEmpty() => EmptyState(
+    icon: _iconForType(widget.type),
+    title: 'Aucun ${widget.titre.toLowerCase()}',
+    subtitle: 'Appuyez sur + pour créer votre premier contrat',
+  );
 
   Widget _buildError(String message) {
     return Center(

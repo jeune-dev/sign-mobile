@@ -27,6 +27,7 @@ class Facture extends Equatable {
   final String? delaisExecution;
   final List<dynamic>? items;
   final Map<String, dynamic>? client;
+  final String? statut; // 'en_attente' | 'partiel' | 'payee'
 
   const Facture({
     required this.id,
@@ -40,8 +41,9 @@ class Facture extends Equatable {
     this.delaisExecution,
     this.items,
     this.client,
+    this.statut,
   });
 
   @override
-  List<Object?> get props => [id, numeroFacture];
+  List<Object?> get props => [id, numeroFacture, statut];
 }

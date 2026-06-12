@@ -49,7 +49,19 @@ class TokenService {
 
   Future<void> clearToken() async {
     await secureStorage.delete(key: 'jwt_token');
+    await secureStorage.delete(key: 'refresh_token');
     _authController.add(false);
+  }
+
+  Future<String?> getRefreshToken() async =>
+      secureStorage.read(key: 'refresh_token');
+
+  Future<void> setRefreshToken(String? token) async {
+    if (token == null || token.isEmpty) {
+      await secureStorage.delete(key: 'refresh_token');
+    } else {
+      await secureStorage.write(key: 'refresh_token', value: token);
+    }
   }
 
   /// VULN-M05 : Vérifie l'expiration du JWT côté client.

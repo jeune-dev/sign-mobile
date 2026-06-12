@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:sign_application/core/config/contrat_type.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
 import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class CreationContratPrestationPage extends StatefulWidget {
   const CreationContratPrestationPage({super.key});
@@ -77,19 +80,10 @@ class _State extends State<CreationContratPrestationPage>
 
   void _onBack() => setState(() => _step--);
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.red[600],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
+  void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   void _submit() {
-    context.read<AutresContratsBloc>().add(CreerContrat('contrat-prestation', {
+    context.read<AutresContratsBloc>().add(CreerContrat(ContratType.prestation.apiValue, {
       'autrePartieId': _client!.id,
       'data': {
         'titre_contrat':      _titreCtrl.text.trim(),
@@ -124,9 +118,7 @@ class _State extends State<CreationContratPrestationPage>
       body: BlocListener<AutresContratsBloc, AutresContratsState>(
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
-            ScaffoldMessenger.of(ctx).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.green[600], behavior: SnackBarBehavior.floating),
-            );
+            showToast(ctx, 'Contrat créé', 'Le contrat de prestation a été créé avec succès.', ToastificationType.success);
             Navigator.pop(ctx);
           }
           if (state is AutresContratsError) _showError(state.message);
@@ -331,6 +323,8 @@ class _State extends State<CreationContratPrestationPage>
                   DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
                   DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
                   DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
+                  DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
+                  DropdownMenuItem(value: 'Autre', child: Text('Autre')),
                 ],
                 onChanged: (v) => setState(() => _modePaiement = v!),
               ),

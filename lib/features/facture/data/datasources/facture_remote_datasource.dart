@@ -23,6 +23,12 @@ abstract class FactureRemoteDataSource {
   Future<FacturesResult> getFactures({int page, int limit});
   Future<void> creerFacture(Map<String, dynamic> data);
   Future<List<int>> ouvrirDocument(String documentId);
+  Future<Map<String, dynamic>> mettreAJourFacture({
+    required String documentId,
+    double? avance,
+    String? statut,
+  });
+  Future<void> renvoyerFacture(String documentId);
 }
 
 class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
@@ -65,5 +71,27 @@ class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
       options: Options(responseType: ResponseType.bytes),
     );
     return List<int>.from(response.data);
+  }
+
+  @override
+  Future<Map<String, dynamic>> mettreAJourFacture({
+    required String documentId,
+    double? avance,
+    String? statut,
+  }) async {
+    final body = <String, dynamic>{};
+    if (avance != null) body['avance'] = avance;
+    if (statut != null) body['statut'] = statut;
+
+    final response = await dio.patch(
+      Env.documentMettreAJour(documentId),
+      data: body,
+    );
+    return Map<String, dynamic>.from(response.data['data'] ?? {});
+  }
+
+  @override
+  Future<void> renvoyerFacture(String documentId) async {
+    await dio.post(Env.documentRenvoyerFacture(documentId));
   }
 }

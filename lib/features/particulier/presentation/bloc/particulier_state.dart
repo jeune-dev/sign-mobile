@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/particulier_facture.dart';
 import '../../domain/entities/particulier_contrat.dart';
@@ -54,6 +55,20 @@ class ContratSigne extends ParticulierState {
 
 class ContratSignatureEnCours extends ParticulierState {
   const ContratSignatureEnCours();
+}
+
+// ── PDF téléchargement ──────────────────────────────────────────
+class ContratPdfLoading extends ParticulierState {
+  const ContratPdfLoading();
+}
+
+class ContratPdfReady extends ParticulierState {
+  final Uint8List pdfBytes;
+  final String contratId;
+  final String type;
+  const ContratPdfReady({required this.pdfBytes, required this.contratId, required this.type});
+  @override
+  List<Object?> get props => [contratId, type];
 }
 
 // ── Erreur ──────────────────────────────────────────────────────

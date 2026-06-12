@@ -28,6 +28,7 @@ class RegisterUser {
     String? adresseEntreprise,
     String? telephoneEntreprise,
     String? emailEntreprise,
+    void Function(int sent, int total)? onSendProgress,
   }) async {
     return await repository.register(
       nom: nom,
@@ -47,6 +48,7 @@ class RegisterUser {
       adresseEntreprise: adresseEntreprise,
       telephoneEntreprise: telephoneEntreprise,
       emailEntreprise: emailEntreprise,
+      onSendProgress: onSendProgress,
     );
   }
 }

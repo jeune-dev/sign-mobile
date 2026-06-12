@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/config/env.dart';
 import 'core/services/token_service.dart';
+import 'core/services/auth_event_bus.dart';
 
 // Account
 import 'features/account/data/datasources/account_remote_datasource.dart';
@@ -29,6 +30,7 @@ import 'features/fiche_paie/data/datasources/fiche_paie_remote_datasource.dart';
 import 'features/fiche_paie/data/repositories/fiche_paie_repository_impl.dart';
 import 'features/fiche_paie/domain/repositories/fiche_paie_repository.dart';
 import 'features/fiche_paie/domain/usecases/cree_fiche_paie.dart';
+// GetFichesPaie and TelechargerFichePaie are defined in cree_fiche_paie.dart
 import 'features/fiche_paie/presentation/bloc/fiche_paie_bloc.dart';
 
 // Client
@@ -47,6 +49,8 @@ import 'features/facture/domain/repositories/facture_repository.dart';
 import 'features/facture/domain/usecases/get_factures.dart';
 import 'features/facture/domain/usecases/creer_facture.dart';
 import 'features/facture/domain/usecases/ouvrir_document.dart';
+import 'features/facture/domain/usecases/mettre_a_jour_facture.dart';
+import 'features/facture/domain/usecases/renvoyer_facture.dart';
 import 'features/facture/presentation/bloc/facture_bloc.dart';
 
 // Contrat
@@ -67,6 +71,7 @@ import 'features/contrat_travail/domain/usecases/get_contrat_travail_detail.dart
 import 'features/contrat_travail/domain/usecases/creer_contrat_travail.dart';
 import 'features/contrat_travail/domain/usecases/signer_contrat_travail.dart';
 import 'features/contrat_travail/domain/usecases/telecharger_contrat_travail.dart';
+import 'features/contrat_travail/domain/usecases/get_stats_travail.dart';
 import 'features/contrat_travail/presentation/bloc/contrat_travail_bloc.dart';
 
 // Quittance Loyer
@@ -109,7 +114,61 @@ import 'features/particulier/domain/usecases/get_factures_client.dart';
 import 'features/particulier/domain/usecases/get_contrats_client.dart';
 import 'features/particulier/presentation/bloc/particulier_bloc.dart';
 
+// ─── Helpers Dio ─────────────────────────────────────────────────────────────
+
 final sl = GetIt.instance;
+
+/// Tente de rafraîchir le JWT via le refresh token stocké.
+/// Implémente la rotation : le refresh token est consommé et un nouveau est émis.
+/// Retourne true si le nouveau token a été sauvegardé, false sinon.
+Future<bool> _tryRefresh(Dio dio) async {
+  try {
+    final refreshToken = await sl<TokenService>().getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+
+    final response = await dio.post(
+      Env.authRefresh,
+      data: {'refreshToken': refreshToken},
+      options: Options(
+        // Empêche l'intercepteur de relancer _tryRefresh (boucle infinie)
+        extra: {'skipAuthInterceptor': true},
+      ),
+    );
+
+    final newToken   = response.data['token']        as String?;
+    final newRefresh = response.data['refreshToken'] as String?;
+
+    if (newToken == null || newToken.isEmpty) return false;
+
+    await sl<TokenService>().setToken(newToken);
+    if (newRefresh != null && newRefresh.isNotEmpty) {
+      await sl<TokenService>().setRefreshToken(newRefresh);
+    }
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+/// Révoque le refresh token côté backend (déconnexion propre).
+/// Appelé lors du logout — l'erreur réseau est ignorée car le token local
+/// sera de toute façon supprimé par [TokenService.clearToken].
+Future<void> revokeRefreshToken(Dio dio) async {
+  try {
+    final refreshToken = await sl<TokenService>().getRefreshToken();
+    if (refreshToken == null || refreshToken.isEmpty) return;
+
+    await dio.post(
+      Env.authLogout,
+      data: {'refreshToken': refreshToken},
+      options: Options(extra: {'skipAuthInterceptor': true}),
+    );
+  } catch (_) {
+    // Ignorer — la révocation côté serveur est best-effort
+  }
+}
+
+// ─── Initialisation ──────────────────────────────────────────────────────────
 
 Future<void> init() async {
   //================================================
@@ -118,7 +177,6 @@ Future<void> init() async {
 
   // REST-C01 : En production, les variables sont injectées via --dart-define.
   // Le fichier .env n'est PAS bundlé dans l'APK.
-  // flutter_dotenv est maintenant en dev_dependencies uniquement.
 
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
@@ -139,13 +197,12 @@ Future<void> init() async {
   //================================================
 
   sl.registerLazySingleton(() {
-    // REST-C01 : URL résolue depuis --dart-define (prod) ou .env (dev) ou fallback codé
     final dio = Dio(
       BaseOptions(
         baseUrl: Env.baseUrl,
-        connectTimeout: const Duration(seconds: 15),   // OPT-04 : réduit de 30s → 15s
-        receiveTimeout: const Duration(seconds: 30),   // OPT-04 : réduit de 120s → 30s
-        sendTimeout: const Duration(seconds: 30),      // OPT-04 : réduit de 60s → 30s
+        connectTimeout: const Duration(seconds: 15),
+        receiveTimeout: const Duration(seconds: 30),
+        sendTimeout: const Duration(seconds: 30),
         contentType: 'application/json',
         headers: {'Accept': 'application/json'},
       ),
@@ -153,17 +210,20 @@ Future<void> init() async {
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // VULN-H02 : Log uniquement en debug, sans données sensibles
         if (kDebugMode) {
           debugPrint('🌐 [REQUEST] ${options.method} ${options.path}');
         }
 
         final path = options.path.split('?')[0].trim();
-        final isAuthEndpoint =
-            path.endsWith('/auth/login') || path.endsWith('/auth/register');
+        final isPublicEndpoint =
+            path.endsWith('/auth/login') ||
+            path.endsWith('/auth/register') ||
+            path.endsWith(Env.authRefresh) ||
+            path.endsWith(Env.authLogout) ||
+            options.extra['skipAuthInterceptor'] == true;
 
-        if (!isAuthEndpoint) {
-          // VULN-M05 : Utilise getValidToken() qui vérifie l'expiration
+        if (!isPublicEndpoint) {
+          // VULN-M05 : Utilise getValidToken() qui vérifie l'expiration côté client
           final token = await sl<TokenService>().getValidToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -183,13 +243,29 @@ Future<void> init() async {
           debugPrint('❌ [ERROR] ${e.type} ${e.requestOptions.path} — Status: ${e.response?.statusCode}');
         }
 
-        // VULN-C04 : Déconnexion automatique sur 401 (token expiré / révoqué)
+        // VULN-C04 : 401 → tenter le refresh avant de déconnecter
         if (e.response?.statusCode == 401) {
+          // Ne pas boucler sur les endpoints publics (login/refresh eux-mêmes)
+          final isPublic = e.requestOptions.extra['skipAuthInterceptor'] == true;
+          if (!isPublic) {
+            final refreshed = await _tryRefresh(dio);
+            if (refreshed) {
+              final token = await sl<TokenService>().getToken();
+              e.requestOptions.headers['Authorization'] = 'Bearer $token';
+              try {
+                final retryResponse = await dio.fetch(e.requestOptions);
+                return handler.resolve(retryResponse);
+              } catch (_) {
+                // Retry échoué — déconnecter
+              }
+            }
+          }
           await sl<TokenService>().clearToken();
+          // Notifier l'UI d'un logout forcé — sans BuildContext
+          AuthEventBus.instance.emitLogout();
         }
 
         // OPT-05 : Retry automatique sur erreurs réseau transitoires (max 2 tentatives)
-        // Retry uniquement sur timeout et connection error, PAS sur erreurs HTTP 4xx/5xx
         final isNetworkError = e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout ||
             e.type == DioExceptionType.connectionError;
@@ -201,13 +277,12 @@ Future<void> init() async {
             debugPrint('🔄 [RETRY] Tentative ${retryCount + 1}/2 pour ${e.requestOptions.path}');
           }
           e.requestOptions.extra['retryCount'] = retryCount + 1;
-          // Attente exponentielle : 1s, 2s
           await Future.delayed(Duration(seconds: retryCount + 1));
           try {
             final response = await dio.fetch(e.requestOptions);
             return handler.resolve(response);
           } catch (_) {
-            // Si le retry échoue aussi, on laisse passer l'erreur originale
+            // Retry réseau échoué — erreur originale propagée
           }
         }
 
@@ -245,7 +320,7 @@ Future<void> init() async {
       () => AuthRepositoryImpl(remoteDataSource: sl()));
   sl.registerLazySingleton(() => LoginUser(sl()));
   sl.registerLazySingleton(() => RegisterUser(sl()));
-  sl.registerFactory(() => AuthBloc(loginUser: sl(), registerUser: sl()));
+  sl.registerFactory(() => AuthBloc(loginUser: sl(), registerUser: sl(), authRepository: sl()));
 
   //================================================
   // FEATURE — FICHE DE PAIE
@@ -256,7 +331,13 @@ Future<void> init() async {
   sl.registerLazySingleton<FichePaieRepository>(
       () => FichePaieRepositoryImpl(sl()));
   sl.registerLazySingleton(() => CreerFichePaie(sl()));
-  sl.registerFactory(() => FichePaieBloc(sl()));
+  sl.registerLazySingleton(() => GetFichesPaie(sl()));
+  sl.registerLazySingleton(() => TelechargerFichePaie(sl()));
+  sl.registerFactory(() => FichePaieBloc(
+        creerFichePaie:       sl(),
+        getFichesPaie:        sl(),
+        telechargerFichePaie: sl(),
+      ));
 
   //================================================
   // FEATURE — CLIENT
@@ -286,10 +367,14 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetFactures(sl()));
   sl.registerLazySingleton(() => CreerFacture(sl()));
   sl.registerLazySingleton(() => OuvrirDocument(sl()));
+  sl.registerLazySingleton(() => MettreAJourFacture(sl()));
+  sl.registerLazySingleton(() => RenvoyerFacture(sl()));
   sl.registerFactory(() => FactureBloc(
         getFactures: sl(),
         creerFacture: sl(),
         ouvrirDocument: sl(),
+        mettreAJourFacture: sl(),
+        renvoyerFacture: sl(),
       ));
 
   //================================================
@@ -322,12 +407,14 @@ Future<void> init() async {
   sl.registerLazySingleton(() => CreerContratTravail(sl()));
   sl.registerLazySingleton(() => SignerContratTravail(sl()));
   sl.registerLazySingleton(() => TelechargerContratTravail(sl()));
+  sl.registerLazySingleton(() => GetStatsTravail(sl()));
   sl.registerFactory(() => ContratTravailBloc(
-        getContratsTravail: sl(),
-        getContratTravailDetail: sl(),
-        creerContratTravail: sl(),
-        signerContratTravail: sl(),
+        getContratsTravail:       sl(),
+        getContratTravailDetail:  sl(),
+        creerContratTravail:      sl(),
+        signerContratTravail:     sl(),
         telechargerContratTravail: sl(),
+        getStatsTravail:          sl(),
       ));
 
   //================================================
@@ -402,13 +489,14 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetContratsByTypeClient(sl()));
   sl.registerLazySingleton(() => GetContratDetailClient(sl()));
   sl.registerLazySingleton(() => SignerContratClient(sl()));
+  sl.registerLazySingleton(() => DownloadContratPdfClient(sl()));
   sl.registerFactory(() => ParticulierBloc(
-        getDashboardStats: sl<particulier_dashboard.GetDashboardStats>(),
-        getFacturesClient: sl(),
-        getContratsClient: sl(),
-        getContratsByTypeClient: sl(),
-        getContratDetailClient: sl(),
-        signerContratClient: sl(),
+        getDashboardStats:         sl<particulier_dashboard.GetDashboardStats>(),
+        getFacturesClient:         sl(),
+        getContratsClient:         sl(),
+        getContratsByTypeClient:   sl(),
+        getContratDetailClient:    sl(),
+        signerContratClient:       sl(),
+        downloadContratPdfClient:  sl(),
       ));
-
 }

@@ -46,6 +46,12 @@ class Env {
         return const String.fromEnvironment('ACCOUNT_MODIFIER_INFO_PATH');
       case 'ACCOUNT_CHANGE_PASSWORD_PATH':
         return const String.fromEnvironment('ACCOUNT_CHANGE_PASSWORD_PATH');
+      case 'ACCOUNT_FORGOT_PASSWORD_PATH':
+        return const String.fromEnvironment('ACCOUNT_FORGOT_PASSWORD_PATH');
+      case 'ACCOUNT_RESET_PASSWORD_PATH':
+        return const String.fromEnvironment('ACCOUNT_RESET_PASSWORD_PATH');
+      case 'ACCOUNT_DEVICE_TOKEN_PATH':
+        return const String.fromEnvironment('ACCOUNT_DEVICE_TOKEN_PATH');
       case 'CLIENT_LISTE_PATH':
         return const String.fromEnvironment('CLIENT_LISTE_PATH');
       case 'CLIENT_AJOUT_PATH':
@@ -100,6 +106,10 @@ class Env {
         return const String.fromEnvironment('PARTICULIER_FACTURES_PATH');
       case 'PARTICULIER_CONTRATS_PATH':
         return const String.fromEnvironment('PARTICULIER_CONTRATS_PATH');
+      case 'AUTH_REFRESH_PATH':
+        return const String.fromEnvironment('AUTH_REFRESH_PATH');
+      case 'AUTH_LOGOUT_PATH':
+        return const String.fromEnvironment('AUTH_LOGOUT_PATH');
       default:
         return '';
     }
@@ -122,6 +132,12 @@ class Env {
       _get('ACCOUNT_MODIFIER_INFO_PATH', fallback: '/account/modifier-info-personnelles');
   static String get accountChangePassword =>
       _get('ACCOUNT_CHANGE_PASSWORD_PATH', fallback: '/account/change-password');
+  static String get accountForgotPassword =>
+      _get('ACCOUNT_FORGOT_PASSWORD_PATH', fallback: '/account/forgot-password');
+  static String get accountResetPassword =>
+      _get('ACCOUNT_RESET_PASSWORD_PATH', fallback: '/account/reset-password');
+  static String get accountDeviceToken =>
+      _get('ACCOUNT_DEVICE_TOKEN_PATH', fallback: '/account/device-token');
 
   // ─── Client ──────────────────────────────────────────────────────────────────
   static String get clientListe =>
@@ -140,6 +156,8 @@ class Env {
       _get('DOCUMENT_OUVRIR_PATH', fallback: '/professionnel/document/ouvrir-document');
   static String get documentTelecharger =>
       _get('DOCUMENT_TELECHARGER_PATH', fallback: '/professionnel/document/telecharger-document');
+  static String documentMettreAJour(String id) => '/professionnel/document/$id/mettre-a-jour';
+  static String documentRenvoyerFacture(String id) => '/professionnel/document/$id/renvoyer-facture';
 
   // ─── Contrat Bail ─────────────────────────────────────────────────────────────
   static String get contratBailListe =>
@@ -193,30 +211,17 @@ class Env {
   static String get particulierContrats =>
       _get('PARTICULIER_CONTRATS_PATH', fallback: '/particulier/contrats');
 
-  // ─── Autres Contrats ──────────────────────────────────────────────────────────
-  static const String typeCaution             = 'contrat-caution';
-  static const String typeConfidentialite     = 'contrat-confidentialite';
-  static const String typeLocation            = 'contrat-location';
-  static const String typePartenariat         = 'contrat-partenariat';
-  static const String typePrestation          = 'contrat-prestation';
-  static const String typeProcuration         = 'procuration';
-  static const String typeReconnaissanceDette = 'reconnaissance-dette';
-
   // ─── Stats endpoints ──────────────────────────────────────────────────────────
   static String get contratBailStats    => '/professionnel/contratBail/stats';
   static String get contratTravailStats => '/professionnel/contratTravail/stats';
   static String autresContratsStats(String type) => '${autresContratsBase(type)}/stats';
 
-  static String autresContratsBase(String type) {
-    const map = {
-      'contrat-caution':          'contrat-caution',
-      'contrat-confidentialite':  'contrat-confidentialite',
-      'contrat-location':         'contrat-location',
-      'contrat-partenariat':      'contrat-partenariat',
-      'contrat-prestation':       'contrat-prestation',
-      'procuration':              'procuration',
-      'reconnaissance-dette':     'reconnaissance-dette',
-    };
-    return '/professionnel/${map[type] ?? type}';
-  }
+  // Le type est directement le segment de chemin API — pas de mapping nécessaire.
+  static String autresContratsBase(String type) => '/professionnel/$type';
+
+  // ─── Auth (endpoints supplémentaires) ────────────────────────────────────────
+  static String get authRefresh =>
+      _get('AUTH_REFRESH_PATH', fallback: '/auth/refresh');
+  static String get authLogout =>
+      _get('AUTH_LOGOUT_PATH', fallback: '/auth/logout');
 }

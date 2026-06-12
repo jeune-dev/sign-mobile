@@ -69,6 +69,18 @@ class ContratTravailRepositoryImpl implements ContratTravailRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, Map<String, int>>> getStatsTravail() async {
+    try {
+      final stats = await remoteDataSource.getStatsTravail();
+      return Right(stats);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _handleDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
   String _handleDioError(DioException e) {
     if (e.response?.data is Map && e.response?.data['message'] != null) {
       return e.response!.data['message'];

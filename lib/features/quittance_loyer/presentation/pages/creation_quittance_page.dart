@@ -7,6 +7,8 @@ import 'package:sign_application/features/client/presentation/bloc/client_state.
 import '../bloc/quittance_loyer_bloc.dart';
 import '../bloc/quittance_loyer_event.dart';
 import '../bloc/quittance_loyer_state.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class CreationQuittancePage extends StatefulWidget {
   const CreationQuittancePage({super.key});
@@ -65,15 +67,11 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClient == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner un locataire'), backgroundColor: Colors.red),
-      );
+      showToast(context, 'Champ requis', 'Veuillez sélectionner un locataire', ToastificationType.error);
       return;
     }
     if (_datePaiement == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez sélectionner la date de paiement'), backgroundColor: Colors.red),
-      );
+      showToast(context, 'Champ requis', 'Veuillez sélectionner la date de paiement', ToastificationType.error);
       return;
     }
 
@@ -109,15 +107,11 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
       body: BlocListener<QuittanceLoyerBloc, QuittanceLoyerState>(
         listener: (context, state) {
           if (state is QuittanceLoyerSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.green),
-            );
+            showToast(context, 'Quittance créée', 'La quittance de loyer a été créée avec succès.', ToastificationType.success);
             Navigator.pop(context);
           }
           if (state is QuittanceLoyerError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         child: Form(
@@ -282,6 +276,8 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                   DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
                   DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
                   DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
+                  DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
+                  DropdownMenuItem(value: 'Autre', child: Text('Autre')),
                 ],
                 onChanged: (v) => setState(() => _modePaiement = v!),
               ),

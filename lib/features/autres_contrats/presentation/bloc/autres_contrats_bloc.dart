@@ -70,7 +70,7 @@ class AutresContratsBloc extends Bloc<AutresContratsEvent, AutresContratsState> 
     final result = await telechargerContrat(event.type, event.id);
     result.fold(
       (failure) => emit(AutresContratsError(failure.errorMessage)),
-      (bytes) => emit(AutresContratsBytes(bytes: bytes, id: event.id)),
+      (bytes) => emit(AutresContratsBytes(bytes: bytes, id: event.id, titre: event.titre)),
     );
   }
 }

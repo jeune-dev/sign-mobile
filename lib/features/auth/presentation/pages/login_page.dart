@@ -5,6 +5,7 @@ import 'package:toastification/toastification.dart';
 import 'package:flutter/gestures.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 
+import 'package:sign_application/core/config/user_role.dart';
 import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import '../../../../core/theme/app_color.dart';
@@ -95,17 +96,18 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
+      listenWhen: (previous, current) => previous is AuthLoading,
       listener: (context, state) {
         if (state is AuthSuccess) {
           // SEC-05 : Réinitialiser le compteur de tentatives après succès
           _loginAttempts = 0;
           _isThrottled = false;
-          final role = state.user.role.toLowerCase();
+          final userRole = UserRoleX.fromString(state.user.role);
           String route = AppRouter.homeRoute;
 
-          if (role == 'particulier') {
+          if (userRole.isClient) {
             route = AppRouter.clientRoute;
-          } else if (role == 'professionnel' || role == 'independant') {
+          } else if (userRole.isPro) {
             route = AppRouter.professionnelRoute;
           }
 

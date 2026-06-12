@@ -11,6 +11,8 @@ import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_pai
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_event.dart';
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_state.dart';
 import 'package:sign_application/features/fiche_paie/domain/entities/fiche_paie.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Palette
@@ -35,14 +37,27 @@ class _P {
 // ─────────────────────────────────────────────────────────────────────────────
 // Widget principal
 // ─────────────────────────────────────────────────────────────────────────────
-class FichePaieFormPage extends StatefulWidget {
+class FichePaieFormPage extends StatelessWidget {
   final User? user;
   const FichePaieFormPage({super.key, this.user});
+
   @override
-  State<FichePaieFormPage> createState() => _FichePaieFormPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => GetIt.instance<FichePaieBloc>(),
+      child: _FichePaieFormView(user: user),
+    );
+  }
 }
 
-class _FichePaieFormPageState extends State<FichePaieFormPage>
+class _FichePaieFormView extends StatefulWidget {
+  final User? user;
+  const _FichePaieFormView({this.user});
+  @override
+  State<_FichePaieFormView> createState() => _FichePaieFormPageState();
+}
+
+class _FichePaieFormPageState extends State<_FichePaieFormView>
     with SingleTickerProviderStateMixin {
 
   final _formKey = GlobalKey<FormState>();
@@ -260,19 +275,7 @@ class _FichePaieFormPageState extends State<FichePaieFormPage>
     context.read<FichePaieBloc>().add(CreerFichePaieEvent(fiche));
   }
 
-  void _showErr(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [
-        const Icon(Icons.warning_rounded, color: Colors.white, size: 18),
-        const SizedBox(width: 10),
-        Expanded(child: Text(msg, style: const TextStyle(fontWeight: FontWeight.w500))),
-      ]),
-      backgroundColor: _P.danger,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
-    ));
-  }
+  void _showErr(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   // ─────────────────────────────────────────────────────────────────────────
   // UI HELPERS
@@ -812,9 +815,25 @@ class _FichePaieFormPageState extends State<FichePaieFormPage>
   Widget _sectionPaiement() => _card(
     icon: '💳', title: 'Paiement',
     children: [
-      _drop('Mode de paiement', _paiement,
-          ['Espèces','Virement bancaire','Wave / Orange Money'],
-              (v) => setState(() => _paiement = v!)),
+      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _label('Mode de paiement', req: true),
+        DropdownButtonFormField<String>(
+          value: _paiement,
+          isExpanded: true,
+          onChanged: (v) => setState(() => _paiement = v!),
+          style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
+          decoration: _deco(),
+          borderRadius: BorderRadius.circular(14),
+          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _P.inkLight),
+          items: const [
+            DropdownMenuItem(value: 'Espèces', child: Text('Espèces')),
+            DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
+            DropdownMenuItem(value: 'Wave / Orange Money', child: Text('Wave / Orange Money')),
+            DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
+          ],
+        ),
+        const SizedBox(height: 14),
+      ]),
       _datePicker('Date de paiement', _datePaiement, (d) => setState(() => _datePaiement = d)),
       _field('Numéro de fiche', _numCtrl, hint: 'FP-2025-001', req: true),
     ],
@@ -831,17 +850,7 @@ class _FichePaieFormPageState extends State<FichePaieFormPage>
       body: BlocListener<FichePaieBloc, FichePaieState>(
         listener: (ctx, state) {
           if (state is FichePaieSuccess) {
-            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-              content: const Row(children: [
-                Icon(Icons.check_circle_rounded, color: Colors.white),
-                SizedBox(width: 10),
-                Text('Fiche de paie créée avec succès', style: TextStyle(fontWeight: FontWeight.w600)),
-              ]),
-              backgroundColor: _P.success,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              margin: const EdgeInsets.all(16),
-            ));
+            showToast(ctx, 'Fiche créée', 'La fiche de paie a été créée avec succès.', ToastificationType.success);
             Navigator.pop(ctx);
           }
           if (state is FichePaieError) _showErr(state.message);

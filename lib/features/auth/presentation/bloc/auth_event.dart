@@ -87,3 +87,23 @@ class RegisterRequested extends AuthEvent {
 class LogoutRequested extends AuthEvent {}
 
 class ResetAuthState extends AuthEvent {}
+
+class ForgotPasswordRequested extends AuthEvent {
+  final String email;
+  const ForgotPasswordRequested({required this.email});
+  @override
+  List<Object?> get props => [email];
+}
+
+class ResetPasswordRequested extends AuthEvent {
+  final String email;
+  final String otpRecu;
+  final String newPassword;
+  const ResetPasswordRequested({
+    required this.email,
+    required this.otpRecu,
+    required this.newPassword,
+  });
+  @override
+  List<Object?> get props => [email, otpRecu, newPassword];
+}

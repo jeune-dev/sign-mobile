@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:sign_application/core/widgets/empty_state.dart';
+import 'package:sign_application/core/widgets/shimmer_list.dart';
 import '../bloc/particulier_bloc.dart';
 import '../bloc/particulier_event.dart';
 import '../bloc/particulier_state.dart';
@@ -64,7 +66,7 @@ class _FacturesClientPageState extends State<FacturesClientPage> {
             buildWhen: (prev, curr) => curr is FacturesLoaded || curr is ParticulierLoading || curr is ParticulierError,
             builder: (context, state) {
               if (state is ParticulierLoading) {
-                return const Center(child: CircularProgressIndicator(color: Colors.black));
+                return const ShimmerList(itemCount: 4, padding: EdgeInsets.fromLTRB(16, 4, 16, 16));
               }
               if (state is ParticulierError) {
                 return _buildError(state.message);
@@ -91,22 +93,16 @@ class _FacturesClientPageState extends State<FacturesClientPage> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            _selectedStatut == null
-                ? 'Aucune facture reçue'
-                : _selectedStatut == 'signe'
-                    ? 'Aucune facture signée'
-                    : 'Aucune facture en attente',
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
-          ),
-        ],
-      ),
+    final title = _selectedStatut == null
+        ? 'Aucune facture reçue'
+        : _selectedStatut == 'signe'
+            ? 'Aucune facture signée'
+            : 'Aucune facture en attente';
+    return EmptyState(
+      icon: Icons.receipt_long_outlined,
+      title: title,
+      subtitle: 'Vos factures reçues apparaîtront ici',
+      scrollable: false,
     );
   }
 

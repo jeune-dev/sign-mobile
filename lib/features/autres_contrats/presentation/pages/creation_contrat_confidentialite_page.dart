@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sign_application/core/config/contrat_type.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
 import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 
 class CreationContratConfidentialitePage extends StatefulWidget {
   const CreationContratConfidentialitePage({super.key});
@@ -57,13 +60,10 @@ class _State extends State<CreationContratConfidentialitePage> {
 
   void _onBack() => setState(() => _step--);
 
-  void _showError(String msg) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(msg), backgroundColor: Colors.red[600], behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-  );
+  void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
   void _submit() {
-    context.read<AutresContratsBloc>().add(CreerContrat('contrat-confidentialite', {
+    context.read<AutresContratsBloc>().add(CreerContrat(ContratType.confidentialite.apiValue, {
       'autrePartieId': _client!.id,
       'data': {
         'type_informations':        _typeInfoCtrl.text.trim(),
@@ -102,7 +102,7 @@ class _State extends State<CreationContratConfidentialitePage> {
       body: BlocListener<AutresContratsBloc, AutresContratsState>(
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
-            ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.green[600], behavior: SnackBarBehavior.floating));
+            showToast(ctx, 'Contrat créé', 'Le contrat de confidentialité a été créé avec succès.', ToastificationType.success);
             Navigator.pop(ctx);
           }
           if (state is AutresContratsError) _showError(state.message);
@@ -131,7 +131,7 @@ class _State extends State<CreationContratConfidentialitePage> {
                 step: _step, totalSteps: _totalSteps,
                 onBack: _onBack, onNext: _onNext, accentColor: _accent,
                 isLoading: state is AutresContratsLoading,
-                submitLabel: 'Créer l\'accord NDA',
+                submitLabel: 'Créer le contrat de confidentialité',
               ),
             ),
           ],
@@ -152,7 +152,7 @@ class _State extends State<CreationContratConfidentialitePage> {
     padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
     children: [
       CInfoBanner(
-        title: 'Accord de non-divulgation (NDA)',
+        title: 'Contrat de Confidentialité',
         description: 'Protégez vos informations sensibles, secrets commerciaux et données confidentielles partagés avec un tiers.',
         icon: _icon, accentColor: _accent,
       ),

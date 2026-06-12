@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_event.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_state.dart';
@@ -38,9 +40,7 @@ class _AjouterClientPageState extends State<AjouterClientPage> {
   void _ajouterClient() {
     if (!_formKey.currentState!.validate()) return;
     if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Les mots de passe ne correspondent pas'), backgroundColor: Colors.red),
-      );
+      showToast(context, 'Erreur', 'Les mots de passe ne correspondent pas', ToastificationType.error);
       return;
     }
     context.read<ClientBloc>().add(AjouterClientEvent(
@@ -59,15 +59,11 @@ class _AjouterClientPageState extends State<AjouterClientPage> {
     return BlocListener<ClientBloc, ClientState>(
       listener: (context, state) {
         if (state is ClientSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.message), backgroundColor: Colors.green),
-          );
+          showToast(context, 'Succès', state.message, ToastificationType.success);
           Navigator.pop(context);
         }
         if (state is ClientError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: ${state.message}'), backgroundColor: Colors.red),
-          );
+          showToast(context, 'Erreur', state.message, ToastificationType.error);
         }
       },
       child: Scaffold(

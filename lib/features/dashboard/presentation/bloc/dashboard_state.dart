@@ -15,7 +15,8 @@ class DashboardLoaded extends DashboardState {
 class DashboardDocumentBytes extends DashboardState {
   final List<int> bytes;
   final String documentId;
-  DashboardDocumentBytes({required this.bytes, required this.documentId});
+  final String titre;
+  DashboardDocumentBytes({required this.bytes, required this.documentId, this.titre = ''});
 }
 
 class DashboardError extends DashboardState {

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sign_application/core/widgets/empty_state.dart';
+import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import '../bloc/quittance_loyer_bloc.dart';
 import '../bloc/quittance_loyer_event.dart';
 import '../bloc/quittance_loyer_state.dart';
@@ -47,19 +51,15 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
       body: BlocConsumer<QuittanceLoyerBloc, QuittanceLoyerState>(
         listener: (context, state) {
           if (state is QuittanceBytes) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Téléchargement réussi'), backgroundColor: Colors.green),
-            );
+            showToast(context, 'Téléchargement', 'Quittance téléchargée avec succès', ToastificationType.success);
           }
           if (state is QuittanceLoyerError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         builder: (context, state) {
           if (state is QuittanceLoyerLoading) {
-            return const Center(child: CircularProgressIndicator(color: Colors.black));
+            return const ShimmerList(itemCount: 4, padding: EdgeInsets.fromLTRB(16, 12, 16, 80));
           }
           if (state is QuittancesLoaded) {
             final quittances = state.quittances;
@@ -87,15 +87,11 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
                   ),
                   if (quittances.isEmpty)
                     const SliverFillRemaining(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey),
-                            SizedBox(height: 16),
-                            Text('Aucune quittance', style: TextStyle(color: Colors.grey, fontSize: 16)),
-                          ],
-                        ),
+                      child: EmptyState(
+                        icon: Icons.receipt_long_outlined,
+                        title: 'Aucune quittance',
+                        subtitle: 'Vos quittances de loyer apparaîtront ici',
+                        scrollable: false,
                       ),
                     )
                   else

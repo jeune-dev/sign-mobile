@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../injection_container.dart';
+import '../../../../core/config/user_role.dart';
 import '../../../../core/routes/app_router.dart';
 import '../../../../core/services/token_service.dart';
 
@@ -40,7 +41,8 @@ class _SplashPageState extends State<SplashPage> {
         final role = await storage.read(key: 'user_role');
         if (!mounted) return;
 
-        if (role == 'Particulier' || role == 'client') {
+        final userRole = UserRoleX.fromString(role);
+        if (userRole.isClient) {
           Navigator.of(context).pushReplacementNamed(AppRouter.clientRoute);
         } else {
           Navigator.of(context).pushReplacementNamed(AppRouter.professionnelRoute);

@@ -27,7 +27,8 @@ class SignerContrat extends AutresContratsEvent {
 class TelechargerContrat extends AutresContratsEvent {
   final String type;
   final String id;
-  TelechargerContrat(this.type, this.id);
+  final String titre;
+  TelechargerContrat(this.type, this.id, {this.titre = ''});
 }
 
 class ResetState extends AutresContratsEvent {}

@@ -4,7 +4,8 @@ class LoadDashboard extends DashboardEvent {}
 
 class OuvrirDocumentDashboardEvent extends DashboardEvent {
   final String documentId;
-  OuvrirDocumentDashboardEvent(this.documentId);
+  final String titre;
+  OuvrirDocumentDashboardEvent(this.documentId, {this.titre = ''});
 }
 
 class ResetDashboardState extends DashboardEvent {}

@@ -1,33 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:sign_application/core/widgets/logout_dialog.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import '../../../../auth/presentation/bloc/auth_bloc.dart';
-import '../../../../auth/presentation/bloc/auth_event.dart';
 import '../../../../account/presentation/pages/profil_page.dart';
 import '../../../../particulier/presentation/bloc/particulier_bloc.dart';
 import '../../../../particulier/presentation/pages/dashboard_client_page.dart';
 import '../../../../particulier/presentation/pages/factures_client_page.dart';
 import '../../../../particulier/presentation/pages/contrats_client_page.dart';
+import 'package:sign_application/core/widgets/network_banner.dart';
+import 'package:sign_application/core/services/fcm_service.dart';
 
 class ClientPage extends StatefulWidget {
   final User? user;
+  final int initialTabIndex;
 
-  const ClientPage({super.key, this.user});
+  const ClientPage({super.key, this.user, this.initialTabIndex = 0});
 
   @override
   State<ClientPage> createState() => _ClientPageState();
 }
 
 class _ClientPageState extends State<ClientPage> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
-  void _logout() {
-    context.read<AuthBloc>().add(LogoutRequested());
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      '/login',
-      (route) => false,
-    );
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTabIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FcmService.init(context);
+    });
   }
 
   @override
@@ -40,7 +44,7 @@ class _ClientPageState extends State<ClientPage> {
             DashboardClientPage(user: widget.user),
             const FacturesClientPage(),
             const ContratsClientPage(),
-            const ProfilPage(), // ProfilPage charge l'utilisateur via AccountBloc
+            const ProfilPage(),
           ];
 
           return Scaffold(
@@ -70,15 +74,17 @@ class _ClientPageState extends State<ClientPage> {
               ),
               actions: [
                 IconButton(
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  onPressed: _logout,
+                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                  onPressed: () => LogoutDialog.show(ctx),
                   tooltip: 'Déconnexion',
                 ),
               ],
             ),
-            body: IndexedStack(
-              index: _currentIndex,
-              children: pages,
+            body: NetworkBanner(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: pages,
+              ),
             ),
             bottomNavigationBar: BottomNavigationBar(
               currentIndex: _currentIndex,

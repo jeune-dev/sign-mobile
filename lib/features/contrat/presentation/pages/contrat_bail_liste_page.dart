@@ -13,6 +13,10 @@ import 'package:sign_application/features/contrat/presentation/bloc/contrat_bloc
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_event.dart';
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_state.dart';
 import 'package:sign_application/features/contrat/presentation/pages/creation_contrat_bail_page.dart';
+import 'package:sign_application/core/widgets/empty_state.dart';
+import 'package:sign_application/core/widgets/shimmer_list.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/injection_container.dart' as di;
 
 class ContratBailListePage extends StatefulWidget {
@@ -23,11 +27,9 @@ class ContratBailListePage extends StatefulWidget {
 }
 
 class _ContratBailListePageState extends State<ContratBailListePage> {
-  int _statsTotal = 0, _statsActifs = 0, _statsEnAttente = 0;
+  int _statsTotal = 0, _statsSignes = 0, _statsEnAttente = 0;
   bool _statsLoading = true;
   final Set<String> _downloading = {};
-  String _pendingTitre = '';
-  ContratsLoaded? _lastLoaded;
 
   @override
   void initState() {
@@ -44,7 +46,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
       if (!mounted) return;
       setState(() {
         _statsTotal     = (data['total']     as num?)?.toInt() ?? 0;
-        _statsActifs    = (data['signes']    as num?)?.toInt() ?? 0;
+        _statsSignes    = (data['signes']    as num?)?.toInt() ?? 0;
         _statsEnAttente = (data['enAttente'] as num?)?.toInt() ?? 0;
         _statsLoading   = false;
       });
@@ -54,7 +56,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
   }
 
   void _ouvrirContrat(ContratBail c) {
-    _pendingTitre = c.numeroContrat ?? c.id;
+    final titre = c.numeroContrat ?? c.id;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -76,19 +78,19 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
         ),
       ),
     );
-    context.read<ContratBloc>().add(TelechargerContratEvent(c.id));
+    context.read<ContratBloc>().add(TelechargerContratEvent(c.id, titre: titre));
   }
 
-  Future<void> _saveAndOpen(List<int> bytes, String id) async {
+  Future<void> _saveAndOpen(List<int> bytes, String titre) async {
     try {
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/bail_$id.pdf');
+      final file = File('${dir.path}/bail_$titre.pdf');
       await file.writeAsBytes(bytes);
       if (!mounted) return;
       await Navigator.push(context, MaterialPageRoute(
         builder: (_) => PdfViewerPage(
           filePath: file.path,
-          titre: _pendingTitre.isNotEmpty ? _pendingTitre : id,
+          titre: titre,
         ),
       ));
       if (mounted) {
@@ -142,34 +144,26 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
       backgroundColor: const Color(0xFFF2F2F7),
       body: BlocListener<ContratBloc, ContratState>(
         listener: (ctx, state) {
-          if (state is ContratsLoaded) _lastLoaded = state;
           if (state is ContratBytes) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            _saveAndOpen(state.bytes, state.contratId);
+            _saveAndOpen(state.bytes, state.titre.isNotEmpty ? state.titre : state.contratId);
           }
           if (state is ContratError) {
             if (Navigator.canPop(context)) Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red[400],
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ));
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         child: BlocBuilder<ContratBloc, ContratState>(
           builder: (ctx, state) {
-            final loading = state is ContratLoading && _lastLoaded == null;
-            final eff = state is ContratsLoaded ? state
-                : (state is! ContratError && _lastLoaded != null) ? _lastLoaded! : state;
-            final contrats = eff is ContratsLoaded ? eff.contrats : <ContratBail>[];
+            final loading = state is ContratLoading;
+            final contrats = state is ContratsLoaded ? state.contrats : <ContratBail>[];
 
             return Column(
               children: [
                 _buildTopBar(),
                 Expanded(
                   child: loading
-                      ? const Center(child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5))
+                      ? const ShimmerList()
                       : state is ContratError && contrats.isEmpty
                           ? _buildError(state.message)
                           : RefreshIndicator(
@@ -263,7 +257,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
             children: [
               _statBadge('Total', _statsTotal),
               const SizedBox(width: 10),
-              _statBadge('Actifs', _statsActifs, color: Colors.green),
+              _statBadge('Signés', _statsSignes, color: Colors.green),
               const SizedBox(width: 10),
               _statBadge('En attente', _statsEnAttente, color: const Color(0xFFFFB347)),
             ],
@@ -300,9 +294,9 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
   }
 
   Widget _buildCard(ContratBail c) {
-    final isActif = c.statut?.toLowerCase() == 'actif';
-    final statusColor = isActif ? Colors.green : const Color(0xFFFFB347);
-    final statusLabel = isActif ? 'Actif' : (c.statut ?? 'En attente');
+    final isSigne = c.statut == 'signe';
+    final statusColor = isSigne ? Colors.green : const Color(0xFFFFB347);
+    final statusLabel = isSigne ? 'Signé' : 'En attente de signature';
     final isDown = _downloading.contains(c.id);
     final locataires = c.locataires
         ?.map((l) => '${l['prenom'] ?? ''} ${l['nom'] ?? ''}').join(', ')
@@ -429,7 +423,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                       child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(Icons.open_in_new_rounded, color: Colors.white, size: 16),
                         SizedBox(width: 6),
-                        Text('Voir le doc',
+                        Text('Voir Contrat de Bail',
                             style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
                       ]),
                     ),
@@ -471,21 +465,11 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
     );
   }
 
-  Widget _buildEmpty() => ListView(children: [
-    const SizedBox(height: 80),
-    Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 72, height: 72,
-            decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle),
-            child: Icon(Icons.home_work_outlined, size: 36, color: Colors.grey[400])),
-        const SizedBox(height: 16),
-        Text('Aucun contrat de bail',
-            style: TextStyle(color: Colors.grey[600], fontSize: 16, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 4),
-        Text('Créez votre premier bail', style: TextStyle(color: Colors.grey[400], fontSize: 13)),
-      ]),
-    ),
-  ]);
+  Widget _buildEmpty() => const EmptyState(
+    icon: Icons.home_work_outlined,
+    title: 'Aucun contrat de bail',
+    subtitle: 'Créez votre premier bail en appuyant sur le bouton +',
+  );
 
   Widget _buildError(String message) => Center(
     child: Column(mainAxisSize: MainAxisSize.min, children: [

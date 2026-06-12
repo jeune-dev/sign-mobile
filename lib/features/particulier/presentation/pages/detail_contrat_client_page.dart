@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:intl/intl.dart';
+import 'package:sign_application/core/config/contrat_type.dart';
 import '../bloc/particulier_bloc.dart';
 import '../bloc/particulier_event.dart';
 import '../bloc/particulier_state.dart';
@@ -26,9 +29,7 @@ class DetailContratClientPage extends StatelessWidget {
       body: BlocListener<ParticulierBloc, ParticulierState>(
         listener: (context, state) {
           if (state is ParticulierError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-            );
+            showToast(context, 'Erreur', state.message, ToastificationType.error);
           }
         },
         child: ListView(
@@ -97,7 +98,7 @@ class DetailContratClientPage extends StatelessWidget {
       _addIfNotNull(details, 'Lieu de travail', raw['lieu_travail']);
       _addIfNotNull(details, 'Date de début',   raw['date_debut']);
       _addIfNotNull(details, 'Salaire brut',    raw['salaire_brut']?.toString());
-    } else if (contrat.type == 'contrat-prestation') {
+    } else if (contrat.type == ContratType.prestation.apiValue) {
       _addIfNotNull(details, 'Titre',          raw['titre_contrat']);
       _addIfNotNull(details, 'Montant total',  raw['montant_total']?.toString());
       _addIfNotNull(details, 'Date de début',  raw['date_debut']);
@@ -107,7 +108,7 @@ class DetailContratClientPage extends StatelessWidget {
       _addIfNotNull(details, 'Loyer mensuel',  raw['loyer_mensuel']?.toString());
       _addIfNotNull(details, 'Date de début',  raw['date_debut_bail']);
       _addIfNotNull(details, 'Durée',          raw['duree']?.toString());
-    } else if (contrat.type == 'reconnaissance-dette') {
+    } else if (contrat.type == ContratType.reconnaissanceDette.apiValue) {
       _addIfNotNull(details, 'Montant',        raw['montant']?.toString());
       _addIfNotNull(details, 'Date de remboursement', raw['date_remboursement']);
     } else {
@@ -148,9 +149,7 @@ class DetailContratClientPage extends StatelessWidget {
               ),
               onPressed: () {
                 // Affichage PDF — extension future
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Aperçu PDF disponible prochainement')),
-                );
+                showToast(context, 'Bientôt disponible', 'Aperçu PDF disponible prochainement', ToastificationType.info);
               },
             ),
           ),
