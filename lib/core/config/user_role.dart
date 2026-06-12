@@ -21,9 +21,9 @@ extension UserRoleX on UserRole {
     }
   }
 
-  bool get isPro => this == UserRole.professionnel || this == UserRole.independant;
+  bool get isPro => this == UserRole.professionnel || this == UserRole.independant || this == UserRole.particulier;
   bool get isEntreprise => this == UserRole.professionnel;
-  bool get isClient => this == UserRole.particulier;
+  bool get isClient => false;
 
   String get label {
     switch (this) {
