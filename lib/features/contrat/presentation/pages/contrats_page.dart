@@ -22,6 +22,8 @@ import 'package:sign_application/features/contrat_travail/presentation/bloc/cont
 import 'package:sign_application/features/contrat_travail/presentation/pages/contrats_travail_liste_page.dart';
 import 'package:sign_application/features/contrat_travail/presentation/pages/creation_contrat_travail_page.dart';
 import 'package:sign_application/injection_container.dart' as di;
+import 'package:sign_application/features/particulier/presentation/pages/contrats_a_signer_page.dart';
+import 'package:sign_application/features/particulier/presentation/bloc/particulier_bloc.dart';
 
 class _Stats {
   final int total;
@@ -196,7 +198,7 @@ class _ContratsPageState extends State<ContratsPage> {
           SliverToBoxAdapter(child: _buildHeader()),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
               child: ElevatedButton.icon(
                 onPressed: _showContractTypeModal,
                 icon: const Icon(Icons.add_rounded, size: 20),
@@ -204,6 +206,29 @@ class _ContratsPageState extends State<ContratsPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black, foregroundColor: Colors.white,
                   elevation: 0, padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => BlocProvider(
+                      create: (_) => di.sl<ParticulierBloc>(),
+                      child: const ContratsASignerPage(),
+                    ),
+                  ));
+                },
+                icon: const Icon(Icons.draw_outlined, size: 20, color: Colors.black87),
+                label: const Text('Mes contrats à signer', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.black87, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   minimumSize: const Size(double.infinity, 48),
                 ),

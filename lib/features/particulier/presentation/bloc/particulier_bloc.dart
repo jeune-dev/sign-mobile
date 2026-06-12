@@ -7,12 +7,13 @@ import 'particulier_event.dart';
 import 'particulier_state.dart';
 
 class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
-  final GetDashboardStats       getDashboardStats;
-  final GetFacturesClient       getFacturesClient;
-  final GetContratsClient       getContratsClient;
-  final GetContratsByTypeClient getContratsByTypeClient;
-  final GetContratDetailClient  getContratDetailClient;
-  final SignerContratClient     signerContratClient;
+  final GetDashboardStats          getDashboardStats;
+  final GetFacturesClient          getFacturesClient;
+  final GetContratsClient          getContratsClient;
+  final GetContratsByTypeClient    getContratsByTypeClient;
+  final GetContratDetailClient     getContratDetailClient;
+  final SignerContratClient        signerContratClient;
+  final DownloadContratPdfClient   downloadContratPdfClient;
 
   ParticulierBloc({
     required this.getDashboardStats,
@@ -21,12 +22,14 @@ class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
     required this.getContratsByTypeClient,
     required this.getContratDetailClient,
     required this.signerContratClient,
+    required this.downloadContratPdfClient,
   }) : super(ParticulierInitial()) {
     on<LoadDashboardStats>(_onLoadDashboard);
     on<LoadFactures>(_onLoadFactures);
     on<LoadContrats>(_onLoadContrats);
     on<LoadContratDetail>(_onLoadContratDetail);
     on<SignerContrat>(_onSignerContrat);
+    on<DownloadContratPdf>(_onDownloadContratPdf);
   }
 
   Future<void> _onLoadDashboard(
@@ -100,6 +103,22 @@ class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
     result.fold(
       (failure) => emit(ParticulierError(failure.errorMessage)),
       (_)       => emit(const ContratSigne()),
+    );
+  }
+
+  Future<void> _onDownloadContratPdf(
+    DownloadContratPdf event,
+    Emitter<ParticulierState> emit,
+  ) async {
+    emit(const ContratPdfLoading());
+    final result = await downloadContratPdfClient(type: event.type, contratId: event.contratId);
+    result.fold(
+      (failure) => emit(ParticulierError(failure.errorMessage)),
+      (bytes)   => emit(ContratPdfReady(
+        pdfBytes:  bytes,
+        contratId: event.contratId,
+        type:      event.type,
+      )),
     );
   }
 }

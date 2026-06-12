@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:sign_application/core/errors/failure.dart';
@@ -100,6 +101,21 @@ class ParticulierRepositoryImpl implements ParticulierRepository {
     try {
       await remoteDataSource.signerContrat(type: type, contratId: contratId, signature: signature);
       return const Right(null);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _mapDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, Uint8List>> downloadContratPdf({
+    required String type,
+    required String contratId,
+  }) async {
+    try {
+      final bytes = await remoteDataSource.downloadContratPdf(type: type, contratId: contratId);
+      return Right(bytes);
     } on DioException catch (e) {
       return Left(ServerFailure(errorMessage: _mapDioError(e)));
     } catch (e) {

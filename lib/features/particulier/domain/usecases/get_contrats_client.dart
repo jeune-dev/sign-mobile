@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dartz/dartz.dart';
 import 'package:sign_application/core/errors/failure.dart';
 import '../entities/particulier_contrat.dart';
@@ -45,4 +46,15 @@ class SignerContratClient {
     required String signature,
   }) =>
       repository.signerContrat(type: type, contratId: contratId, signature: signature);
+}
+
+class DownloadContratPdfClient {
+  final ParticulierRepository repository;
+  DownloadContratPdfClient(this.repository);
+
+  Future<Either<Failure, Uint8List>> call({
+    required String type,
+    required String contratId,
+  }) =>
+      repository.downloadContratPdf(type: type, contratId: contratId);
 }

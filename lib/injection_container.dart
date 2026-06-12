@@ -489,12 +489,14 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetContratsByTypeClient(sl()));
   sl.registerLazySingleton(() => GetContratDetailClient(sl()));
   sl.registerLazySingleton(() => SignerContratClient(sl()));
+  sl.registerLazySingleton(() => DownloadContratPdfClient(sl()));
   sl.registerFactory(() => ParticulierBloc(
-        getDashboardStats:      sl<particulier_dashboard.GetDashboardStats>(),
-        getFacturesClient:      sl(),
-        getContratsClient:      sl(),
-        getContratsByTypeClient: sl(),
-        getContratDetailClient: sl(),
-        signerContratClient:    sl(),
+        getDashboardStats:         sl<particulier_dashboard.GetDashboardStats>(),
+        getFacturesClient:         sl(),
+        getContratsClient:         sl(),
+        getContratsByTypeClient:   sl(),
+        getContratDetailClient:    sl(),
+        signerContratClient:       sl(),
+        downloadContratPdfClient:  sl(),
       ));
 }

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_application/core/config/env.dart';
@@ -11,6 +12,7 @@ abstract class ParticulierRemoteDataSource {
   Future<List<ParticulierContratModel>> getContratsByType({required String type, String? statut, int page, int limit});
   Future<ParticulierContratModel> getContratDetail({required String type, required String contratId});
   Future<void> signerContrat({required String type, required String contratId, required String signature});
+  Future<Uint8List> downloadContratPdf({required String type, required String contratId});
 }
 
 class ParticulierRemoteDataSourceImpl implements ParticulierRemoteDataSource {
@@ -101,6 +103,18 @@ class ParticulierRemoteDataSourceImpl implements ParticulierRemoteDataSource {
       '${Env.particulierContrats}/$type/$contratId/signer',
       data: {'signature': signature},
     );
+  }
+
+  @override
+  Future<Uint8List> downloadContratPdf({
+    required String type,
+    required String contratId,
+  }) async {
+    final response = await dio.get(
+      '${Env.particulierContrats}/$type/$contratId/pdf',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data as List<int>);
   }
 
   List<ParticulierContratModel> _parseContrats(List list) {
