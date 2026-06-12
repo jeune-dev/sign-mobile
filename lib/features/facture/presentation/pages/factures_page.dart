@@ -101,6 +101,21 @@ class _FacturesPageState extends State<FacturesPage> {
     );
   }
 
+  void _ouvrirDetailFacturePayee(Facture doc) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _FacturePayeeDetailSheet(
+        doc: doc,
+        formatMontant: _formatMontant,
+        onRenvoyer: () {
+          context.read<FactureBloc>().add(RenvoyerFactureEvent(doc.id));
+        },
+      ),
+    );
+  }
+
   void _ouvrirDocument(String documentId, String numeroFacture) {
     showDialog(
       context: context,
@@ -185,6 +200,10 @@ class _FacturesPageState extends State<FacturesPage> {
           showToast(context, 'Mise à jour', 'Facture mise à jour avec succès', ToastificationType.success);
           context.read<FactureBloc>().add(LoadFactures());
         }
+        if (state is FactureRenvoyeeSuccess) {
+          if (Navigator.canPop(context)) Navigator.pop(context);
+          showToast(context, 'Email envoyé', 'La facture a été renvoyée avec succès', ToastificationType.success);
+        }
         if (state is FactureError) {
           if (Navigator.canPop(context)) Navigator.pop(context);
           showToast(context, 'Erreur', state.message, ToastificationType.error);
@@ -203,7 +222,7 @@ class _FacturesPageState extends State<FacturesPage> {
           int payees = 0, enAttente = 0;
           for (final f in factures) {
             montantTotal += f.montant;
-            if (f.avance >= f.montant) payees++; else enAttente++;
+            if (f.statut == 'payee') payees++; else enAttente++;
           }
 
           return Column(
@@ -636,33 +655,58 @@ class _FacturesPageState extends State<FacturesPage> {
               ],
             ),
           ),
-          // ── Bouton Mettre à jour ─────────────────────────────────────
+          // ── Bouton action selon statut ───────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            child: GestureDetector(
-              onTap: () => _ouvrirModalMiseAJour(doc),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.withOpacity(0.25)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.edit_outlined, color: Colors.orange[700], size: 16),
-                    const SizedBox(width: 6),
-                    Text('Mettre à jour la facture',
-                        style: TextStyle(
-                            color: Colors.orange[700],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              ),
-            ),
+            child: doc.statut == 'payee'
+                ? GestureDetector(
+                    onTap: () => _ouvrirDetailFacturePayee(doc),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00C896).withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF00C896).withOpacity(0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.receipt_long_outlined, color: Color(0xFF00C896), size: 16),
+                          SizedBox(width: 6),
+                          Text('Voir la facture',
+                              style: TextStyle(
+                                  color: Color(0xFF00C896),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () => _ouvrirModalMiseAJour(doc),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 11),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.orange.withOpacity(0.25)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.edit_outlined, color: Colors.orange[700], size: 16),
+                          const SizedBox(width: 6),
+                          Text('Mettre à jour la facture',
+                              style: TextStyle(
+                                  color: Colors.orange[700],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -913,9 +957,10 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // ── Drag handle ─────────────────────────────────────────────────
             Container(
               width: 40, height: 4,
@@ -1100,6 +1145,7 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -1171,6 +1217,210 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
                 )),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Feuille détail facture payée ──────────────────────────────────────────────
+class _FacturePayeeDetailSheet extends StatelessWidget {
+  final Facture doc;
+  final String Function(double) formatMontant;
+  final VoidCallback onRenvoyer;
+
+  const _FacturePayeeDetailSheet({
+    required this.doc,
+    required this.formatMontant,
+    required this.onRenvoyer,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tva = (doc.tva ?? 0) / 100;
+    final totalHT = doc.montant;
+    final tvaAmount = totalHT * tva;
+    final totalTTC = totalHT + tvaAmount;
+
+    return BlocListener<FactureBloc, FactureState>(
+      listener: (context, state) {
+        if (state is FactureRenvoyeeLoading) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        }
+      },
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                Container(
+                  width: 40, height: 4,
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+
+                // Header
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44, height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF00C896).withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.check_circle_rounded, color: Color(0xFF00C896), size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(doc.numeroFacture ?? 'Facture',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.black87)),
+                            const SizedBox(height: 2),
+                            const Text('Payée intégralement',
+                                style: TextStyle(fontSize: 12, color: Color(0xFF00C896), fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          width: 32, height: 32,
+                          decoration: BoxDecoration(color: Colors.grey[200], shape: BoxShape.circle),
+                          child: const Icon(Icons.close_rounded, size: 17, color: Colors.black54),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Détails financiers
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Détails du paiement',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[700])),
+                      const SizedBox(height: 12),
+
+                      _detailRow('Total HT', formatMontant(totalHT), Colors.black87),
+                      if (tva > 0) _detailRow('TVA (${doc.tva}%)', formatMontant(tvaAmount), Colors.grey.shade600),
+                      if (tva > 0) _detailRow('Total TTC', formatMontant(totalTTC), Colors.black87, bold: true),
+                      _detailRow('Montant reçu', formatMontant(doc.avance), const Color(0xFF00C896), bold: true),
+                      const Divider(height: 24),
+
+                      if (doc.moyenPaiement != null)
+                        _detailRow('Mode de paiement', doc.moyenPaiement!, Colors.black54),
+                      if (doc.lieuExecution != null)
+                        _detailRow('Lieu', doc.lieuExecution!, Colors.black54),
+                      if (doc.dateExecution != null)
+                        _detailRow('Date exécution', doc.dateExecution!, Colors.black54),
+
+                      const SizedBox(height: 20),
+
+                      // Items
+                      if (doc.items != null && (doc.items as List).isNotEmpty) ...[
+                        Text('Prestations',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[700])),
+                        const SizedBox(height: 10),
+                        ...(doc.items as List).map((item) {
+                          final m = item is Map ? item : {};
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(m['designation']?.toString() ?? '',
+                                      style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                                ),
+                                Text(
+                                  '${m['quantite']} × ${formatMontant((m['prix_unitaire'] as num?)?.toDouble() ?? 0)}',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                ),
+                              ],
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 12),
+                      ],
+
+                      // Bouton renvoyer
+                      GestureDetector(
+                        onTap: onRenvoyer,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          margin: const EdgeInsets.only(bottom: 28),
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.send_rounded, color: Colors.white, size: 18),
+                              SizedBox(width: 8),
+                              Text('Renvoyer la facture',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, Color valueColor, {bool bold = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
+                  color: valueColor)),
+        ],
       ),
     );
   }

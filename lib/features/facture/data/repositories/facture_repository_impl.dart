@@ -70,6 +70,18 @@ class FactureRepositoryImpl implements FactureRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, void>> renvoyerFacture(String documentId) async {
+    try {
+      await remoteDataSource.renvoyerFacture(documentId);
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _handleDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
   String _handleDioError(DioException e) {
     if (e.response?.data is Map && e.response?.data['message'] != null) {
       return e.response!.data['message'];

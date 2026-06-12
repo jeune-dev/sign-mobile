@@ -3,6 +3,7 @@ import '../../domain/usecases/get_factures.dart';
 import '../../domain/usecases/creer_facture.dart';
 import '../../domain/usecases/ouvrir_document.dart';
 import '../../domain/usecases/mettre_a_jour_facture.dart';
+import '../../domain/usecases/renvoyer_facture.dart';
 import '../../domain/entities/facture.dart';
 import 'facture_event.dart';
 import 'facture_state.dart';
@@ -12,6 +13,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
   final CreerFacture creerFacture;
   final OuvrirDocument ouvrirDocument;
   final MettreAJourFacture mettreAJourFacture;
+  final RenvoyerFacture renvoyerFacture;
 
   List<Facture> _factures = [];
   int _currentPage = 1;
@@ -21,6 +23,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
     required this.creerFacture,
     required this.ouvrirDocument,
     required this.mettreAJourFacture,
+    required this.renvoyerFacture,
   }) : super(FactureInitial()) {
     on<LoadFactures>(_onLoadFactures);
     on<LoadMoreFactures>(_onLoadMoreFactures);
@@ -31,6 +34,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
     on<OuvrirDocumentEvent>(_onOuvrirDocument);
     on<ResetFactureState>((_, emit) => emit(FactureInitial()));
     on<MettreAJourFactureEvent>(_onMettreAJourFacture);
+    on<RenvoyerFactureEvent>(_onRenvoyerFacture);
   }
 
   Future<void> _onLoadFactures(
@@ -114,6 +118,18 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
     result.fold(
       (failure) => emit(FactureError(failure.errorMessage)),
       (data) => emit(FactureMiseAJourSuccess(data)),
+    );
+  }
+
+  Future<void> _onRenvoyerFacture(
+    RenvoyerFactureEvent event,
+    Emitter<FactureState> emit,
+  ) async {
+    emit(FactureRenvoyeeLoading());
+    final result = await renvoyerFacture(event.documentId);
+    result.fold(
+      (failure) => emit(FactureError(failure.errorMessage)),
+      (_) => emit(FactureRenvoyeeSuccess()),
     );
   }
 }

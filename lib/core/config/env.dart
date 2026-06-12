@@ -157,6 +157,7 @@ class Env {
   static String get documentTelecharger =>
       _get('DOCUMENT_TELECHARGER_PATH', fallback: '/professionnel/document/telecharger-document');
   static String documentMettreAJour(String id) => '/professionnel/document/$id/mettre-a-jour';
+  static String documentRenvoyerFacture(String id) => '/professionnel/document/$id/renvoyer-facture';
 
   // ─── Contrat Bail ─────────────────────────────────────────────────────────────
   static String get contratBailListe =>

@@ -27,4 +27,5 @@ abstract class FactureRepository {
     double? avance,
     String? statut,
   });
+  Future<Either<Failure, void>> renvoyerFacture(String documentId);
 }

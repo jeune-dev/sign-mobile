@@ -36,3 +36,8 @@ class MettreAJourFactureEvent extends FactureEvent {
     this.statut,
   });
 }
+
+class RenvoyerFactureEvent extends FactureEvent {
+  final String documentId;
+  RenvoyerFactureEvent(this.documentId);
+}

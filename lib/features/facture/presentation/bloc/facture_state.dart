@@ -42,3 +42,7 @@ class FactureMiseAJourSuccess extends FactureState {
   final Map<String, dynamic> data;
   FactureMiseAJourSuccess(this.data);
 }
+
+class FactureRenvoyeeSuccess extends FactureState {}
+
+class FactureRenvoyeeLoading extends FactureState {}

@@ -28,6 +28,7 @@ abstract class FactureRemoteDataSource {
     double? avance,
     String? statut,
   });
+  Future<void> renvoyerFacture(String documentId);
 }
 
 class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
@@ -87,5 +88,10 @@ class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
       data: body,
     );
     return Map<String, dynamic>.from(response.data['data'] ?? {});
+  }
+
+  @override
+  Future<void> renvoyerFacture(String documentId) async {
+    await dio.post(Env.documentRenvoyerFacture(documentId));
   }
 }

@@ -50,6 +50,7 @@ import 'features/facture/domain/usecases/get_factures.dart';
 import 'features/facture/domain/usecases/creer_facture.dart';
 import 'features/facture/domain/usecases/ouvrir_document.dart';
 import 'features/facture/domain/usecases/mettre_a_jour_facture.dart';
+import 'features/facture/domain/usecases/renvoyer_facture.dart';
 import 'features/facture/presentation/bloc/facture_bloc.dart';
 
 // Contrat
@@ -367,11 +368,13 @@ Future<void> init() async {
   sl.registerLazySingleton(() => CreerFacture(sl()));
   sl.registerLazySingleton(() => OuvrirDocument(sl()));
   sl.registerLazySingleton(() => MettreAJourFacture(sl()));
+  sl.registerLazySingleton(() => RenvoyerFacture(sl()));
   sl.registerFactory(() => FactureBloc(
         getFactures: sl(),
         creerFacture: sl(),
         ouvrirDocument: sl(),
         mettreAJourFacture: sl(),
+        renvoyerFacture: sl(),
       ));
 
   //================================================
