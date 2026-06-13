@@ -312,13 +312,11 @@ class _FacturesPageState extends State<FacturesPage> {
                           color: Colors.white.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          '📄  Mes factures',
-                          style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600),
-                        ),
+                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.receipt_outlined, size: 12, color: Colors.white70),
+                          SizedBox(width: 4),
+                          Text('Mes factures', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ]),
                       ),
                       const SizedBox(height: 12),
                       isLoading

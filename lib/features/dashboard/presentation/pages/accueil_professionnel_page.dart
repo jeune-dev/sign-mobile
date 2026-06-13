@@ -278,10 +278,11 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
               color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Text(
-              '🧾  Factures',
-              style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
-            ),
+            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.receipt_long_outlined, size: 11, color: Colors.white70),
+              SizedBox(width: 4),
+              Text('Factures', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600)),
+            ]),
           ),
           const SizedBox(height: 10),
           // ── Nombre de factures ────────────────────────────────────────────

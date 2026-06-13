@@ -294,7 +294,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     );
   }
 
-  Widget _card({required String icon, required String title, required List<Widget> children}) {
+  Widget _card({required IconData icon, required String title, required List<Widget> children}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -310,7 +310,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
             Container(
               width: 36, height: 36,
               decoration: BoxDecoration(color: _P.accentSoft, borderRadius: BorderRadius.circular(10)),
-              child: Center(child: Text(icon, style: const TextStyle(fontSize: 17))),
+              child: Center(child: Icon(icon, size: 20, color: _P.accent)),
             ),
             const SizedBox(width: 12),
             Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _P.ink, letterSpacing: -0.3)),
@@ -519,7 +519,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   // ─────────────────────────────────────────────────────────────────────────
 
   Widget _sectionEmploye() => _card(
-    icon: '👤', title: 'Employé',
+    icon: Icons.person_outline, title: 'Employé',
     children: [
       if (_selected != null) ...[
         Container(
@@ -643,7 +643,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionIdSalarie() => _card(
-    icon: '🪪', title: 'Identification salarié',
+    icon: Icons.badge_outlined, title: 'Identification salarié',
     children: [
       _row2(
         _field('N° IPRES', _ipresCtrl, hint: 'IPRES-000000'),
@@ -655,7 +655,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionRemuneration() => _card(
-    icon: '💰', title: 'Rémunération',
+    icon: Icons.payments_outlined, title: 'Rémunération',
     children: [
       _field('Salaire brut (FCFA)', _brutCtrl, hint: '500 000', type: TextInputType.number, req: true),
       _row2(
@@ -670,7 +670,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionTempsTravail() => _card(
-    icon: '⏱️', title: 'Temps de travail',
+    icon: Icons.schedule_outlined, title: 'Temps de travail',
     children: [
       _row2(
         _field('Jours travaillés', _joursTravCtrl, hint: '26', type: TextInputType.number),
@@ -694,7 +694,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionHeuresSupp() => _card(
-    icon: '⚡', title: 'Heures supplémentaires',
+    icon: Icons.bolt_outlined, title: 'Heures supplémentaires',
     children: [
       _toggle(
         'Heures supplémentaires effectuées', _hSupp, (v) => setState(() => _hSupp = v),
@@ -707,7 +707,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionPrimes() => _card(
-    icon: '🎁', title: 'Primes & Avantages',
+    icon: Icons.card_giftcard_outlined, title: 'Primes & Avantages',
     children: [
       _toggle(
         'Primes accordées ce mois', _primes, (v) => setState(() => _primes = v),
@@ -739,7 +739,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionConges() => _card(
-    icon: '🏖️', title: 'Congés payés',
+    icon: Icons.beach_access_outlined, title: 'Congés payés',
     children: [
       _toggle(
         'Congés pris ce mois', _conges, (v) => setState(() => _conges = v),
@@ -754,7 +754,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionRetenues() => _card(
-    icon: '📉', title: 'Avances & Retenues',
+    icon: Icons.remove_circle_outline, title: 'Avances & Retenues',
     children: [
       _toggle(
         'Avance sur salaire', _avance, (v) => setState(() => _avance = v),
@@ -773,7 +773,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionCotisations() => _card(
-    icon: '🛡️', title: 'Cotisations sociales',
+    icon: Icons.shield_outlined, title: 'Cotisations sociales',
     children: [
       Container(
         padding: const EdgeInsets.all(12),
@@ -802,7 +802,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionImpots() => _card(
-    icon: '📋', title: 'Impôts & Situation familiale',
+    icon: Icons.assignment_outlined, title: 'Impôts & Situation familiale',
     children: [
       _toggle('Soumis à l\'IR', _soumisIr, (v) => setState(() => _soumisIr = v),
           sub: 'Impôt sur le Revenu'),
@@ -813,7 +813,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   );
 
   Widget _sectionPaiement() => _card(
-    icon: '💳', title: 'Paiement',
+    icon: Icons.credit_card_outlined, title: 'Paiement',
     children: [
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _label('Mode de paiement', req: true),

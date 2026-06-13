@@ -356,14 +356,20 @@ class _ProfilPageState extends State<ProfilPage> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (r != UserRole.unknown) ...[
+          Icon(r.icon, size: 13, color: Colors.white),
+          const SizedBox(width: 5),
+        ],
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
+      ]),
     );
   }
 
