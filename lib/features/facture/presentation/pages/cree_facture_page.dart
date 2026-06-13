@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
@@ -26,6 +27,9 @@ class _CreeFactureState extends State<CreeFacture> {
   final _delaisExecutionController = TextEditingController();
   final _lieuExecutionController = TextEditingController();
   final _avanceController = TextEditingController();
+  final _montantPayeController = TextEditingController();
+  bool _avanceActif = false;
+  bool _montantPayeActif = false;
 
   List<Client> _clientsTrouves = [];
   Client? _clientSelectionne;
@@ -54,6 +58,7 @@ class _CreeFactureState extends State<CreeFacture> {
     _delaisExecutionController.dispose();
     _lieuExecutionController.dispose();
     _avanceController.dispose();
+    _montantPayeController.dispose();
     super.dispose();
   }
 
@@ -89,7 +94,9 @@ class _CreeFactureState extends State<CreeFacture> {
   }
 
   double _calculerSolde() {
-    return _calculerMontantTotal() - (double.tryParse(_avanceController.text) ?? 0);
+    final paye = (double.tryParse(_avanceController.text) ?? 0) +
+        (double.tryParse(_montantPayeController.text) ?? 0);
+    return _calculerMontantTotal() - paye;
   }
 
   void _rechercherClients(String query) {
@@ -147,6 +154,7 @@ class _CreeFactureState extends State<CreeFacture> {
       'delais_execution': _delaisExecutionController.text,
       'date_execution': _dateEcheance?.toIso8601String(),
       'avance': double.tryParse(_avanceController.text) ?? 0,
+      'montant_paye': double.tryParse(_montantPayeController.text) ?? 0,
       'lieu_execution': _lieuExecutionController.text,
       'moyen_paiement': _selectedMoyenPaiement ?? 'ESPECES',
       'tva': int.parse(_selectedTva ?? '0'),
@@ -318,7 +326,14 @@ class _CreeFactureState extends State<CreeFacture> {
                                             icon: const Icon(Icons.arrow_drop_down, size: 20),
                                             items: _typesItem.map((type) => DropdownMenuItem(
                                               value: type,
-                                              child: Text(type == 'produit' ? '📦 Produit' : '🛠️ Service', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(type == 'produit' ? Icons.inventory_2_outlined : Icons.build_outlined, size: 14),
+                                                  const SizedBox(width: 6),
+                                                  Text(type == 'produit' ? 'Produit' : 'Service', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                                                ],
+                                              ),
                                             )).toList(),
                                             onChanged: (v) {
                                               if (v != null) {
@@ -468,23 +483,68 @@ class _CreeFactureState extends State<CreeFacture> {
                               const SizedBox(height: 8),
                               Divider(color: Colors.grey[300]),
                               const SizedBox(height: 8),
-                              const Text('Avance', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              const Text('Paiement', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _avanceController,
+                                enabled: !_montantPayeActif,
                                 decoration: InputDecoration(
-                                  labelText: 'Montant de l\'avance (FCFA)',
+                                  labelText: 'Avance (FCFA)',
                                   prefixIcon: const Icon(Icons.payment),
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                  filled: _montantPayeActif,
+                                  fillColor: _montantPayeActif ? Colors.grey[100] : null,
                                 ),
                                 keyboardType: TextInputType.number,
-                                onChanged: (_) => setState(() {}),
+                                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                                onChanged: (v) => setState(() {
+                                  _avanceActif = v.isNotEmpty;
+                                  if (v.isNotEmpty) _montantPayeController.clear();
+                                }),
                                 validator: (v) {
                                   if (v != null && v.isNotEmpty) {
                                     final a = double.tryParse(v);
                                     if (a == null || a < 0) return 'Avance invalide';
                                     if (a > total) return 'L\'avance ne peut pas dépasser le montant total';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              const Row(
+                                children: [
+                                  Expanded(child: Divider()),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 8),
+                                    child: Text('OU', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600)),
+                                  ),
+                                  Expanded(child: Divider()),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              TextFormField(
+                                controller: _montantPayeController,
+                                enabled: !_avanceActif,
+                                decoration: InputDecoration(
+                                  labelText: 'Montant payé (FCFA)',
+                                  prefixIcon: const Icon(Icons.check_circle_outline),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                  filled: _avanceActif,
+                                  fillColor: _avanceActif ? Colors.grey[100] : null,
+                                ),
+                                keyboardType: TextInputType.number,
+                                inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
+                                onChanged: (v) => setState(() {
+                                  _montantPayeActif = v.isNotEmpty;
+                                  if (v.isNotEmpty) _avanceController.clear();
+                                }),
+                                validator: (v) {
+                                  if (v != null && v.isNotEmpty) {
+                                    final a = double.tryParse(v);
+                                    if (a == null || a < 0) return 'Montant invalide';
+                                    if (a > total) return 'Le montant payé ne peut pas dépasser le total';
                                   }
                                   return null;
                                 },
@@ -511,9 +571,12 @@ class _CreeFactureState extends State<CreeFacture> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _delaisExecutionController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                         decoration: InputDecoration(
-                          labelText: 'Ex: 2 jours',
+                          labelText: 'Ex: 2 (jours)',
                           prefixIcon: const Icon(Icons.timer),
+                          suffixText: 'jours',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                         ),

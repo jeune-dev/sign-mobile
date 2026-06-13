@@ -116,6 +116,30 @@ class _FacturesPageState extends State<FacturesPage> {
     );
   }
 
+  Future<void> _confirmerRenvoyer(Facture doc) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Renvoyer la facture'),
+        content: Text('Voulez-vous renvoyer la facture ${doc.numeroFacture ?? ''} au client ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annuler'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.black87, foregroundColor: Colors.white),
+            child: const Text('Renvoyer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      context.read<FactureBloc>().add(RenvoyerFactureEvent(doc.id));
+    }
+  }
+
   void _ouvrirDocument(String documentId, String numeroFacture) {
     showDialog(
       context: context,
@@ -669,29 +693,57 @@ class _FacturesPageState extends State<FacturesPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: doc.statut == 'payee'
-                ? GestureDetector(
-                    onTap: () => _ouvrirDetailFacturePayee(doc),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 11),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00C896).withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFF00C896).withOpacity(0.3)),
+                ? Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () => _ouvrirDocument(doc.id, doc.numeroFacture ?? ''),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00C896).withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF00C896).withOpacity(0.3)),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.receipt_long_outlined, color: Color(0xFF00C896), size: 16),
+                              SizedBox(width: 6),
+                              Text('Voir la facture',
+                                  style: TextStyle(
+                                      color: Color(0xFF00C896),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.receipt_long_outlined, color: Color(0xFF00C896), size: 16),
-                          SizedBox(width: 6),
-                          Text('Voir la facture',
-                              style: TextStyle(
-                                  color: Color(0xFF00C896),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700)),
-                        ],
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: () => _confirmerRenvoyer(doc),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          decoration: BoxDecoration(
+                            color: Colors.black87,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.send_rounded, color: Colors.white, size: 16),
+                              SizedBox(width: 6),
+                              Text('Renvoyer la facture',
+                                  style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   )
                 : GestureDetector(
                     onTap: () => _ouvrirModalMiseAJour(doc),
@@ -942,6 +994,7 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
       _quickChip = chip;
       if (chip == 0) {
         _avanceCtrl.text = _montant.toStringAsFixed(0);
+        _statut = 'payee';
       } else if (chip == 1) {
         _avanceCtrl.text = (_montant / 2).toStringAsFixed(0);
       }
@@ -1202,8 +1255,9 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
 
   Widget _statutTile(String value, String label, IconData icon, Color color) {
     final selected = _statut == value;
+    final locked = _quickChip == 0;
     return GestureDetector(
-      onTap: () => setState(() => _statut = value),
+      onTap: locked ? null : () => setState(() => _statut = value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 12),
