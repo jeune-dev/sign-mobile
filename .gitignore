@@ -1,3 +1,6 @@
+# Obfuscation debug symbols (ne pas commiter — uploader vers Crashlytics uniquement)
+build/symbols/
+
 # Miscellaneous
 *.class
 *.log

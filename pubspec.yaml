@@ -100,6 +100,7 @@ flutter:
     # Variables injectées via --dart-define à la compilation
     - assets/icons/
     - assets/fonts/
+    - assets/certs/
   # IMP-06 : ACTION MANUELLE REQUISE pour bundler les polices localement :
   # 1. Télécharger depuis https://fonts.google.com/specimen/Plus+Jakarta+Sans
   #    → Télécharger → Extraire les .ttf dans assets/fonts/
@@ -116,8 +117,6 @@ flutter:
            weight: 600
          - asset: assets/fonts/PlusJakartaSans-Bold.ttf
            weight: 700
-         - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
-           weight: 800
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

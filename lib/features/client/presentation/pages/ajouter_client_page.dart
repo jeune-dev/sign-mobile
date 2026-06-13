@@ -71,7 +71,7 @@ class _AjouterClientPageState extends State<AjouterClientPage> {
           backgroundColor: Colors.black,
           title: const Text('Ajouter un client', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           centerTitle: true,
-          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
+          leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context), tooltip: 'Retour'),
         ),
         body: BlocBuilder<ClientBloc, ClientState>(
           builder: (context, state) {

@@ -188,7 +188,7 @@ class _CreeFactureState extends State<CreeFacture> {
             backgroundColor: Colors.black,
             title: const Text('Nouvelle Facture', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             centerTitle: true,
-            leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
+            leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context), tooltip: 'Retour'),
           ),
           body: BlocBuilder<FactureBloc, FactureState>(
             builder: (context, factureState) {
@@ -233,6 +233,7 @@ class _CreeFactureState extends State<CreeFacture> {
                               IconButton(
                                 icon: const Icon(Icons.close, color: Colors.red),
                                 onPressed: () => setState(() => _clientSelectionne = null),
+                                tooltip: 'Retirer le client',
                               ),
                             ],
                           ),
@@ -334,6 +335,7 @@ class _CreeFactureState extends State<CreeFacture> {
                                           onPressed: () => _supprimerItem(index),
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
+                                          tooltip: 'Supprimer cet article',
                                         ),
                                     ],
                                   ),
@@ -560,7 +562,7 @@ class _CreeFactureState extends State<CreeFacture> {
                         decoration: InputDecoration(
                           labelText: 'Date d\'échéance',
                           prefixIcon: const Icon(Icons.calendar_today),
-                          suffixIcon: IconButton(icon: const Icon(Icons.date_range), onPressed: _selectDateEcheance),
+                          suffixIcon: IconButton(icon: const Icon(Icons.date_range), onPressed: _selectDateEcheance, tooltip: 'Choisir une date'),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                         ),
