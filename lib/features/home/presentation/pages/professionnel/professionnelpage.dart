@@ -124,6 +124,7 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
             actions: [
               // ── Icône de navigation vers la page de profil ────────────
               IconButton(
+                tooltip: 'Mon profil',
                 icon: const Icon(Icons.manage_accounts_outlined,
                     color: Colors.white, size: 26),
                 onPressed: () {

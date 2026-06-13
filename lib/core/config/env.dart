@@ -116,8 +116,11 @@ class Env {
   }
 
   // ─── Base ────────────────────────────────────────────────────────────────────
-  static String get baseUrl => _get('API_BASE_URL',
-      fallback: 'https://sign-backend-ha5a.onrender.com/sign');
+  static String get baseUrl {
+    final v = _get('API_BASE_URL', fallback: '');
+    assert(v.isNotEmpty, 'API_BASE_URL manquant — relance avec --dart-define=API_BASE_URL=...');
+    return v;
+  }
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
   static String get login =>

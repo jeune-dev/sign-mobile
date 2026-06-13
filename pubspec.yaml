@@ -147,9 +147,6 @@ flutter:
 flutter_icons:
   android: true
   ios: true
-  # IMP-03 : Utilise le logo de meilleure résolution disponible.
-  # ACTION MANUELLE REQUISE : Remplacer par un PNG 1024×1024 transparent
-  # nommé assets/images/app_icon.png pour une qualité optimale.
-  image_path: "assets/images/logo_sign.jpeg"
+  image_path: "assets/images/app_icon.png"
   adaptive_icon_background: "#FFFFFF"
-  adaptive_icon_foreground: "assets/images/logo_sign.jpeg"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
