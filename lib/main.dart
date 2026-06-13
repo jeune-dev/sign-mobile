@@ -124,6 +124,17 @@ class _MyAppState extends State<MyApp> {
           Locale('fr', 'FR'),
           Locale('en', 'US'),
         ],
+        // Clamp textScaler : empêche le texte d'exploser sur les téléphones
+        // dont l'utilisateur a mis "Taille du texte = Grande/Très grande"
+        builder: (context, child) {
+          final mq = MediaQuery.of(context);
+          return MediaQuery(
+            data: mq.copyWith(
+              textScaler: mq.textScaler.clamp(maxScaleFactor: 1.2),
+            ),
+            child: child!,
+          );
+        },
         home: const SplashPage(),
         onGenerateRoute: AppRouter.onGenerateRoute,
       ),

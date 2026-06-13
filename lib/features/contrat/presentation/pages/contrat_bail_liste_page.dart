@@ -280,9 +280,11 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
             _statsLoading
                 ? SizedBox(width: 16, height: 16,
                     child: CircularProgressIndicator(color: color, strokeWidth: 2))
-                : Text('$value',
-                    style: TextStyle(color: color, fontSize: 22,
-                        fontWeight: FontWeight.w900, height: 1)),
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('$value',
+                        style: TextStyle(color: color, fontSize: 22,
+                            fontWeight: FontWeight.w900, height: 1))),
             const SizedBox(height: 3),
             Text(label,
                 style: TextStyle(color: color.withOpacity(0.7),

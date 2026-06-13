@@ -163,6 +163,15 @@ class _LoginPageState extends State<LoginPage> {
 
   // ─────────────────────── HEADER ───────────────────────
   Widget _buildHeader() {
+    return LayoutBuilder(builder: (context, constraints) {
+      final screenW = MediaQuery.sizeOf(context).width;
+      // Réduction progressive pour petits écrans (< 360px)
+      final titleSize = screenW < 360 ? 24.0 : (screenW < 400 ? 28.0 : 32.0);
+      return _buildHeaderContent(titleSize);
+    });
+  }
+
+  Widget _buildHeaderContent(double titleSize) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -201,7 +210,7 @@ class _LoginPageState extends State<LoginPage> {
               TextSpan(
                 text: 'Se ',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 32,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   color: AppColor.kGrayscaleDark100,
                   height: 1.2,
@@ -210,7 +219,7 @@ class _LoginPageState extends State<LoginPage> {
               TextSpan(
                 text: 'Connecter',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 32,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   color: AppColor.kPrimary,
                 ),

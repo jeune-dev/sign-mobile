@@ -330,14 +330,18 @@ class _FacturesPageState extends State<FacturesPage> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             )
-                          : Text(
-                              '$total',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 48,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: -2,
-                                height: 1,
+                          : FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                '$total',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -2,
+                                  height: 1,
+                                ),
                               ),
                             ),
                       const SizedBox(height: 4),
@@ -397,18 +401,26 @@ class _FacturesPageState extends State<FacturesPage> {
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value,
-                  style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black87,
-                      height: 1)),
-              Text(title,
-                  style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(value,
+                      style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black87,
+                          height: 1)),
+                ),
+                Text(title,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ),
           ),
         ],
       ),

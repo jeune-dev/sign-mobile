@@ -349,13 +349,16 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                     height: 16,
                     child: CircularProgressIndicator(
                         color: color, strokeWidth: 2))
-                : Text(
-                    '$value',
-                    style: TextStyle(
-                        color: color,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        height: 1),
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '$value',
+                      style: TextStyle(
+                          color: color,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          height: 1),
+                    ),
                   ),
             const SizedBox(height: 3),
             Text(label,
