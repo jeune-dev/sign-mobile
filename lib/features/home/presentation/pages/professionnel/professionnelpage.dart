@@ -143,7 +143,6 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
                     ),
                   );
                 },
-                tooltip: 'Mon profil',
               ),
               // ── Déconnexion ───────────────────────────────────────────
               IconButton(
