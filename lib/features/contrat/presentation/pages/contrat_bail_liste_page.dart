@@ -13,6 +13,7 @@ import 'package:sign_application/features/contrat/presentation/bloc/contrat_bloc
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_event.dart';
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_state.dart';
 import 'package:sign_application/features/contrat/presentation/pages/creation_contrat_bail_page.dart';
+import 'package:sign_application/features/etat_logement/presentation/pages/etats_logement_liste_page.dart';
 import 'package:sign_application/core/widgets/empty_state.dart';
 import 'package:sign_application/core/widgets/shimmer_list.dart';
 import 'package:toastification/toastification.dart';
@@ -432,6 +433,32 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                   ),
                 ),
               ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EtatsLogementListePage(contrat: c),
+                ),
+              ),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF059669).withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF059669).withOpacity(0.3)),
+                ),
+                child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.fact_check_outlined, color: Color(0xFF059669), size: 16),
+                  SizedBox(width: 6),
+                  Text('État des lieux',
+                      style: TextStyle(color: Color(0xFF059669), fontSize: 12, fontWeight: FontWeight.w700)),
+                ]),
+              ),
             ),
           ),
         ],

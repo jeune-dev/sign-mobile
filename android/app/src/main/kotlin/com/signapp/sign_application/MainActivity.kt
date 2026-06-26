@@ -8,6 +8,6 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // VULN-H05 : Empêche les captures d'écran et le preview dans le gestionnaire de tâches
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        // window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
     }
 }

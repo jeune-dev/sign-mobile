@@ -1,11 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:sign_application/core/config/user_role.dart';
+import 'package:sign_application/core/routes/app_router.dart';
+import 'package:sign_application/core/services/token_service.dart';
 import 'package:sign_application/core/theme/app_color.dart';
-import 'package:sign_application/features/auth/presentation/pages/login_page.dart';
+import 'package:sign_application/injection_container.dart';
 
 // Première page d'onboarding (logo 1)
 class OnboardingPage1 extends StatefulWidget {
-  const OnboardingPage1({super.key});
+  // Route vers laquelle rediriger à la fin de l'animation.
+  // Par défaut login ; quand un appelant fournit une valeur, elle prime.
+  // Comme c'est la page d'accueil de l'app, la destination réelle
+  // (accueil client/pro si déjà connecté, sinon login) est résolue ici
+  // pendant que l'animation joue — plus besoin d'un écran intermédiaire.
+  final String nextRoute;
+
+  const OnboardingPage1({super.key, this.nextRoute = AppRouter.loginRoute});
 
   @override
   State<OnboardingPage1> createState() => _OnboardingPage1State();
@@ -17,9 +28,15 @@ class _OnboardingPage1State extends State<OnboardingPage1>
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
+  // Destination finale calculée selon l'authentification.
+  late String _nextRoute = widget.nextRoute;
+
   @override
   void initState() {
     super.initState();
+
+    // Résout la destination (auth) en tâche de fond pendant l'animation.
+    _resolveDestination();
 
     // Animation de pulsation continue pour l'image
     _pulseController = AnimationController(
@@ -36,7 +53,7 @@ class _OnboardingPage1State extends State<OnboardingPage1>
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-            const OnboardingPage2(),
+            OnboardingPage2(nextRoute: _nextRoute),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
@@ -46,6 +63,24 @@ class _OnboardingPage1State extends State<OnboardingPage1>
         );
       }
     });
+  }
+
+  // VULN-M05/M06 : reprend la session si token valide, sinon login.
+  Future<void> _resolveDestination() async {
+    try {
+      final tokenService = sl<TokenService>();
+      final storage = sl<FlutterSecureStorage>();
+      if (await tokenService.isAuthenticated) {
+        final role = await storage.read(key: 'user_role');
+        _nextRoute = UserRoleX.fromString(role).isClient
+            ? AppRouter.clientRoute
+            : AppRouter.professionnelRoute;
+      } else {
+        _nextRoute = AppRouter.loginRoute;
+      }
+    } catch (_) {
+      _nextRoute = AppRouter.loginRoute;
+    }
   }
 
   @override
@@ -125,7 +160,10 @@ class _OnboardingPage1State extends State<OnboardingPage1>
 
 // Deuxième page d'onboarding (logo 2)
 class OnboardingPage2 extends StatefulWidget {
-  const OnboardingPage2({super.key});
+  // Route finale après l'animation (login ou accueil client/pro).
+  final String nextRoute;
+
+  const OnboardingPage2({super.key, this.nextRoute = AppRouter.loginRoute});
 
   @override
   State<OnboardingPage2> createState() => _OnboardingPage2State();
@@ -151,17 +189,9 @@ class _OnboardingPage2State extends State<OnboardingPage2>
 
     _timer = Timer(const Duration(seconds: 4), () {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-            const LoginPage(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 800),
-          ),
-        );
+        // Redirige vers la destination finale calculée au démarrage :
+        // accueil client/pro si déjà connecté, sinon login.
+        Navigator.of(context).pushReplacementNamed(widget.nextRoute);
       }
     });
   }

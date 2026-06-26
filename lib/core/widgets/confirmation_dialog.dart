@@ -92,10 +92,14 @@ class _ConfirmationDialog extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: Text(
-                      cancelLabel,
-                      style: const TextStyle(
-                          color: Color(0xFF374151), fontWeight: FontWeight.w600),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        cancelLabel,
+                        maxLines: 1,
+                        style: const TextStyle(
+                            color: Color(0xFF374151), fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ),
@@ -110,10 +114,14 @@ class _ConfirmationDialog extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: Text(
-                      confirmLabel,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        confirmLabel,
+                        maxLines: 1,
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.w600),
+                      ),
                     ),
                   ),
                 ),

@@ -11,7 +11,7 @@ import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/core/theme/app_theme.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_bloc.dart';
 import 'package:sign_application/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:sign_application/features/auth/presentation/pages/splash_page.dart';
+import 'package:sign_application/features/auth/presentation/pages/onboarding_page.dart';
 import 'package:sign_application/core/services/auth_event_bus.dart';
 import 'package:sign_application/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
@@ -21,6 +21,7 @@ import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_
 import 'package:sign_application/features/facture/presentation/bloc/facture_bloc.dart';
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_bloc.dart';
 import 'package:sign_application/features/quittance_loyer/presentation/bloc/quittance_loyer_bloc.dart';
+import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_bloc.dart';
 import 'package:sign_application/features/autres_contrats/presentation/bloc/autres_contrats_bloc.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:sign_application/core/services/fcm_service.dart';
@@ -106,6 +107,7 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (_) => di.sl<ContratBloc>()),
         BlocProvider(create: (_) => di.sl<ContratTravailBloc>()),
         BlocProvider(create: (_) => di.sl<QuittanceLoyerBloc>()),
+        BlocProvider(create: (_) => di.sl<EtatLogementBloc>()),
         BlocProvider(create: (_) => di.sl<FichePaieBloc>()),
         BlocProvider(create: (_) => di.sl<AutresContratsBloc>()),
       ],
@@ -135,7 +137,7 @@ class _MyAppState extends State<MyApp> {
             child: child!,
           );
         },
-        home: const SplashPage(),
+        home: const OnboardingPage1(),
         onGenerateRoute: AppRouter.onGenerateRoute,
       ),
     );

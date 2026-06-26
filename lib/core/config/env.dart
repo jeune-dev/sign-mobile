@@ -90,6 +90,8 @@ class Env {
         return const String.fromEnvironment('FICHE_PAIE_MES_FICHES_PATH');
       case 'FICHE_PAIE_DETAIL_PATH':
         return const String.fromEnvironment('FICHE_PAIE_DETAIL_PATH');
+      case 'ETAT_LOGEMENT_BASE_PATH':
+        return const String.fromEnvironment('ETAT_LOGEMENT_BASE_PATH');
       case 'PARTICULIER_DASHBOARD_STATS_PATH':
         return const String.fromEnvironment('PARTICULIER_DASHBOARD_STATS_PATH');
       case 'PARTICULIER_FACTURES_PATH':
@@ -195,6 +197,10 @@ class Env {
       _get('FICHE_PAIE_MES_FICHES_PATH', fallback: '/v1/professionnel/mes-fiches-paie');
   static String get fichePaieDetail =>
       _get('FICHE_PAIE_DETAIL_PATH', fallback: '/v1/professionnel/fiche-paie');
+
+  // ─── État des lieux ───────────────────────────────────────────────────────────
+  static String get etatLogementBase =>
+      _get('ETAT_LOGEMENT_BASE_PATH', fallback: '/v1/professionnel/etat-logement');
 
   // ─── Particulier ─────────────────────────────────────────────────────────────
   static String get particulierDashboardStats =>

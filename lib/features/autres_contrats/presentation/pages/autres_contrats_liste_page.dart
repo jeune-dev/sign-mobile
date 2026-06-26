@@ -125,7 +125,8 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
     if (_downloading.contains(c.id)) return;
     setState(() => _downloading.add(c.id));
     try {
-      final url = '${Env.autresContratsBase(widget.type)}/${c.id}/telecharger';
+      // Route backend : GET /:contratId/download (et non /telecharger)
+      final url = '${Env.autresContratsBase(widget.type)}/${c.id}/download';
       final resp = await di.sl<Dio>().get(
         url,
         options: Options(responseType: ResponseType.bytes),

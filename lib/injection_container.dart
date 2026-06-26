@@ -87,6 +87,17 @@ import 'features/quittance_loyer/domain/usecases/creer_quittance.dart';
 import 'features/quittance_loyer/domain/usecases/telecharger_quittance.dart';
 import 'features/quittance_loyer/presentation/bloc/quittance_loyer_bloc.dart';
 
+// État des lieux
+import 'features/etat_logement/data/datasources/etat_logement_remote_datasource.dart';
+import 'features/etat_logement/data/repositories/etat_logement_repository_impl.dart';
+import 'features/etat_logement/domain/repositories/etat_logement_repository.dart';
+import 'features/etat_logement/domain/usecases/get_etats_logement.dart';
+import 'features/etat_logement/domain/usecases/get_etat_logement_detail.dart';
+import 'features/etat_logement/domain/usecases/creer_etat_logement.dart';
+import 'features/etat_logement/domain/usecases/signer_etat_logement.dart';
+import 'features/etat_logement/domain/usecases/telecharger_etat_logement.dart';
+import 'features/etat_logement/presentation/bloc/etat_logement_bloc.dart';
+
 // Autres Contrats
 import 'features/autres_contrats/data/datasources/autre_contrat_remote_datasource.dart';
 import 'features/autres_contrats/data/repositories/autre_contrat_repository_impl.dart';
@@ -259,6 +270,8 @@ Future<void> init() async {
       onError: (DioException e, handler) async {
         if (kDebugMode) {
           debugPrint('❌ [ERROR] ${e.type} ${e.requestOptions.path} — Status: ${e.response?.statusCode}');
+          // Affiche le corps renvoyé par le backend (cause réelle du 400, message de validation, etc.)
+          debugPrint('❌ [ERROR BODY] ${e.response?.data}');
         }
 
         // VULN-C04 : 401 → tenter le refresh avant de déconnecter
@@ -452,6 +465,27 @@ Future<void> init() async {
         getQuittanceDetail: sl(),
         creerQuittance: sl(),
         telechargerQuittance: sl(),
+      ));
+
+  //================================================
+  // FEATURE — ÉTAT DES LIEUX
+  //================================================
+
+  sl.registerLazySingleton<EtatLogementRemoteDataSource>(
+      () => EtatLogementRemoteDataSourceImpl(dio: sl()));
+  sl.registerLazySingleton<EtatLogementRepository>(
+      () => EtatLogementRepositoryImpl(sl()));
+  sl.registerLazySingleton(() => GetEtatsLogement(sl()));
+  sl.registerLazySingleton(() => GetEtatLogementDetail(sl()));
+  sl.registerLazySingleton(() => CreerEtatLogement(sl()));
+  sl.registerLazySingleton(() => SignerEtatLogement(sl()));
+  sl.registerLazySingleton(() => TelechargerEtatLogement(sl()));
+  sl.registerFactory(() => EtatLogementBloc(
+        getEtatsLogement: sl(),
+        getEtatLogementDetail: sl(),
+        creerEtatLogement: sl(),
+        signerEtatLogement: sl(),
+        telechargerEtatLogement: sl(),
       ));
 
   //================================================

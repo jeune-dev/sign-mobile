@@ -17,6 +17,7 @@ import 'package:sign_application/features/autres_contrats/presentation/pages/cre
 import 'package:sign_application/features/autres_contrats/presentation/pages/creation_reconnaissance_dette_page.dart';
 import 'package:sign_application/features/contrat/presentation/pages/creation_contrat_bail_page.dart';
 import 'package:sign_application/features/contrat/presentation/pages/contrat_bail_liste_page.dart';
+import 'package:sign_application/features/etat_logement/presentation/pages/etats_logement_liste_page.dart';
 import 'package:sign_application/features/contrat_travail/presentation/bloc/contrat_travail_bloc.dart';
 import 'package:sign_application/features/contrat_travail/presentation/bloc/contrat_travail_event.dart' show LoadContratsTravail;
 import 'package:sign_application/features/contrat_travail/presentation/pages/contrats_travail_liste_page.dart';
@@ -228,6 +229,28 @@ class _ContratsPageState extends State<ContratsPage> {
                 label: const Text('Mes contrats à signer', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87)),
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.black87, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  // Ouvre le module état des lieux et présente directement
+                  // la liste des contrats de bail à choisir pour démarrer.
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => const EtatsLogementListePage(autoSelectBail: true),
+                  )).then((_) => _loadAllStats());
+                },
+                icon: const Icon(Icons.fact_check_outlined, size: 20, color: Color(0xFF059669)),
+                label: const Text('États des lieux', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF059669))),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF059669), width: 1.5),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   minimumSize: const Size(double.infinity, 48),

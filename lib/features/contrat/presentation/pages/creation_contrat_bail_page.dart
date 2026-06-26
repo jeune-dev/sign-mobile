@@ -15,6 +15,7 @@ import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/confirmation_dialog.dart';
 import 'package:sign_application/core/services/form_draft_service.dart';
+import 'package:sign_application/features/etat_logement/presentation/pages/etats_logement_liste_page.dart';
 
 class CreationContratPage extends StatefulWidget {
   final User? user;
@@ -366,9 +367,34 @@ class _CreationContratPageState extends State<CreationContratPage>
     }));
   }
 
-  void _showSuccess() {
+  Future<void> _showSuccess() async {
     showToast(context, 'Contrat créé', 'Le contrat de bail a été créé avec succès.', ToastificationType.success);
-    Navigator.pop(context, true);
+
+    // On propose directement de créer l'état des lieux du logement.
+    final creerEtat = await showConfirmationDialog(
+      context,
+      title: 'Contrat de bail créé',
+      message: 'Voulez-vous créer l\'état des lieux de ce logement maintenant ?',
+      confirmLabel: 'État des lieux',
+      cancelLabel: 'Plus tard',
+      confirmColor: const Color(0xFF059669),
+      icon: Icons.fact_check_outlined,
+    );
+
+    if (!mounted) return;
+
+    if (creerEtat) {
+      // Ouvre le module état des lieux avec sélection du bail (le bail
+      // tout juste créé y apparaît) — remplace la page de création.
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const EtatsLogementListePage(autoSelectBail: true),
+        ),
+      );
+    } else {
+      Navigator.pop(context, true);
+    }
   }
 
   void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
