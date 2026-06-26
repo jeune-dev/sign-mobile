@@ -1,37 +1,23 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// REST-C01 : Variables d'environnement lues depuis --dart-define (production)
-/// avec fallback sur flutter_dotenv (développement local).
+/// Résolution des variables d'environnement.
+/// Priorité : 1) --dart-define (production)  2) .env local (dev)  3) valeur par défaut
 ///
 /// En production :
 ///   flutter build apk --dart-define=API_BASE_URL=https://sign-backend-ha5a.onrender.com/sign ...
-///
-/// En développement :
-///   Les valeurs sont lues depuis le fichier .env (non bundlé dans l'APK).
 class Env {
-  // ─── Résolution d'une variable ──────────────────────────────────────────────
-  // Priorité : 1) --dart-define   2) .env local   3) valeur par défaut
   static String _get(String key, {required String fallback}) {
-    // 1. Valeur injectée à la compilation via --dart-define
-    // fromEnvironment est évalué à compile-time par clé littérale,
-    // donc on utilise un switch statique pour chaque clé connue.
     final fromDefine = _fromDefine(key);
     if (fromDefine.isNotEmpty) return fromDefine;
 
-    // 2. Fallback sur .env chargé en mémoire (dev uniquement)
-    // Guard : dotenv.load() peut ne pas avoir été appelé (prod sans --dart-define)
     try {
       final fromDotenv = dotenv.maybeGet(key)?.trim();
       if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
-    } catch (_) {
-      // dotenv non initialisé — on tombe sur le fallback codé en dur ci-dessous
-    }
+    } catch (_) {}
 
-    // 3. Valeur par défaut codée en dur
     return fallback;
   }
 
-  /// Résolution à la compilation via --dart-define (retourne '' si non définie)
   static String _fromDefine(String key) {
     switch (key) {
       case 'API_BASE_URL':
@@ -40,6 +26,10 @@ class Env {
         return const String.fromEnvironment('AUTH_LOGIN_PATH');
       case 'AUTH_REGISTER_PATH':
         return const String.fromEnvironment('AUTH_REGISTER_PATH');
+      case 'AUTH_REFRESH_PATH':
+        return const String.fromEnvironment('AUTH_REFRESH_PATH');
+      case 'AUTH_LOGOUT_PATH':
+        return const String.fromEnvironment('AUTH_LOGOUT_PATH');
       case 'ACCOUNT_ME_PATH':
         return const String.fromEnvironment('ACCOUNT_ME_PATH');
       case 'ACCOUNT_MODIFIER_INFO_PATH':
@@ -106,10 +96,6 @@ class Env {
         return const String.fromEnvironment('PARTICULIER_FACTURES_PATH');
       case 'PARTICULIER_CONTRATS_PATH':
         return const String.fromEnvironment('PARTICULIER_CONTRATS_PATH');
-      case 'AUTH_REFRESH_PATH':
-        return const String.fromEnvironment('AUTH_REFRESH_PATH');
-      case 'AUTH_LOGOUT_PATH':
-        return const String.fromEnvironment('AUTH_LOGOUT_PATH');
       default:
         return '';
     }
@@ -124,107 +110,104 @@ class Env {
 
   // ─── Auth ────────────────────────────────────────────────────────────────────
   static String get login =>
-      _get('AUTH_LOGIN_PATH', fallback: '/auth/login');
+      _get('AUTH_LOGIN_PATH', fallback: '/v1/auth/login');
   static String get register =>
-      _get('AUTH_REGISTER_PATH', fallback: '/auth/register');
+      _get('AUTH_REGISTER_PATH', fallback: '/v1/auth/register');
+  static String get authRefresh =>
+      _get('AUTH_REFRESH_PATH', fallback: '/v1/auth/refresh');
+  static String get authLogout =>
+      _get('AUTH_LOGOUT_PATH', fallback: '/v1/auth/logout');
 
   // ─── Account ─────────────────────────────────────────────────────────────────
   static String get accountMe =>
-      _get('ACCOUNT_ME_PATH', fallback: '/account/me');
+      _get('ACCOUNT_ME_PATH', fallback: '/v1/account/me');
   static String get accountModifierInfo =>
-      _get('ACCOUNT_MODIFIER_INFO_PATH', fallback: '/account/modifier-info-personnelles');
+      _get('ACCOUNT_MODIFIER_INFO_PATH', fallback: '/v1/account/modifier-info-personnelles');
   static String get accountChangePassword =>
-      _get('ACCOUNT_CHANGE_PASSWORD_PATH', fallback: '/account/change-password');
+      _get('ACCOUNT_CHANGE_PASSWORD_PATH', fallback: '/v1/account/change-password');
   static String get accountForgotPassword =>
-      _get('ACCOUNT_FORGOT_PASSWORD_PATH', fallback: '/account/forgot-password');
+      _get('ACCOUNT_FORGOT_PASSWORD_PATH', fallback: '/v1/account/forgot-password');
   static String get accountResetPassword =>
-      _get('ACCOUNT_RESET_PASSWORD_PATH', fallback: '/account/reset-password');
+      _get('ACCOUNT_RESET_PASSWORD_PATH', fallback: '/v1/account/reset-password');
   static String get accountDeviceToken =>
-      _get('ACCOUNT_DEVICE_TOKEN_PATH', fallback: '/account/device-token');
+      _get('ACCOUNT_DEVICE_TOKEN_PATH', fallback: '/v1/account/device-token');
 
   // ─── Client ──────────────────────────────────────────────────────────────────
   static String get clientListe =>
-      _get('CLIENT_LISTE_PATH', fallback: '/professionnel/client/liste-clients');
+      _get('CLIENT_LISTE_PATH', fallback: '/v1/professionnel/client/liste-clients');
   static String get clientAjout =>
-      _get('CLIENT_AJOUT_PATH', fallback: '/professionnel/client/ajout-client');
+      _get('CLIENT_AJOUT_PATH', fallback: '/v1/professionnel/client/ajout-client');
   static String get clientRecherche =>
-      _get('CLIENT_RECHERCHE_PATH', fallback: '/professionnel/client/recherche-client');
+      _get('CLIENT_RECHERCHE_PATH', fallback: '/v1/professionnel/client/recherche-client');
 
   // ─── Facture / Document ───────────────────────────────────────────────────────
   static String get documentMesDocuments =>
-      _get('DOCUMENT_MES_DOCUMENTS_PATH', fallback: '/professionnel/document/mes-documents');
+      _get('DOCUMENT_MES_DOCUMENTS_PATH', fallback: '/v1/professionnel/document/mes-documents');
   static String get documentCreer =>
-      _get('DOCUMENT_CREER_PATH', fallback: '/professionnel/document/creer-document');
+      _get('DOCUMENT_CREER_PATH', fallback: '/v1/professionnel/document/creer-document');
   static String get documentOuvrir =>
-      _get('DOCUMENT_OUVRIR_PATH', fallback: '/professionnel/document/ouvrir-document');
+      _get('DOCUMENT_OUVRIR_PATH', fallback: '/v1/professionnel/document/ouvrir-document');
   static String get documentTelecharger =>
-      _get('DOCUMENT_TELECHARGER_PATH', fallback: '/professionnel/document/telecharger-document');
-  static String documentMettreAJour(String id) => '/professionnel/document/$id/mettre-a-jour';
-  static String documentRenvoyerFacture(String id) => '/professionnel/document/$id/renvoyer-facture';
+      _get('DOCUMENT_TELECHARGER_PATH', fallback: '/v1/professionnel/document/telecharger-document');
+  static String documentMettreAJour(String id) => '/v1/professionnel/document/$id/mettre-a-jour';
+  static String documentRenvoyerFacture(String id) => '/v1/professionnel/document/$id/renvoyer-facture';
 
   // ─── Contrat Bail ─────────────────────────────────────────────────────────────
   static String get contratBailListe =>
-      _get('CONTRAT_BAIL_LISTE_PATH', fallback: '/professionnel/contratBail/mes-contrat-immobilier');
+      _get('CONTRAT_BAIL_LISTE_PATH', fallback: '/v1/professionnel/contratBail/mes-contrat-immobilier');
   static String get contratBailCreer =>
-      _get('CONTRAT_BAIL_CREER_PATH', fallback: '/professionnel/contratBail/creation-contrat-immobilier');
+      _get('CONTRAT_BAIL_CREER_PATH', fallback: '/v1/professionnel/contratBail/creation-contrat-immobilier');
   static String get contratBailTelecharger =>
-      _get('CONTRAT_BAIL_TELECHARGER_PATH', fallback: '/professionnel/contratBail/telecharger-contrat-immobilier');
+      _get('CONTRAT_BAIL_TELECHARGER_PATH', fallback: '/v1/professionnel/contratBail/telecharger-contrat-immobilier');
   static String get contratBailSigner =>
-      _get('CONTRAT_BAIL_SIGNER_PATH', fallback: '/professionnel/contratBail');
+      _get('CONTRAT_BAIL_SIGNER_PATH', fallback: '/v1/professionnel/contratBail');
 
   // ─── Dashboard ────────────────────────────────────────────────────────────────
   static String get dashboardStats =>
-      _get('DASHBOARD_STATS_PATH', fallback: '/professionnel/dashboard/stats');
+      _get('DASHBOARD_STATS_PATH', fallback: '/v1/professionnel/dashboard/stats');
 
   // ─── Contrat Travail ──────────────────────────────────────────────────────────
   static String get contratTravailCreer =>
-      _get('CONTRAT_TRAVAIL_CREER_PATH', fallback: '/professionnel/contratTravail/creation-contrat-travail');
+      _get('CONTRAT_TRAVAIL_CREER_PATH', fallback: '/v1/professionnel/contratTravail/creation-contrat-travail');
   static String get contratTravailListe =>
-      _get('CONTRAT_TRAVAIL_LISTE_PATH', fallback: '/professionnel/contratTravail');
+      _get('CONTRAT_TRAVAIL_LISTE_PATH', fallback: '/v1/professionnel/contratTravail');
   static String get contratTravailDetail =>
-      _get('CONTRAT_TRAVAIL_DETAIL_PATH', fallback: '/professionnel/contratTravail');
+      _get('CONTRAT_TRAVAIL_DETAIL_PATH', fallback: '/v1/professionnel/contratTravail');
   static String get contratTravailTelecharger =>
-      _get('CONTRAT_TRAVAIL_TELECHARGER_PATH', fallback: '/professionnel/contratTravail');
+      _get('CONTRAT_TRAVAIL_TELECHARGER_PATH', fallback: '/v1/professionnel/contratTravail');
   static String get contratTravailSigner =>
-      _get('CONTRAT_TRAVAIL_SIGNER_PATH', fallback: '/professionnel/contratTravail');
+      _get('CONTRAT_TRAVAIL_SIGNER_PATH', fallback: '/v1/professionnel/contratTravail');
 
   // ─── Quittance de loyer ───────────────────────────────────────────────────────
   static String get quittanceCreer =>
-      _get('QUITTANCE_CREER_PATH', fallback: '/professionnel/creation-quittance-loyer');
+      _get('QUITTANCE_CREER_PATH', fallback: '/v1/professionnel/creation-quittance-loyer');
   static String get quittanceListe =>
-      _get('QUITTANCE_LISTE_PATH', fallback: '/professionnel');
+      _get('QUITTANCE_LISTE_PATH', fallback: '/v1/professionnel');
   static String get quittanceDetail =>
-      _get('QUITTANCE_DETAIL_PATH', fallback: '/professionnel');
+      _get('QUITTANCE_DETAIL_PATH', fallback: '/v1/professionnel');
   static String get quittanceTelecharger =>
-      _get('QUITTANCE_TELECHARGER_PATH', fallback: '/professionnel');
+      _get('QUITTANCE_TELECHARGER_PATH', fallback: '/v1/professionnel');
 
   // ─── Fiche de paie ────────────────────────────────────────────────────────────
   static String get fichePaieCreer =>
-      _get('FICHE_PAIE_CREER_PATH', fallback: '/professionnel/cree-fiches-paie');
+      _get('FICHE_PAIE_CREER_PATH', fallback: '/v1/professionnel/cree-fiches-paie');
   static String get fichePaieMesFiches =>
-      _get('FICHE_PAIE_MES_FICHES_PATH', fallback: '/professionnel/mes-fiches-paie');
+      _get('FICHE_PAIE_MES_FICHES_PATH', fallback: '/v1/professionnel/mes-fiches-paie');
   static String get fichePaieDetail =>
-      _get('FICHE_PAIE_DETAIL_PATH', fallback: '/professionnel/fiche-paie');
+      _get('FICHE_PAIE_DETAIL_PATH', fallback: '/v1/professionnel/fiche-paie');
 
   // ─── Particulier ─────────────────────────────────────────────────────────────
   static String get particulierDashboardStats =>
-      _get('PARTICULIER_DASHBOARD_STATS_PATH', fallback: '/particulier/dashboard/stats');
+      _get('PARTICULIER_DASHBOARD_STATS_PATH', fallback: '/v1/particulier/dashboard/stats');
   static String get particulierFactures =>
-      _get('PARTICULIER_FACTURES_PATH', fallback: '/particulier/factures');
+      _get('PARTICULIER_FACTURES_PATH', fallback: '/v1/particulier/factures');
   static String get particulierContrats =>
-      _get('PARTICULIER_CONTRATS_PATH', fallback: '/particulier/contrats');
+      _get('PARTICULIER_CONTRATS_PATH', fallback: '/v1/particulier/contrats');
 
   // ─── Stats endpoints ──────────────────────────────────────────────────────────
-  static String get contratBailStats    => '/professionnel/contratBail/stats';
-  static String get contratTravailStats => '/professionnel/contratTravail/stats';
+  static String get contratBailStats    => '/v1/professionnel/contratBail/stats';
+  static String get contratTravailStats => '/v1/professionnel/contratTravail/stats';
   static String autresContratsStats(String type) => '${autresContratsBase(type)}/stats';
 
-  // Le type est directement le segment de chemin API — pas de mapping nécessaire.
-  static String autresContratsBase(String type) => '/professionnel/$type';
-
-  // ─── Auth (endpoints supplémentaires) ────────────────────────────────────────
-  static String get authRefresh =>
-      _get('AUTH_REFRESH_PATH', fallback: '/auth/refresh');
-  static String get authLogout =>
-      _get('AUTH_LOGOUT_PATH', fallback: '/auth/logout');
+  static String autresContratsBase(String type) => '/v1/professionnel/$type';
 }
