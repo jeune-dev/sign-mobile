@@ -197,9 +197,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     } on DioException catch (e) {
       if (e.response?.statusCode == 400) {
         final errorData = e.response?.data;
-        final errorMessage = errorData is Map && errorData.containsKey('message')
-            ? errorData['message']
-            : 'Données invalides';
+        String errorMessage = 'Données invalides';
+        if (errorData is Map) {
+          final details = errorData['details'];
+          if (details is List && details.isNotEmpty) {
+            errorMessage = details.first.toString();
+          } else if (errorData.containsKey('message')) {
+            errorMessage = errorData['message'].toString();
+          }
+        }
         throw DioException(
           requestOptions: e.requestOptions,
           response: e.response,
