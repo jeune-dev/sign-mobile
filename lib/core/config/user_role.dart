@@ -27,11 +27,21 @@ extension UserRoleX on UserRole {
 
   String get label {
     switch (this) {
-      case UserRole.professionnel: return '🏢 Professionnel';
-      case UserRole.independant:   return '💼 Indépendant';
-      case UserRole.particulier:   return '👤 Particulier';
-      case UserRole.admin:         return '⚙️ Admin';
+      case UserRole.professionnel: return 'Professionnel';
+      case UserRole.independant:   return 'Indépendant';
+      case UserRole.particulier:   return 'Particulier';
+      case UserRole.admin:         return 'Admin';
       case UserRole.unknown:       return 'Inconnu';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case UserRole.professionnel: return Icons.business_outlined;
+      case UserRole.independant:   return Icons.work_outline;
+      case UserRole.particulier:   return Icons.person_outline;
+      case UserRole.admin:         return Icons.settings_outlined;
+      case UserRole.unknown:       return Icons.help_outline;
     }
   }
 

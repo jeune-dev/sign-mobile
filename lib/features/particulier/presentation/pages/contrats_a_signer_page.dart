@@ -223,7 +223,7 @@ class _ContratCard extends StatelessWidget {
                 const SizedBox(width: 8),
 
                 // Signer OU Voir document signé
-                if (contrat.peutSigner && !contrat.estSigne)
+                if (!contrat.estSigne)
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: onSigner,

@@ -59,6 +59,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B)),
             onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'Retour',
           ),
         ),
         body: SafeArea(

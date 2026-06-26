@@ -37,6 +37,7 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => context.read<QuittanceLoyerBloc>().add(LoadQuittances()),
+            tooltip: 'Actualiser',
           ),
         ],
       ),

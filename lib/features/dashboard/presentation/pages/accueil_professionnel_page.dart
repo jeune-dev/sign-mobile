@@ -278,21 +278,26 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
               color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Text(
-              '🧾  Factures',
-              style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600),
-            ),
+            child: const Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.receipt_long_outlined, size: 11, color: Colors.white70),
+              SizedBox(width: 4),
+              Text('Factures', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w600)),
+            ]),
           ),
           const SizedBox(height: 10),
           // ── Nombre de factures ────────────────────────────────────────────
-          Text(
-            '$nombreFactures',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 38,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -1.5,
-              height: 1,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '$nombreFactures',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 38,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -1.5,
+                height: 1,
+              ),
             ),
           ),
           Text(
@@ -377,15 +382,23 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
             child: Icon(icon, color: color, size: 18),
           ),
           const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value,
-                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: -0.8, height: 1)),
-              const SizedBox(height: 1),
-              Text('$subtitle $title',
-                  style: TextStyle(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.w500)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(value,
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: -0.8, height: 1)),
+                ),
+                const SizedBox(height: 1),
+                Text('$subtitle $title',
+                    style: TextStyle(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.w500),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ),
           ),
         ],
       ),
@@ -410,17 +423,18 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
             BoxShadow(color: color.withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
-        child: Row(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Flexible(
+            Icon(icon, color: Colors.white, size: 22),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
               child: Text(
                 label,
-                style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                textAlign: TextAlign.center,
+                maxLines: 2,
               ),
             ),
           ],

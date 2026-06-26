@@ -7,7 +7,7 @@ abstract class ContratRemoteDataSource {
   Future<List<ContratBailModel>> getContratsImmobilier({int page, int limit});
   Future<void> creerContratBail(Map<String, dynamic> data);
   Future<List<int>> telechargerContrat(String contratId);
-}
+} 
 
 class ContratRemoteDataSourceImpl implements ContratRemoteDataSource {
   final Dio dio;

@@ -105,13 +105,16 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                       const SizedBox(height: 24),
                       // App name with a subtle animation
-                      const Text(
-                        'Sign Application',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          letterSpacing: 1.2,
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: const Text(
+                          'Sign Application',
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                            letterSpacing: 1.2,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),

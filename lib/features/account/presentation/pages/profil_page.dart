@@ -108,13 +108,19 @@ class _ProfilPageState extends State<ProfilPage> {
                     // Photo de profil grande
                     _buildLargeAvatar(photoUrl, user),
                     const SizedBox(height: 14),
-                    Text(
-                      user.fullName,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Text(
+                        user.fullName,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                        ),
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -299,12 +305,15 @@ class _ProfilPageState extends State<ProfilPage> {
         border: Border.all(color: Colors.white, width: 3),
       ),
       child: Center(
-        child: Text(
-          initials,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            initials,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
@@ -317,12 +326,15 @@ class _ProfilPageState extends State<ProfilPage> {
       height: size,
       color: Colors.white.withValues(alpha: 0.24),
       child: Center(
-        child: Text(
-          initials,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            initials,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
@@ -344,14 +356,20 @@ class _ProfilPageState extends State<ProfilPage> {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
       ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (r != UserRole.unknown) ...[
+          Icon(r.icon, size: 13, color: Colors.white),
+          const SizedBox(width: 5),
+        ],
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
+      ]),
     );
   }
 

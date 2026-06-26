@@ -69,7 +69,7 @@ class _NetworkBannerState extends State<NetworkBanner>
               begin: const Offset(0, -1),
               end: Offset.zero,
             ).animate(_slideAnim),
-            child: _isOffline ? _OfflineBanner() : _OnlineBanner(),
+            child: _isOffline ? const _OfflineBanner() : const _OnlineBanner(),
           ),
         Expanded(child: widget.child),
       ],
@@ -78,6 +78,8 @@ class _NetworkBannerState extends State<NetworkBanner>
 }
 
 class _OfflineBanner extends StatelessWidget {
+  const _OfflineBanner();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -104,6 +106,8 @@ class _OfflineBanner extends StatelessWidget {
 }
 
 class _OnlineBanner extends StatelessWidget {
+  const _OnlineBanner();
+
   @override
   Widget build(BuildContext context) {
     return Container(

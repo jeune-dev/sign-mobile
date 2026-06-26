@@ -388,14 +388,20 @@ class _RegisterPageState extends State<RegisterPage> {
           ),
         ),
         const SizedBox(height: 20),
-        Text(
-          _currentStep == 0 ? 'Commençons !' : 'Informations complémentaires',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 28,
-            fontWeight: FontWeight.w800,
-            color: AppColor.kGrayscaleDark100,
-            height: 1.2,
-          ),
+        LayoutBuilder(
+          builder: (context, _) {
+            final sw = MediaQuery.sizeOf(context).width;
+            final fs = sw < 360 ? 22.0 : (sw < 400 ? 25.0 : 28.0);
+            return Text(
+              _currentStep == 0 ? 'Commençons !' : 'Informations complémentaires',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: fs,
+                fontWeight: FontWeight.w800,
+                color: AppColor.kGrayscaleDark100,
+                height: 1.2,
+              ),
+            );
+          },
         ),
         const SizedBox(height: 6),
         Text(

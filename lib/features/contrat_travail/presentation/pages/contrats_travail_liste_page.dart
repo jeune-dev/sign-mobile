@@ -345,9 +345,11 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                 ? SizedBox(
                     width: 16, height: 16,
                     child: CircularProgressIndicator(color: fg, strokeWidth: 2))
-                : Text('$value',
-                    style: TextStyle(
-                        color: fg, fontSize: 22, fontWeight: FontWeight.w900, height: 1)),
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('$value',
+                        style: TextStyle(
+                            color: fg, fontSize: 22, fontWeight: FontWeight.w900, height: 1))),
             const SizedBox(height: 3),
             Text(label,
                 style: TextStyle(color: fg.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w600)),

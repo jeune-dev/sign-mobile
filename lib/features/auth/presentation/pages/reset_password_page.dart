@@ -67,6 +67,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             icon: const Icon(Icons.arrow_back_ios_new_rounded,
                 color: Color(0xFF1E293B)),
             onPressed: () => Navigator.of(context).pop(),
+            tooltip: 'Retour',
           ),
         ),
         body: SafeArea(
@@ -157,6 +158,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         ),
                         onPressed: () =>
                             setState(() => _obscureNew = !_obscureNew),
+                        tooltip: _obscureNew ? 'Afficher le mot de passe' : 'Masquer le mot de passe',
                       ),
                     ),
                     validator: (v) {
@@ -192,6 +194,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                         ),
                         onPressed: () =>
                             setState(() => _obscureConfirm = !_obscureConfirm),
+                        tooltip: _obscureConfirm ? 'Afficher le mot de passe' : 'Masquer le mot de passe',
                       ),
                     ),
                     validator: (v) {

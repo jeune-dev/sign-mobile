@@ -66,6 +66,7 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
                 _obscureText = !_obscureText;
               });
             },
+            tooltip: _obscureText ? 'Afficher le mot de passe' : 'Masquer le mot de passe',
           ),
           hintText: widget.hintText,
           hintStyle: GoogleFonts.plusJakartaSans(

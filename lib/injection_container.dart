@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -181,6 +184,10 @@ Future<void> init() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
 
+  // Certificate pinning — chargement du CA cert en mémoire une seule fois
+  final certByteData = await rootBundle.load('assets/certs/backend_ca.pem');
+  final pinnedCertBytes = certByteData.buffer.asUint8List();
+
   sl.registerLazySingleton(() => const FlutterSecureStorage(
         aOptions: AndroidOptions(encryptedSharedPreferences: true),
         iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -207,6 +214,17 @@ Future<void> init() async {
         headers: {'Accept': 'application/json'},
       ),
     );
+
+    // Certificate pinning (production uniquement — désactivé en debug pour le hot-reload)
+    if (!kDebugMode) {
+      dio.httpClientAdapter = IOHttpClientAdapter(
+        createHttpClient: () {
+          final sc = SecurityContext(withTrustedRoots: false);
+          sc.setTrustedCertificatesBytes(pinnedCertBytes);
+          return HttpClient(context: sc);
+        },
+      );
+    }
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {

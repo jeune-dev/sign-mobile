@@ -298,12 +298,20 @@ class _ContratsPageState extends State<ContratsPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-                        child: const Text('📋  Mes contrats', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                          Icon(Icons.description_outlined, size: 12, color: Colors.white70),
+                          SizedBox(width: 4),
+                          Text('Mes contrats', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                        ]),
                       ),
                       const SizedBox(height: 12),
                       _statsLoading
                           ? Container(width: 60, height: 44, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)))
-                          : Text('$_totalAll', style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900, letterSpacing: -2, height: 1)),
+                          : FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text('$_totalAll', style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900, letterSpacing: -2, height: 1)),
+                            ),
                       const SizedBox(height: 4),
                       Text('Sur 9 types de contrats', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
                     ],
@@ -342,12 +350,18 @@ class _ContratsPageState extends State<ContratsPage> {
         children: [
           Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 18)),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black87, height: 1)),
-              Text(title, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black87, height: 1)),
+                ),
+                Text(title, style: TextStyle(fontSize: 11, color: Colors.grey[500]), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ],
+            ),
           ),
         ],
       ),
@@ -458,11 +472,12 @@ class _ContractTypeModal extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Nouveau contrat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black87)),
+                const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Nouveau contrat', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.black87), maxLines: 1, overflow: TextOverflow.ellipsis),
                   SizedBox(height: 2),
                   Text('Choisissez le type', style: TextStyle(fontSize: 13, color: Colors.grey)),
-                ]),
+                ])),
+                const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () => Navigator.pop(context),
                   child: Container(width: 36, height: 36, decoration: BoxDecoration(color: Colors.grey[100], shape: BoxShape.circle), child: const Icon(Icons.close_rounded, size: 18, color: Colors.black54)),
