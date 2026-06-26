@@ -75,12 +75,17 @@ class AuthResponseModel {
   AuthResponseModel({required this.token, this.refreshToken, required this.user});
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
-    final userData = json['utilisateur'] ?? {};
+    // Backend wraps everything in "data": { token, refreshToken, utilisateur }
+    final data = json['data'] is Map
+        ? Map<String, dynamic>.from(json['data'] as Map)
+        : <String, dynamic>{};
+
+    final rawUser = data['utilisateur'] ?? json['utilisateur'] ?? <String, dynamic>{};
 
     return AuthResponseModel(
-      token: json['token'] ?? '',
-      refreshToken: json['refreshToken'] as String?,
-      user: UserModel.fromJson(userData as Map<String, dynamic>),
+      token: (data['token'] ?? json['token'])?.toString() ?? '',
+      refreshToken: (data['refreshToken'] ?? json['refreshToken'])?.toString(),
+      user: UserModel.fromJson(Map<String, dynamic>.from(rawUser as Map)),
     );
   }
 
