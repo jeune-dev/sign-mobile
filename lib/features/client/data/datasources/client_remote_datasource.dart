@@ -15,7 +15,8 @@ class ClientRemoteDataSourceImpl implements ClientRemoteDataSource {
   @override
   Future<List<ClientModel>> getClients() async {
     final response = await dio.get(Env.clientListe);
-    final utilisateurs = response.data['utilisateurs'] as List? ?? [];
+    final data = response.data['data'] as Map<String, dynamic>? ?? {};
+    final utilisateurs = data['utilisateurs'] as List? ?? [];
     return utilisateurs
         .map((e) => ClientModel.fromJson(Map<String, dynamic>.from(e)))
         .toList();
@@ -33,7 +34,8 @@ class ClientRemoteDataSourceImpl implements ClientRemoteDataSource {
         'telephone': query,
       },
     );
-    final utilisateurs = response.data['utilisateurs'] as List? ?? [];
+    final data = response.data['data'] as Map<String, dynamic>? ?? {};
+    final utilisateurs = data['utilisateurs'] as List? ?? [];
     return utilisateurs
         .map((e) => ClientModel.fromJson(Map<String, dynamic>.from(e)))
         .toList();

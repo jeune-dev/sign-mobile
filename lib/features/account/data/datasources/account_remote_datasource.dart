@@ -15,7 +15,8 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
   @override
   Future<AccountUserModel> getMe() async {
     final response = await dio.get(Env.accountMe);
-    final json = Map<String, dynamic>.from(response.data['utilisateur']);
+    final data = response.data['data'] as Map<String, dynamic>? ?? {};
+    final json = Map<String, dynamic>.from(data['utilisateur'] as Map? ?? {});
     return AccountUserModel.fromJson(json);
   }
 
@@ -49,7 +50,8 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
           : null,
     );
 
-    final json = Map<String, dynamic>.from(response.data['utilisateur']);
+    final data2 = response.data['data'] as Map<String, dynamic>? ?? {};
+    final json = Map<String, dynamic>.from(data2['utilisateur'] as Map? ?? {});
     return AccountUserModel.fromJson(json);
   }
 
