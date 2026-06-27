@@ -105,11 +105,6 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
     }
   }
 
-  String _formatDate(String? d) {
-    if (d == null || d.isEmpty) return '—';
-    try { return DateFormat('MM/yyyy').format(DateTime.parse(d)); } catch (_) { return d; }
-  }
-
   String _formatMontant(double? v) {
     if (v == null) return '—';
     return '${NumberFormat('#,###', 'fr_FR').format(v).replaceAll(',', ' ')} FCFA';
@@ -237,7 +232,6 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
 
   Widget _buildCard(FichePaie fiche) {
     final moisAnnee = '${fiche.mois} ${fiche.annee}';
-    final salarieId = fiche.salarieId;
 
     return Container(
       decoration: BoxDecoration(

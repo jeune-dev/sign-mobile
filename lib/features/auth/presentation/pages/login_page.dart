@@ -127,7 +127,7 @@ class _LoginPageState extends State<LoginPage> {
           showToast(
             context,
             'Échec de la connexion',
-            'Identifiant ou mot de passe incorrect !',
+            state.message,
             ToastificationType.error,
           );
         }

@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:sign_application/core/widgets/logout_dialog.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
-import '../../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../../account/presentation/pages/profil_page.dart';
 import '../../../../particulier/presentation/bloc/particulier_bloc.dart';
 import '../../../../particulier/presentation/pages/dashboard_client_page.dart';

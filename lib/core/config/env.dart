@@ -182,19 +182,19 @@ class Env {
 
   // ─── Quittance de loyer ───────────────────────────────────────────────────────
   static String get quittanceCreer =>
-      _get('QUITTANCE_CREER_PATH', fallback: '/v1/professionnel/creation-quittance-loyer');
+      _get('QUITTANCE_CREER_PATH', fallback: '/v1/professionnel/quittance-loyer/creation-quittance-loyer');
   static String get quittanceListe =>
-      _get('QUITTANCE_LISTE_PATH', fallback: '/v1/professionnel');
+      _get('QUITTANCE_LISTE_PATH', fallback: '/v1/professionnel/quittance-loyer');
   static String get quittanceDetail =>
-      _get('QUITTANCE_DETAIL_PATH', fallback: '/v1/professionnel');
+      _get('QUITTANCE_DETAIL_PATH', fallback: '/v1/professionnel/quittance-loyer');
   static String get quittanceTelecharger =>
-      _get('QUITTANCE_TELECHARGER_PATH', fallback: '/v1/professionnel');
+      _get('QUITTANCE_TELECHARGER_PATH', fallback: '/v1/professionnel/quittance-loyer');
 
   // ─── Fiche de paie ────────────────────────────────────────────────────────────
   static String get fichePaieCreer =>
-      _get('FICHE_PAIE_CREER_PATH', fallback: '/v1/professionnel/cree-fiches-paie');
+      _get('FICHE_PAIE_CREER_PATH', fallback: '/v1/professionnel/fiche-paie/cree-fiches-paie');
   static String get fichePaieMesFiches =>
-      _get('FICHE_PAIE_MES_FICHES_PATH', fallback: '/v1/professionnel/mes-fiches-paie');
+      _get('FICHE_PAIE_MES_FICHES_PATH', fallback: '/v1/professionnel/fiche-paie/mes-fiches-paie');
   static String get fichePaieDetail =>
       _get('FICHE_PAIE_DETAIL_PATH', fallback: '/v1/professionnel/fiche-paie');
 

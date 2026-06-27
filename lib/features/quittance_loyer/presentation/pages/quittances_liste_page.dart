@@ -43,10 +43,16 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.black,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreationQuittancePage()),
-        ).then((_) => context.read<QuittanceLoyerBloc>().add(LoadQuittances())),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreationQuittancePage()),
+          ).then((_) {
+            if (context.mounted) {
+              context.read<QuittanceLoyerBloc>().add(LoadQuittances());
+            }
+          });
+        },
         child: const Icon(Icons.add, color: Colors.white),
       ),
       body: BlocConsumer<QuittanceLoyerBloc, QuittanceLoyerState>(
