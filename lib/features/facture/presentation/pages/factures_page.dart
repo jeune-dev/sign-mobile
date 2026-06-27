@@ -1272,3 +1272,16 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
     );
   }
 }
+
+class _LoadingDialog extends StatelessWidget {
+  const _LoadingDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 80, height: 80,
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      child: const Center(child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5)),
+    );
+  }
+}

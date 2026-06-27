@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:toastification/toastification.dart';
 import '../../../../core/widgets/toastNotif.dart';
 import '../bloc/auth_bloc.dart';
@@ -14,7 +15,7 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
-  final _formKey = GlobalKey<FormState>();
+  final _formKey         = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   bool _submitted = false;
 
@@ -28,8 +29,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     setState(() => _submitted = true);
     if (!_formKey.currentState!.validate()) return;
     context.read<AuthBloc>().add(
-          ForgotPasswordRequested(email: _emailController.text.trim()),
-        );
+      ForgotPasswordRequested(email: _emailController.text.trim()),
+    );
   }
 
   @override
@@ -37,27 +38,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         if (state is ForgotPasswordSuccess) {
-          showToast(
-            context,
-            'Code envoyé',
-            'Un code a été envoyé à votre adresse email.',
-            ToastificationType.success,
-          );
-          Navigator.of(context).pushNamed(
-            '/reset-password',
-            arguments: _emailController.text.trim(),
-          );
+          showToast(context, 'Code envoyé', 'Un code a été envoyé à votre adresse email.', ToastificationType.success);
+          Navigator.of(context).pushNamed('/reset-password', arguments: _emailController.text.trim());
         } else if (state is AuthFailure) {
           showToast(context, 'Erreur', state.message, ToastificationType.error);
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: Colors.white,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B)),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF1E293B), size: 20),
             onPressed: () => Navigator.of(context).pop(),
             tooltip: 'Retour',
           ),
@@ -73,50 +66,44 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 32),
-                  // Illustration
+                  const SizedBox(height: 20),
+
+                  // ── Icône centrale ─────────────────────────────────────────
                   Center(
                     child: Container(
-                      width: 96,
-                      height: 96,
+                      width: 88,
+                      height: 88,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: const Color(0xFFF3F4F6),
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Icon(
-                        Icons.lock_reset_rounded,
-                        size: 48,
-                        color: Color(0xFF1A73E8),
-                      ),
+                      child: const Icon(Icons.lock_reset_rounded, size: 44, color: Color(0xFF111827)),
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  const Text(
+                  const SizedBox(height: 28),
+
+                  // ── Titre ──────────────────────────────────────────────────
+                  Text(
                     'Mot de passe oublié ?',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1E293B),
-                      letterSpacing: -0.5,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 26, fontWeight: FontWeight.w800,
+                      color: const Color(0xFF111827), letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Entrez votre adresse email et nous vous enverrons un code de réinitialisation.',
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: Color(0xFF64748B),
-                      height: 1.5,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15, color: const Color(0xFF6B7280), height: 1.5,
                     ),
                   ),
-                  const SizedBox(height: 40),
-                  // Email field
-                  const Text(
+                  const SizedBox(height: 36),
+
+                  // ── Champ email ────────────────────────────────────────────
+                  Text(
                     'Adresse email',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF374151),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF111827),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -125,50 +112,29 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 15, color: const Color(0xFF111827)),
                     decoration: InputDecoration(
                       hintText: 'exemple@email.com',
-                      hintStyle: const TextStyle(color: Color(0xFFADB5BD)),
-                      prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF6B7280)),
+                      hintStyle: GoogleFonts.plusJakartaSans(fontSize: 15, color: const Color(0xFF9CA3AF)),
+                      prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF6B7280), size: 20),
                       filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 16),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: Color(0xFF1A73E8), width: 2),
-                      ),
-                      errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFDC2626)),
-                      ),
-                      focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: Color(0xFFDC2626), width: 2),
-                      ),
+                      fillColor: const Color(0xFFF8F8FA),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5)),
+                      errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
+                      focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Veuillez entrer votre email';
-                      }
-                      final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                      if (!emailRegex.hasMatch(value.trim())) {
-                        return 'Format d\'email invalide';
-                      }
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'Veuillez entrer votre email';
+                      if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim())) return 'Format d\'email invalide';
                       return null;
                     },
                   ),
                   const SizedBox(height: 32),
-                  // Submit button
+
+                  // ── Bouton ─────────────────────────────────────────────────
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       final isLoading = state is AuthLoading;
@@ -178,48 +144,40 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                         child: ElevatedButton(
                           onPressed: isLoading ? null : _submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1A73E8),
-                            disabledBackgroundColor:
-                                const Color(0xFF1A73E8).withAlpha(128),
+                            backgroundColor: Colors.black87,
+                            disabledBackgroundColor: Colors.black38,
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           ),
                           child: isLoading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'Envoyer le code',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w700,
-                                  ),
+                              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text('Envoyer le code', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                                    const SizedBox(width: 8),
+                                    const Icon(Icons.send_rounded, size: 18),
+                                  ],
                                 ),
                         ),
                       );
                     },
                   ),
-                  const SizedBox(height: 24),
+
+                  const SizedBox(height: 20),
                   Center(
                     child: TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
+                      child: Text(
                         'Retour à la connexion',
-                        style: TextStyle(
-                          color: Color(0xFF1A73E8),
-                          fontWeight: FontWeight.w600,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF111827),
                         ),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

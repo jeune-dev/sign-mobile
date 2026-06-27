@@ -177,19 +177,32 @@ class _ContratsClientPageState extends State<ContratsClientPage> {
 
   Widget _buildError(String message) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.red),
-          const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.black),
-            onPressed: _load,
-            child: const Text('Réessayer', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+              child: Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 32),
+            ),
+            const SizedBox(height: 16),
+            const Text('Impossible de charger', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF111827))),
+            const SizedBox(height: 6),
+            Text(message, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13), textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black87, foregroundColor: Colors.white,
+                elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 13),
+              ),
+              onPressed: _load,
+              child: const Text('Réessayer', style: TextStyle(fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -237,14 +250,18 @@ class _ContratCard extends StatelessWidget {
   final ParticulierContrat contrat;
   final VoidCallback onTap;
 
+  static final _dateFmt = DateFormat('dd/MM/yyyy');
+
   const _ContratCard({required this.contrat, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final date = contrat.createdAt.isNotEmpty
-        ? DateFormat('dd/MM/yyyy').format(DateTime.tryParse(contrat.createdAt) ?? DateTime.now())
+        ? _dateFmt.format(DateTime.tryParse(contrat.createdAt) ?? DateTime.now())
         : '';
     final isSigne = contrat.estSigne;
+    final statusColor = isSigne ? const Color(0xFF16A34A) : const Color(0xFFD97706);
+    final statusBg    = isSigne ? const Color(0xFFF0FDF4) : const Color(0xFFFFFBEB);
 
     return GestureDetector(
       onTap: onTap,
@@ -252,72 +269,62 @@ class _ContratCard extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
           ],
         ),
         child: Row(
           children: [
-            // Icône
             Container(
-              padding: const EdgeInsets.all(10),
+              width: 44, height: 44,
               decoration: BoxDecoration(
-                color: isSigne ? Colors.green.shade50 : Colors.orange.shade50,
-                borderRadius: BorderRadius.circular(10),
+                color: isSigne ? const Color(0xFFF0FDF4) : const Color(0xFFFFF7ED),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                Icons.description_outlined,
-                color: isSigne ? Colors.green.shade700 : Colors.orange.shade700,
-                size: 22,
-              ),
+              child: Icon(Icons.description_outlined, color: statusColor, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    contrat.numeroContrat,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                  ),
-                  Text(
-                    contrat.typeLabel,
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                  ),
-                  if (contrat.generateurNom != null || contrat.generateurEntreprise != null)
+                  Text(contrat.numeroContrat, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF111827))),
+                  const SizedBox(height: 2),
+                  Text(contrat.typeLabel, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                  if (contrat.generateurNom != null || contrat.generateurEntreprise != null) ...[
+                    const SizedBox(height: 1),
                     Text(
                       contrat.generateurEntreprise ?? contrat.generateurNom ?? '',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
                     ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      _StatusBadge(isSigne: isSigne),
-                      if (contrat.peutSigner) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade50,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text('À signer', style: TextStyle(fontSize: 10, color: Colors.blue.shade700)),
-                        ),
-                      ],
+                  ],
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: statusBg, borderRadius: BorderRadius.circular(20), border: Border.all(color: statusColor.withValues(alpha: 0.3))),
+                      child: Text(isSigne ? 'Signé' : 'En attente', style: TextStyle(fontSize: 11, color: statusColor, fontWeight: FontWeight.w600)),
+                    ),
+                    if (contrat.peutSigner) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(color: const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFF93C5FD))),
+                        child: const Text('À signer', style: TextStyle(fontSize: 11, color: Color(0xFF1D4ED8), fontWeight: FontWeight.w600)),
+                      ),
                     ],
-                  ),
+                  ]),
                 ],
               ),
             ),
-            Column(
-              children: [
-                Text(date, style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
-                const SizedBox(height: 4),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
-            ),
+            const SizedBox(width: 8),
+            Column(mainAxisSize: MainAxisSize.min, children: [
+              if (date.isNotEmpty) Text(date, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+              const SizedBox(height: 4),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF), size: 20),
+            ]),
           ],
         ),
       ),
@@ -325,26 +332,3 @@ class _ContratCard extends StatelessWidget {
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  final bool isSigne;
-  const _StatusBadge({required this.isSigne});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: isSigne ? Colors.green.shade100 : Colors.orange.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        isSigne ? 'Signé' : 'En attente de signature',
-        style: TextStyle(
-          fontSize: 11,
-          color: isSigne ? Colors.green.shade800 : Colors.orange.shade800,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-}
