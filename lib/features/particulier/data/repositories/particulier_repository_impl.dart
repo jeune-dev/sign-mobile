@@ -13,8 +13,11 @@ class ParticulierRepositoryImpl implements ParticulierRepository {
   ParticulierRepositoryImpl({required this.remoteDataSource});
 
   String _mapDioError(DioException e) {
-    if (e.response?.data is Map && e.response?.data['message'] != null) {
-      return e.response!.data['message'] as String;
+    final data = e.response?.data;
+    if (data is Map) {
+      return (data['message'] ?? data['error'] ?? data['msg'])?.toString()
+          ?? e.message
+          ?? 'Une erreur est survenue';
     }
     return e.message ?? 'Une erreur est survenue';
   }

@@ -167,7 +167,7 @@ class _ContratsPageState extends State<ContratsPage> {
       );
     }
     Navigator.push(context, MaterialPageRoute(builder: (_) => page))
-        .then((_) => _loadAllStats());
+        .then((_) { if (mounted) _loadAllStats(); });
   }
 
   Widget _getCreationPage(String id) {
@@ -246,7 +246,7 @@ class _ContratsPageState extends State<ContratsPage> {
                   // la liste des contrats de bail à choisir pour démarrer.
                   Navigator.of(context).push(MaterialPageRoute(
                     builder: (_) => const EtatsLogementListePage(autoSelectBail: true),
-                  )).then((_) => _loadAllStats());
+                  )).then((_) { if (mounted) _loadAllStats(); });
                 },
                 icon: const Icon(Icons.fact_check_outlined, size: 20, color: Color(0xFF059669)),
                 label: const Text('États des lieux', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF059669))),

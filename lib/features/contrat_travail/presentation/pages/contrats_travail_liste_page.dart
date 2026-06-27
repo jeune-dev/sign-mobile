@@ -232,7 +232,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CreationContratTravailPage()),
-        ).then((_) => _refreshAll()),
+        ).then((_) { if (mounted) _refreshAll(); }),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Nouveau', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
