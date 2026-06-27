@@ -24,6 +24,10 @@ class _ContratsASignerPageState extends State<ContratsASignerPage> {
   // Contrat en cours de téléchargement PDF (pour éviter doubles appels)
   String? _downloadingPdfFor;
 
+  // Dernière liste chargée, conservée pour ne pas la perdre lors des états
+  // transitoires (signature en cours, contrat signé, PDF en chargement).
+  List<ParticulierContrat>? _contrats;
+
   @override
   void initState() {
     super.initState();
@@ -76,6 +80,11 @@ class _ContratsASignerPageState extends State<ContratsASignerPage> {
       ),
       body: BlocConsumer<ParticulierBloc, ParticulierState>(
         listener: (ctx, state) {
+          if (state is ContratsLoaded) {
+            // Met à jour le cache : la liste reste affichée pendant les
+            // états transitoires suivants (signature, PDF…).
+            setState(() => _contrats = state.contrats);
+          }
           if (state is ContratPdfReady && _downloadingPdfFor != null) {
             setState(() => _downloadingPdfFor = null);
             _openPdf(state.pdfBytes, 'contrat_${state.contratId}.pdf');
@@ -92,12 +101,12 @@ class _ContratsASignerPageState extends State<ContratsASignerPage> {
           }
         },
         builder: (ctx, state) {
-          if (state is ParticulierLoading || state is ContratPdfLoading) {
+          // Premier chargement uniquement : aucun contrat encore en cache.
+          if (_contrats == null) {
             return const Center(child: CircularProgressIndicator(color: Colors.black));
           }
 
-          List<ParticulierContrat> contrats = [];
-          if (state is ContratsLoaded) contrats = state.contrats;
+          final contrats = _contrats!;
 
           if (contrats.isEmpty) {
             return Center(
