@@ -49,7 +49,7 @@ class ClientRepositoryImpl implements ClientRepository {
         'prenom': prenom,
         'email': email,
         'mot_de_passe': motDePasse,
-        'role': 'Client',
+        'role': 'Particulier',
         if (telephone != null && telephone.isNotEmpty) 'telephone': telephone,
         if (adresse != null && adresse.isNotEmpty) 'adresse': adresse,
         if (carteIdentiteNationalNum != null && carteIdentiteNationalNum.isNotEmpty)
@@ -65,8 +65,11 @@ class ClientRepositoryImpl implements ClientRepository {
   }
 
   String _handleDioError(DioException e) {
-    if (e.response?.data is Map && e.response?.data['message'] != null) {
-      return e.response!.data['message'];
+    final data = e.response?.data;
+    if (data is Map) {
+      return (data['message'] ?? data['error'] ?? data['msg'])?.toString()
+          ?? e.message
+          ?? 'Une erreur est survenue';
     }
     return e.message ?? 'Une erreur est survenue';
   }

@@ -155,7 +155,11 @@ class _AjouterClientPageState extends State<AjouterClientPage> {
                         prefixIcon: const Icon(Icons.lock_outline),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
-                      validator: (v) => v == null || v.isEmpty ? 'Veuillez confirmer' : null,
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Veuillez confirmer le mot de passe';
+                        if (v != _passwordController.text) return 'Les mots de passe ne correspondent pas';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     const Text('Téléphone', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

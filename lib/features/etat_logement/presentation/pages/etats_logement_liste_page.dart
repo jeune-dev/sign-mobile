@@ -190,7 +190,7 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
         ),
       ),
     );
-    if (created == true) _reload();
+    if (created == true && mounted) _reload();
   }
 
   /// Bouton « Nouvel état » : scoped → bail courant ; module → choix du bail.
