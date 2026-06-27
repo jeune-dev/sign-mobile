@@ -23,12 +23,14 @@ class AutresContratsListePage extends StatefulWidget {
   final String type;
   final String titre;
   final Widget Function(BuildContext context) createPageBuilder;
+  final String? currentUserId;
 
   const AutresContratsListePage({
     super.key,
     required this.type,
     required this.titre,
     required this.createPageBuilder,
+    this.currentUserId,
   });
 
   @override
@@ -377,12 +379,18 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   Widget _buildCard(AutreContrat c) {
     final isSign = c.statut == 'signe';
     final statusColor = isSign ? Colors.green : const Color(0xFFFFB347);
-    final statusLabel = isSign ? 'Signé' : 'En attente de signature';
+    final statusLabel = isSign ? 'Signé' : 'En attente';
     final isDown = _downloading.contains(c.id);
+
+    final generateurId = c.generateur?['id']?.toString();
+    final estCreateur = widget.currentUserId != null && generateurId == widget.currentUserId;
 
     final autrePartieNom = c.autrePartie != null
         ? '${c.autrePartie!['prenom'] ?? ''} ${c.autrePartie!['nom'] ?? ''}'
             .trim()
+        : null;
+    final generateurNom = c.generateur != null
+        ? '${c.generateur!['prenom'] ?? ''} ${c.generateur!['nom'] ?? ''}'.trim()
         : null;
 
     return Container(
@@ -449,19 +457,38 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                     ],
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: statusColor.withOpacity(0.3)),
-                  ),
-                  child: Text(statusLabel,
-                      style: TextStyle(
-                          color: statusColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700)),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                      ),
+                      child: Text(statusLabel,
+                          style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
+                    ),
+                    if (widget.currentUserId != null) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: estCreateur ? Colors.black.withOpacity(0.07) : Colors.blue.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          estCreateur ? 'Créateur' : 'Reçu',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: estCreateur ? Colors.black54 : Colors.blue[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),

@@ -158,6 +158,7 @@ class _ContratsPageState extends State<ContratsPage> {
         value: context.read<AutresContratsBloc>()..add(LoadContrats(type.id)),
         child: AutresContratsListePage(
           type: type.id, titre: type.titre,
+          currentUserId: widget.user?.id,
           createPageBuilder: (_) => BlocProvider.value(
             value: context.read<AutresContratsBloc>(),
             child: _getCreationPage(type.id),
