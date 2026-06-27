@@ -18,6 +18,7 @@ import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
 import '../../domain/entities/autre_contrat.dart';
+import 'contrat_signature_page.dart';
 
 class AutresContratsListePage extends StatefulWidget {
   final String type;
@@ -119,6 +120,23 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
       }
     } catch (e) {
       if (mounted) showDownloadErrorSnackBar(context, e.toString());
+    }
+  }
+
+  // ── Ouvrir page de signature ─────────────────────────────────────────────
+  Future<void> _ouvrirSignature(AutreContrat c) async {
+    final signed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BlocProvider.value(
+          value: context.read<AutresContratsBloc>(),
+          child: ContratSignaturePage(contrat: c, type: widget.type),
+        ),
+      ),
+    );
+    if ((signed ?? false) && mounted) {
+      context.read<AutresContratsBloc>().add(LoadContrats(widget.type));
+      _loadStats();
     }
   }
 
@@ -516,87 +534,114 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
             ),
           ],
 
-          // ── Boutons Télécharger / Voir le doc ──────────────────────────
+          // ── Boutons actions ─────────────────────────────────────────────
           Divider(color: Colors.grey[100], height: 1),
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                // Télécharger
-                Expanded(
-                  child: GestureDetector(
-                    onTap: isDown ? null : () => _telecharger(c),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[200]!),
+            child: !estCreateur && c.statut == 'en_attente'
+                // ── Destinataire / En attente → Ouvrir + Signer ──────────
+                ? Row(children: [
+                    // Ouvrir le contrat (lecture seule)
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => _ouvrirContrat(c),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.visibility_outlined, size: 15, color: Colors.black54),
+                              SizedBox(width: 6),
+                              Text('Ouvrir', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                        ),
                       ),
-                      child: isDown
-                          ? const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 14,
-                                  height: 14,
-                                  child: CircularProgressIndicator(
-                                      color: Colors.black54, strokeWidth: 2),
-                                ),
-                                SizedBox(width: 8),
-                                Text('Téléchargement…',
-                                    style: TextStyle(
-                                        color: Colors.black45,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600)),
-                              ],
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.download_rounded,
-                                    size: 16, color: Colors.black54),
-                                SizedBox(width: 6),
-                                Text('Télécharger',
-                                    style: TextStyle(
-                                        color: Colors.black54,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700)),
-                              ],
+                    ),
+                    const SizedBox(width: 10),
+                    // Signer → page signature
+                    Expanded(
+                      flex: 2,
+                      child: GestureDetector(
+                        onTap: () => _ouvrirSignature(c),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.draw_outlined, color: Colors.white, size: 15),
+                              SizedBox(width: 6),
+                              Text('Signer le contrat', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ])
+                // ── Créateur ou déjà signé → Voir uniquement ─────────────
+                : Row(children: [
+                    if (estCreateur) ...[
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: isDown ? null : () => _telecharger(c),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey[200]!),
                             ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Voir le doc
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => _ouvrirContrat(c),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(12),
+                            child: isDown
+                                ? const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                    SizedBox(width: 14, height: 14, child: CircularProgressIndicator(color: Colors.black54, strokeWidth: 2)),
+                                    SizedBox(width: 8),
+                                    Text('…', style: TextStyle(color: Colors.black45, fontSize: 12)),
+                                  ])
+                                : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                    Icon(Icons.download_rounded, size: 15, color: Colors.black54),
+                                    SizedBox(width: 6),
+                                    Text('Télécharger', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.w700)),
+                                  ]),
+                          ),
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.open_in_new_rounded,
-                              color: Colors.white, size: 16),
-                          const SizedBox(width: 6),
-                          Text(_labelVoirContrat(widget.type),
-                              style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700)),
-                        ],
+                      const SizedBox(width: 10),
+                    ],
+                    Expanded(
+                      flex: estCreateur ? 1 : 2,
+                      child: GestureDetector(
+                        onTap: () => _ouvrirContrat(c),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.open_in_new_rounded, color: Colors.white, size: 15),
+                              const SizedBox(width: 6),
+                              Text(
+                                c.statut == 'signe' ? 'Voir le contrat signé' : _labelVoirContrat(widget.type),
+                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ],
-            ),
+                  ]),
           ),
         ],
       ),
