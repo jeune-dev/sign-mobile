@@ -641,7 +641,7 @@ class _CreeFactureState extends State<CreeFacture> {
                       const Text('Moyen de paiement *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _selectedMoyenPaiement,
+                        initialValue: _selectedMoyenPaiement,
                         decoration: InputDecoration(
                           labelText: 'Sélectionnez',
                           prefixIcon: const Icon(Icons.payment),
@@ -687,7 +687,7 @@ class _CreeFactureState extends State<CreeFacture> {
                       const Text('TVA (%) *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: _selectedTva,
+                        initialValue: _selectedTva,
                         decoration: InputDecoration(
                           labelText: 'Sélectionnez le taux',
                           prefixIcon: const Icon(Icons.percent),
@@ -734,3 +734,4 @@ class _CreeFactureState extends State<CreeFacture> {
     );
   }
 }
+

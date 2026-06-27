@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -41,8 +41,8 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
   static final _montantFmt     = NumberFormat('#,###', 'fr_FR');
 
   static const _moisList = [
-    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+    'Janvier', 'FÃ©vrier', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'AoÃ»t', 'Septembre', 'Octobre', 'Novembre', 'DÃ©cembre',
   ];
 
   double get _montantTotal {
@@ -78,11 +78,11 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClient == null) {
-      showToast(context, 'Champ requis', 'Veuillez sélectionner un locataire', ToastificationType.error);
+      showToast(context, 'Champ requis', 'Veuillez sÃ©lectionner un locataire', ToastificationType.error);
       return;
     }
     if (_datePaiement == null) {
-      showToast(context, 'Champ requis', 'Veuillez sélectionner la date de paiement', ToastificationType.error);
+      showToast(context, 'Champ requis', 'Veuillez sÃ©lectionner la date de paiement', ToastificationType.error);
       return;
     }
 
@@ -105,7 +105,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
     }));
   }
 
-  // ── Décorations ─────────────────────────────────────────────────────────────
+  // â”€â”€ DÃ©corations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   InputDecoration _dec(String hint, {IconData? icon, Widget? suffix}) {
     return InputDecoration(
       hintText: hint,
@@ -176,7 +176,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
       body: BlocListener<QuittanceLoyerBloc, QuittanceLoyerState>(
         listener: (context, state) {
           if (state is QuittanceLoyerSuccess) {
-            showToast(context, 'Quittance créée', 'La quittance de loyer a été créée avec succès.', ToastificationType.success);
+            showToast(context, 'Quittance crÃ©Ã©e', 'La quittance de loyer a Ã©tÃ© crÃ©Ã©e avec succÃ¨s.', ToastificationType.success);
             Navigator.pop(context);
           }
           if (state is QuittanceLoyerError) {
@@ -189,7 +189,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
             children: [
 
-              // ── Locataire ──────────────────────────────────────────────────
+              // â”€â”€ Locataire â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _card(children: [
                 _sectionTitle('Locataire', Icons.person_outline_rounded),
                 if (_selectedClient != null)
@@ -234,7 +234,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 else ...[
                   TextField(
                     controller: _clientSearchCtrl,
-                    decoration: _dec('Rechercher un locataire…', icon: Icons.search_rounded),
+                    decoration: _dec('Rechercher un locataireâ€¦', icon: Icons.search_rounded),
                     onChanged: (v) {
                       if (v.length >= 2) context.read<ClientBloc>().add(RechercherClientsEvent(v));
                     },
@@ -284,7 +284,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 ],
               ]),
 
-              // ── Logement ────────────────────────────────────────────────────
+              // â”€â”€ Logement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _card(children: [
                 _sectionTitle('Logement', Icons.home_outlined),
                 _label('Adresse du logement', req: true),
@@ -296,7 +296,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 const SizedBox(height: 14),
                 _label('Type de bien', req: true),
                 DropdownButtonFormField<String>(
-                  value: _typeBien,
+                  initialValue: _typeBien,
                   decoration: _dec('Type de bien', icon: Icons.apartment_outlined),
                   borderRadius: BorderRadius.circular(12),
                   items: const [
@@ -311,14 +311,14 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 ),
               ]),
 
-              // ── Période ────────────────────────────────────────────────────
+              // â”€â”€ PÃ©riode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _card(children: [
-                _sectionTitle('Période', Icons.calendar_month_outlined),
+                _sectionTitle('PÃ©riode', Icons.calendar_month_outlined),
                 Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     _label('Mois', req: true),
                     DropdownButtonFormField<String>(
-                      value: _mois,
+                      initialValue: _mois,
                       decoration: _dec('Mois'),
                       borderRadius: BorderRadius.circular(12),
                       items: _moisList.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
@@ -327,7 +327,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                   ])),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    _label('Année', req: true),
+                    _label('AnnÃ©e', req: true),
                     TextFormField(
                       controller: _anneeCtrl,
                       keyboardType: TextInputType.number,
@@ -338,7 +338,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 ]),
               ]),
 
-              // ── Montants ────────────────────────────────────────────────────
+              // â”€â”€ Montants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _card(children: [
                 _sectionTitle('Montants', Icons.payments_outlined),
                 _label('Loyer mensuel', req: true),
@@ -383,7 +383,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 ),
               ]),
 
-              // ── Paiement ────────────────────────────────────────────────────
+              // â”€â”€ Paiement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _card(children: [
                 _sectionTitle('Paiement', Icons.account_balance_wallet_outlined),
                 // Date
@@ -405,7 +405,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        _datePaiement != null ? _dateFmtDisplay.format(_datePaiement!) : 'Sélectionner une date',
+                        _datePaiement != null ? _dateFmtDisplay.format(_datePaiement!) : 'SÃ©lectionner une date',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: _datePaiement != null ? FontWeight.w600 : FontWeight.w400,
@@ -420,14 +420,14 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 const SizedBox(height: 14),
                 _label('Mode de paiement', req: true),
                 DropdownButtonFormField<String>(
-                  value: _modePaiement,
+                  initialValue: _modePaiement,
                   decoration: _dec('Mode de paiement', icon: Icons.payment_outlined),
                   borderRadius: BorderRadius.circular(12),
                   items: const [
-                    DropdownMenuItem(value: 'Espèces',           child: Text('Espèces')),
+                    DropdownMenuItem(value: 'EspÃ¨ces',           child: Text('EspÃ¨ces')),
                     DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
                     DropdownMenuItem(value: 'Mobile Money',      child: Text('Mobile Money')),
-                    DropdownMenuItem(value: 'Chèque',            child: Text('Chèque')),
+                    DropdownMenuItem(value: 'ChÃ¨que',            child: Text('ChÃ¨que')),
                     DropdownMenuItem(value: 'ALL',               child: Text('Tout mode de paiement')),
                     DropdownMenuItem(value: 'Autre',             child: Text('Autre')),
                   ],
@@ -446,43 +446,43 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                     contentPadding: EdgeInsets.zero,
                     title: Text('Paiement complet', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14)),
                     subtitle: Text(
-                      _paiementComplet ? 'La totalité du loyer a été réglée' : 'Paiement partiel',
+                      _paiementComplet ? 'La totalitÃ© du loyer a Ã©tÃ© rÃ©glÃ©e' : 'Paiement partiel',
                       style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                     ),
                     value: _paiementComplet,
-                    activeColor: Colors.black87,
+                    activeThumbColor: Colors.black87,
                     onChanged: (v) => setState(() => _paiementComplet = v),
                   ),
                 ),
                 if (!_paiementComplet) ...[
                   const SizedBox(height: 14),
-                  _label('Montant payé'),
+                  _label('Montant payÃ©'),
                   TextFormField(
                     controller: _montantPayeCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: _dec('Montant partiel reçu', icon: Icons.price_check_outlined),
+                    decoration: _dec('Montant partiel reÃ§u', icon: Icons.price_check_outlined),
                   ),
                 ],
               ]),
 
-              // ── Informations complémentaires ────────────────────────────────
+              // â”€â”€ Informations complÃ©mentaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _card(children: [
-                _sectionTitle('Informations complémentaires', Icons.edit_note_outlined),
+                _sectionTitle('Informations complÃ©mentaires', Icons.edit_note_outlined),
                 _label('Observations'),
                 TextFormField(
                   controller: _obsCtrl,
                   maxLines: 3,
-                  decoration: _dec('Remarques, commentaires…', icon: Icons.notes_rounded),
+                  decoration: _dec('Remarques, commentairesâ€¦', icon: Icons.notes_rounded),
                 ),
                 const SizedBox(height: 14),
-                _label("Ville d'émission"),
+                _label("Ville d'Ã©mission"),
                 TextFormField(
                   controller: _villeCtrl,
                   decoration: _dec('Ex: Dakar', icon: Icons.location_city_outlined),
                 ),
               ]),
 
-              // ── Bouton ──────────────────────────────────────────────────────
+              // â”€â”€ Bouton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               BlocBuilder<QuittanceLoyerBloc, QuittanceLoyerState>(
                 builder: (context, state) {
                   final isLoading = state is QuittanceLoyerLoading;
@@ -501,7 +501,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                       child: isLoading
                           ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                           : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Text('Générer la quittance', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700)),
+                              Text('GÃ©nÃ©rer la quittance', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700)),
                               const SizedBox(width: 8),
                               const Icon(Icons.receipt_long_rounded, size: 18),
                             ]),
@@ -516,3 +516,4 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
     );
   }
 }
+

@@ -11,7 +11,7 @@ class AppTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColor.kPrimary,
       primary: AppColor.kPrimary,
-      background: AppColor.kWhite,
+      surface: AppColor.kWhite,
       brightness: Brightness.light,
     );
 

@@ -32,8 +32,8 @@ android {
 
     defaultConfig {
         applicationId = "com.signapp.sign_application"
-        minSdk = flutter.minSdkVersion   // Android 6.0 — couvre 99%+ des appareils actifs en 2026
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 23  // Android 6.0 (Marshmallow) — couvre 99%+ des appareils actifs en 2026
+        targetSdk = 35  // Android 15 — obligatoire Play Store à partir d'août 2025
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }

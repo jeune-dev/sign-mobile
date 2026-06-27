@@ -400,8 +400,10 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   child: GestureDetector(
                     onTap: () async {
                       final t = await _pickTime(title: 'Heure de début', initial: j.debut ?? const TimeOfDay(hour: 8, minute: 0));
-                      if (t != null) setState(() => _planning[i] = _JourTravail(
-                        jour: j.jour, debut: t, fin: j.fin));
+                      if (t != null) {
+                        setState(() => _planning[i] = _JourTravail(
+                          jour: j.jour, debut: t, fin: j.fin));
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
@@ -429,8 +431,10 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   child: GestureDetector(
                     onTap: () async {
                       final t = await _pickTime(title: 'Heure de fin', initial: j.fin ?? const TimeOfDay(hour: 17, minute: 0));
-                      if (t != null) setState(() => _planning[i] = _JourTravail(
-                        jour: j.jour, debut: j.debut, fin: t));
+                      if (t != null) {
+                        setState(() => _planning[i] = _JourTravail(
+                          jour: j.jour, debut: j.debut, fin: t));
+                      }
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
@@ -703,7 +707,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
               _field(_posteCtrl, 'Poste *'),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
-                value: _typeContrat,
+                initialValue: _typeContrat,
                 decoration: _dec('Type de contrat *'),
                 items: const [
                   DropdownMenuItem(value: 'CDI', child: Text('CDI')),
@@ -726,7 +730,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
               _field(_salaireCtrl, 'Salaire mensuel *', keyboardType: TextInputType.number),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
-                value: _moyenPaiement,
+                initialValue: _moyenPaiement,
                 decoration: _dec('Moyen de paiement *'),
                 items: const [
                   DropdownMenuItem(value: 'Espèces', child: Text('Espèces')),
@@ -740,7 +744,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
-                value: _remunerationFeries,
+                initialValue: _remunerationFeries,
                 decoration: _dec('Rémunération jours fériés *'),
                 items: const [
                   DropdownMenuItem(value: 'rémunérés', child: Text('Rémunérés')),
@@ -751,7 +755,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
-                value: _remunerationMaladie,
+                initialValue: _remunerationMaladie,
                 decoration: _dec('Rémunération absences maladie *'),
                 items: const [
                   DropdownMenuItem(value: 'rémunérés', child: Text('Rémunérées')),
@@ -767,7 +771,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Avance sur salaire possible', style: TextStyle(fontWeight: FontWeight.w600)),
                 value: _avanceSalaire,
-                activeColor: Colors.black,
+                activeThumbColor: Colors.black,
                 onChanged: (v) => setState(() => _avanceSalaire = v),
               ),
               const SizedBox(height: 24),
@@ -880,3 +884,5 @@ class _JourTravail {
   final TimeOfDay? fin;
   const _JourTravail({required this.jour, this.debut, this.fin});
 }
+
+

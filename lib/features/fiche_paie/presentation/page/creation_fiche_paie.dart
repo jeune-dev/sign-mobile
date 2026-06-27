@@ -368,7 +368,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _label(label, req: req),
         DropdownButtonFormField<T>(
-          value: value,
+          initialValue: value,
           isExpanded: true,
           onChanged: fn,
           style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
@@ -818,7 +818,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _label('Mode de paiement', req: true),
         DropdownButtonFormField<String>(
-          value: _paiement,
+          initialValue: _paiement,
           isExpanded: true,
           onChanged: (v) => setState(() => _paiement = v!),
           style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),

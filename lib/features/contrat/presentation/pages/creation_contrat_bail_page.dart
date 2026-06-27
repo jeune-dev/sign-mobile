@@ -813,7 +813,7 @@ class _CreationContratPageState extends State<CreationContratPage>
           _label(label, required: required),
           const SizedBox(height: 6),
           DropdownButtonFormField<T>(
-            value: value,
+            initialValue: value,
             isExpanded: true,
             onChanged: onChanged,
             style: const TextStyle(fontSize: 14, color: _black),
@@ -1588,3 +1588,4 @@ class _SuccessDialogState extends State<_SuccessDialog> {
     );
   }
 }
+

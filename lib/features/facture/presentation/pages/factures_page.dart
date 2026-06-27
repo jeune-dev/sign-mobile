@@ -233,7 +233,7 @@ class _FacturesPageState extends State<FacturesPage> {
           int payees = 0, enAttente = 0;
           for (final f in factures) {
             montantTotal += f.montant;
-            if (f.statut == 'payee') payees++; else enAttente++;
+            if (f.statut == 'payee') { payees++; } else { enAttente++; }
           }
 
           return Column(

@@ -128,13 +128,13 @@ class _ContratsPageState extends State<ContratsPage> {
       case 'bail':                      page = CreationContratPage(user: widget.user); break;
       case 'travail':                   page = const CreationContratTravailPage(); break;
       default:
-        if (type.id == ContratType.prestation.apiValue)         page = const CreationContratPrestationPage();
-        else if (type.id == ContratType.partenariat.apiValue)   page = const CreationContratPartenariatPage();
-        else if (type.id == ContratType.location.apiValue)      page = const CreationContratLocationPage();
-        else if (type.id == ContratType.caution.apiValue)       page = const CreationContratCautionPage();
-        else if (type.id == ContratType.confidentialite.apiValue) page = const CreationContratConfidentialitePage();
-        else if (type.id == ContratType.procuration.apiValue)   page = const CreationProcurationPage();
-        else if (type.id == ContratType.reconnaissanceDette.apiValue) page = const CreationReconnaissanceDettePage();
+        if (type.id == ContratType.prestation.apiValue)              { page = const CreationContratPrestationPage(); }
+        else if (type.id == ContratType.partenariat.apiValue)        { page = const CreationContratPartenariatPage(); }
+        else if (type.id == ContratType.location.apiValue)           { page = const CreationContratLocationPage(); }
+        else if (type.id == ContratType.caution.apiValue)            { page = const CreationContratCautionPage(); }
+        else if (type.id == ContratType.confidentialite.apiValue)    { page = const CreationContratConfidentialitePage(); }
+        else if (type.id == ContratType.procuration.apiValue)        { page = const CreationProcurationPage(); }
+        else if (type.id == ContratType.reconnaissanceDette.apiValue){ page = const CreationReconnaissanceDettePage(); }
     }
     if (page != null) {
       await Navigator.push(context, MaterialPageRoute(

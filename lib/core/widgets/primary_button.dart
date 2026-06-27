@@ -15,7 +15,7 @@ class PrimaryButton extends StatefulWidget {
   final Color? textColor, bgColor;
   final Widget? child;
   const PrimaryButton(
-      {Key? key,
+      {super.key,
       required this.onTap,
       required this.text,
       this.width,
@@ -26,8 +26,7 @@ class PrimaryButton extends StatefulWidget {
       required this.textColor,
       required this.bgColor,
       this.child,
-      this.iconData})
-      : super(key: key);
+      this.iconData});
 
   @override
   State<PrimaryButton> createState() => _PrimaryButtonState();

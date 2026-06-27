@@ -11,15 +11,13 @@ class PasswordTextField extends StatefulWidget {
   final FormFieldValidator<String>? validator;
 
   const PasswordTextField(
-      {Key? key,
+      {super.key,
       required this.hintText,
       required this.height,
       required this.controller,
       required this.width,
       required this.borderRadius,
-      // Le validateur est maintenant un paramètre optionnel
-      this.validator})
-      : super(key: key);
+      this.validator});
 
   @override
   _PasswordTextFieldState createState() => _PasswordTextFieldState();

@@ -42,6 +42,6 @@ class ClientRemoteDataSourceImpl implements ClientRemoteDataSource {
   @override
   Future<void> ajouterClient(Map<String, dynamic> data) async {
     // Création via l'endpoint auth register (role Particulier)
-    await dio.post(Env.authRegister, data: data);
+    await dio.post(Env.register, data: data);
   }
 }

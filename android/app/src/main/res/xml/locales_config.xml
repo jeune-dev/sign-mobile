@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Locales supportées par l'application — Android 13+ (API 33) per-app language preference -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="fr-FR"/>
+    <locale android:name="en-US"/>
+</locale-config>
