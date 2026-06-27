@@ -79,6 +79,7 @@ class _State extends State<CreationReconnaissanceDettePage> {
   Future<void> _submit() async {
     if (_signatureImage == null) { _showError('Veuillez apposer votre signature'); return; }
     final sigBase64 = base64Encode(await _signatureImage!.readAsBytes());
+    if (!mounted) return;
     context.read<AutresContratsBloc>().add(CreerContrat(ContratType.reconnaissanceDette.apiValue, {
       'autrePartieId': _client!.id,
       'data': {

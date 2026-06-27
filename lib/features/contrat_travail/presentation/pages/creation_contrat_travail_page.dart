@@ -573,6 +573,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       return;
     }
     final sigBase64 = base64Encode(await _signatureImage!.readAsBytes());
+    if (!mounted) return;
 
     context.read<ContratTravailBloc>().add(CreerContratTravailEvent({
       'salarieId': _selectedClient!.id,

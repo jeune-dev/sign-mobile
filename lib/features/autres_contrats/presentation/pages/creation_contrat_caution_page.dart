@@ -71,6 +71,7 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
       return;
     }
     final sigBase64 = base64Encode(await _signatureImage!.readAsBytes());
+    if (!mounted) return;
     context.read<AutresContratsBloc>().add(CreerContrat(ContratType.caution.apiValue, {
       'autrePartieId': _client!.id,
       'data': {

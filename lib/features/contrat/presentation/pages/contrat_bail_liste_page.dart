@@ -192,7 +192,11 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
         foregroundColor: Colors.white,
         onPressed: () => Navigator.push(context,
             MaterialPageRoute(builder: (_) => const CreationContratPage()))
-            .then((_) { context.read<ContratBloc>().add(LoadContratsImmobilier()); _loadStats(); }),
+            .then((_) {
+              if (!context.mounted) return;
+              context.read<ContratBloc>().add(LoadContratsImmobilier());
+              _loadStats();
+            }),
         icon: const Icon(Icons.add_rounded),
         label: const Text('Nouveau', style: TextStyle(fontWeight: FontWeight.w700)),
       ),

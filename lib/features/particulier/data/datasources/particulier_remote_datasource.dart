@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_application/core/config/env.dart';
@@ -114,7 +113,9 @@ class ParticulierRemoteDataSourceImpl implements ParticulierRemoteDataSource {
       '${Env.particulierContrats}/$type/$contratId/pdf',
       options: Options(responseType: ResponseType.bytes),
     );
-    return Uint8List.fromList(response.data as List<int>);
+    final data = response.data;
+    if (data is Uint8List) return data;
+    return Uint8List.fromList(List<int>.from(data as List));
   }
 
   List<ParticulierContratModel> _parseContrats(List list) {

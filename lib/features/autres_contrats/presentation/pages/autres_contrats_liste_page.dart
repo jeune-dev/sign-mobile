@@ -247,6 +247,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
           context,
           MaterialPageRoute(builder: widget.createPageBuilder),
         ).then((_) {
+          if (!context.mounted) return;
           context.read<AutresContratsBloc>().add(LoadContrats(widget.type));
           _loadStats();
         }),
@@ -406,9 +407,6 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
     final autrePartieNom = c.autrePartie != null
         ? '${c.autrePartie!['prenom'] ?? ''} ${c.autrePartie!['nom'] ?? ''}'
             .trim()
-        : null;
-    final generateurNom = c.generateur != null
-        ? '${c.generateur!['prenom'] ?? ''} ${c.generateur!['nom'] ?? ''}'.trim()
         : null;
 
     return Container(

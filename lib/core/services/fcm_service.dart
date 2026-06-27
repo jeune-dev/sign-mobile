@@ -35,7 +35,7 @@ class FcmService {
 
     // 4. Handler tap sur notif quand l'app était en arrière-plan
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      _handleNotificationTap(context, message.data);
+      if (context.mounted) _handleNotificationTap(context, message.data);
     });
 
     // 5. Handler tap sur notif quand l'app était terminée
@@ -85,6 +85,7 @@ class FcmService {
     if (type == null || !context.mounted) return;
 
     final role = await _getUserRole();
+    if (!context.mounted) return;
 
     if (role == 'Particulier') {
       // Client → onglet Contrats de la ClientPage
