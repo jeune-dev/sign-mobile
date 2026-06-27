@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +40,8 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
   bool _statsLoading = true;
   final Set<String> _downloading = {};
   final ScrollController _scrollController = ScrollController();
+  static final _dateFmt    = DateFormat('dd/MM/yyyy');
+  static final _montantFmt = NumberFormat('#,###', 'fr_FR');
 
   @override
   void initState() {
@@ -84,7 +86,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
               color: Colors.white, borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 30)]),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30)]),
           child: const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -146,13 +148,13 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
 
   String _formatDate(String? d) {
     if (d == null || d.isEmpty) return '—';
-    try { return DateFormat('dd/MM/yyyy').format(DateTime.parse(d)); }
+    try { return _dateFmt.format(DateTime.parse(d)); }
     catch (_) { return d; }
   }
 
   String _formatMontant(double? v) {
     if (v == null) return '—';
-    return '${NumberFormat('#,###', 'fr_FR').format(v).replaceAll(',', ' ')} FCFA';
+    return '${_montantFmt.format(v).replaceAll(',', ' ')} FCFA';
   }
 
   // ── BUILD ─────────────────────────────────────────────────────────────────
@@ -262,9 +264,9 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                 child: Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.15)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                   ),
                   child: const Icon(Icons.arrow_back_rounded,
                       color: Colors.white, size: 20),
@@ -289,7 +291,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                     Text(
                       'CDI · CDD · Stage · Freelance',
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withValues(alpha: 0.5),
                           fontSize: 12),
                     ),
                   ],
@@ -301,8 +303,8 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF00C896).withOpacity(0.8),
-                      const Color(0xFF00C896).withOpacity(0.5),
+                      const Color(0xFF00C896).withValues(alpha: 0.8),
+                      const Color(0xFF00C896).withValues(alpha: 0.5),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
@@ -322,11 +324,11 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
           // ── Stats depuis API ──────────────────────────────
           Row(
             children: [
-              _statBadge('Total', _stats.total, Colors.white.withOpacity(0.12), Colors.white),
+              _statBadge('Total', _stats.total, Colors.white.withValues(alpha: 0.12), Colors.white),
               const SizedBox(width: 10),
-              _statBadge('Signés', _stats.signes, const Color(0xFF00C896).withOpacity(0.25), const Color(0xFF00C896)),
+              _statBadge('Signés', _stats.signes, const Color(0xFF00C896).withValues(alpha: 0.25), const Color(0xFF00C896)),
               const SizedBox(width: 10),
-              _statBadge('En attente', _stats.enAttente, const Color(0xFFFFB347).withOpacity(0.25), const Color(0xFFFFB347)),
+              _statBadge('En attente', _stats.enAttente, const Color(0xFFFFB347).withValues(alpha: 0.25), const Color(0xFFFFB347)),
             ],
           ),
         ],
@@ -352,7 +354,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                             color: fg, fontSize: 22, fontWeight: FontWeight.w900, height: 1))),
             const SizedBox(height: 3),
             Text(label,
-                style: TextStyle(color: fg.withOpacity(0.7), fontSize: 10, fontWeight: FontWeight.w600)),
+                style: TextStyle(color: fg.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -377,7 +379,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey[100]!),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 14, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -389,7 +391,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                 Container(
                   width: 46, height: 46,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00C896).withOpacity(0.1),
+                    color: const Color(0xFF00C896).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.work_outline_rounded,
@@ -419,9 +421,9 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(statusLabel,
                       style: TextStyle(
@@ -526,9 +528,9 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.12)),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [

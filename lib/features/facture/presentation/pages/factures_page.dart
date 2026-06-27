@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +30,8 @@ class FacturesPage extends StatefulWidget {
 
 class _FacturesPageState extends State<FacturesPage> {
   final Set<String> _downloading = {};
+  static final _dateFmt   = DateFormat('dd/MM/yyyy');
+  static final _montantFmt = NumberFormat('#,###', 'fr_FR');
 
   @override
   void initState() {
@@ -41,7 +43,7 @@ class _FacturesPageState extends State<FacturesPage> {
   String _formatDate(String? d) {
     if (d == null || d.isEmpty) return '—';
     try {
-      return DateFormat('dd/MM/yyyy').format(DateTime.parse(d));
+      return _dateFmt.format(DateTime.parse(d));
     } catch (_) {
       return d;
     }
@@ -51,7 +53,7 @@ class _FacturesPageState extends State<FacturesPage> {
     if (v == null) return '—';
     try {
       final num val = num.parse(v.toString());
-      return '${NumberFormat('#,###', 'fr_FR').format(val).replaceAll(',', ' ')} FCFA';
+      return '${_montantFmt.format(val).replaceAll(',', ' ')} FCFA';
     } catch (_) {
       return '$v FCFA';
     }
@@ -302,7 +304,7 @@ class _FacturesPageState extends State<FacturesPage> {
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.18),
+                  color: Colors.black.withValues(alpha: 0.18),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -318,7 +320,7 @@ class _FacturesPageState extends State<FacturesPage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.12),
+                          color: Colors.white.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Row(mainAxisSize: MainAxisSize.min, children: [
@@ -359,7 +361,7 @@ class _FacturesPageState extends State<FacturesPage> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.08),
+                    color: Colors.white.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: const Icon(Icons.receipt_long_rounded,
@@ -391,7 +393,7 @@ class _FacturesPageState extends State<FacturesPage> {
         border: Border.all(color: Colors.grey[100]!),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 10,
               offset: const Offset(0, 3)),
         ],
@@ -402,7 +404,7 @@ class _FacturesPageState extends State<FacturesPage> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 18),
@@ -490,7 +492,7 @@ class _FacturesPageState extends State<FacturesPage> {
         border: Border.all(color: Colors.grey[100]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -507,7 +509,7 @@ class _FacturesPageState extends State<FacturesPage> {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.12),
+                    color: iconColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(Icons.receipt_long_rounded,
@@ -538,9 +540,9 @@ class _FacturesPageState extends State<FacturesPage> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(statusText,
                       style: TextStyle(
@@ -686,9 +688,9 @@ class _FacturesPageState extends State<FacturesPage> {
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(vertical: 11),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00C896).withOpacity(0.08),
+                            color: const Color(0xFF00C896).withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF00C896).withOpacity(0.3)),
+                            border: Border.all(color: const Color(0xFF00C896).withValues(alpha: 0.3)),
                           ),
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -736,9 +738,9 @@ class _FacturesPageState extends State<FacturesPage> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 11),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.08),
+                        color: Colors.orange.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.orange.withOpacity(0.25)),
+                        border: Border.all(color: Colors.orange.withValues(alpha: 0.25)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -764,9 +766,9 @@ class _FacturesPageState extends State<FacturesPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.12)),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [

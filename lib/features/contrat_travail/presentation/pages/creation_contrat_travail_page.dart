@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -108,7 +108,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text('$h : $m',
@@ -302,7 +302,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
             Container(
               width: 32, height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFF00C896).withOpacity(0.12),
+                color: const Color(0xFF00C896).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.calendar_month_outlined,
@@ -406,10 +406,10 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
                       decoration: BoxDecoration(
-                        color: j.debut != null ? const Color(0xFF00C896).withOpacity(0.08) : Colors.grey[50],
+                        color: j.debut != null ? const Color(0xFF00C896).withValues(alpha: 0.08) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: j.debut != null
-                            ? const Color(0xFF00C896).withOpacity(0.4) : Colors.grey[200]!),
+                            ? const Color(0xFF00C896).withValues(alpha: 0.4) : Colors.grey[200]!),
                       ),
                       child: Text(
                         j.debut != null ? _fmtTime(j.debut!) : '—',
@@ -435,10 +435,10 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
                       decoration: BoxDecoration(
-                        color: j.fin != null ? Colors.red.withOpacity(0.06) : Colors.grey[50],
+                        color: j.fin != null ? Colors.red.withValues(alpha: 0.06) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: j.fin != null
-                            ? Colors.red.withOpacity(0.3) : Colors.grey[200]!),
+                            ? Colors.red.withValues(alpha: 0.3) : Colors.grey[200]!),
                       ),
                       child: Text(
                         j.fin != null ? _fmtTime(j.fin!) : '—',

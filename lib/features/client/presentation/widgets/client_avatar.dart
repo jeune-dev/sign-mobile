@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 /// Avatar d'un client : photo Cloudinary si disponible, sinon initiales colorées
@@ -44,7 +44,7 @@ Widget buildClientAvatar(
 Widget _initialeAvatar(String initiale, double radius, Color bg) {
   return CircleAvatar(
     radius: radius,
-    backgroundColor: bg.withOpacity(0.15),
+    backgroundColor: bg.withValues(alpha: 0.15),
     child: Text(
       initiale,
       style: TextStyle(

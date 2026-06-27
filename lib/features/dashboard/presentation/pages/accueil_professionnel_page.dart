@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -30,7 +30,9 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
   bool _localeReady = false;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
-
+  static final _montantFmt = NumberFormat('#,###', 'fr_FR');
+  static final _dateFmtFr  = DateFormat('dd MMM yyyy', 'fr_FR');
+  static final _dateFmt    = DateFormat('dd/MM/yyyy');
 
   @override
   void initState() {
@@ -58,9 +60,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     if (dateString == null || dateString.isEmpty) return '—';
     try {
       final dt = DateTime.parse(dateString);
-      return _localeReady
-          ? DateFormat('dd MMM yyyy', 'fr_FR').format(dt)
-          : DateFormat('dd/MM/yyyy').format(dt);
+      return _localeReady ? _dateFmtFr.format(dt) : _dateFmt.format(dt);
     } catch (_) {
       return dateString;
     }
@@ -70,8 +70,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     if (montant == null) return '—';
     try {
       final num val = num.parse(montant.toString());
-      return NumberFormat('#,###', 'fr_FR').format(val).replaceAll(',', ' ') +
-          ' FCFA';
+      return '${_montantFmt.format(val).replaceAll(',', ' ')} FCFA';
     } catch (_) {
       return '$montant FCFA';
     }
@@ -251,9 +250,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
 
   // ── Carte principale factures + KPI créances (compacte) ───────────────────
   Widget _buildMainStatCard(int nombreFactures, double creancesClients) {
-    final creancesFormatted = NumberFormat('#,###', 'fr_FR')
-        .format(creancesClients)
-        .replaceAll(',', ' '); // espace fine insécable
+    final creancesFormatted = _montantFmt.format(creancesClients).replaceAll(',', ' ');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -606,7 +603,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey[100]!),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 14, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -617,7 +614,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
               children: [
                 Container(
                   width: 46, height: 46,
-                  decoration: BoxDecoration(color: iconColor.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
+                  decoration: BoxDecoration(color: iconColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
                   child: Icon(Icons.receipt_long_rounded, color: iconColor, size: 22),
                 ),
                 const SizedBox(width: 12),
@@ -688,9 +685,9 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.12)),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [
@@ -723,7 +720,7 @@ class _LoadingDialog extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 30, offset: const Offset(0, 10))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 10))],
       ),
       child: const Column(
         mainAxisSize: MainAxisSize.min,

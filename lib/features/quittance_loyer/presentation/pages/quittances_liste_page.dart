@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/core/widgets/empty_state.dart';
 import 'package:sign_application/core/widgets/shimmer_list.dart';
@@ -156,15 +156,15 @@ class _StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Column(
           children: [
             Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 11, color: color.withOpacity(0.8))),
+            Text(label, style: TextStyle(fontSize: 11, color: color.withValues(alpha: 0.8))),
           ],
         ),
       ),

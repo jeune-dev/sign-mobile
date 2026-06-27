@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -492,10 +492,10 @@ class _CreationContratPageState extends State<CreationContratPage>
                 child: Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                        color: Colors.white.withOpacity(0.15)),
+                        color: Colors.white.withValues(alpha: 0.15)),
                   ),
                   child: const Icon(Icons.arrow_back_rounded,
                       color: Colors.white, size: 20),
@@ -516,7 +516,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                     const SizedBox(height: 2),
                     Text('Remplissez toutes les sections',
                         style: TextStyle(
-                            color: Colors.white.withOpacity(0.5),
+                            color: Colors.white.withValues(alpha: 0.5),
                             fontSize: 12)),
                   ],
                 ),
@@ -528,8 +528,8 @@ class _CreationContratPageState extends State<CreationContratPage>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF6C63FF).withOpacity(0.8),
-                      const Color(0xFF6C63FF).withOpacity(0.5),
+                      const Color(0xFF6C63FF).withValues(alpha: 0.8),
+                      const Color(0xFF6C63FF).withValues(alpha: 0.5),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
@@ -564,7 +564,7 @@ class _CreationContratPageState extends State<CreationContratPage>
         color: _white,
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 20,
               offset: const Offset(0, -4))
         ],
@@ -614,7 +614,7 @@ class _CreationContratPageState extends State<CreationContratPage>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 14,
               offset: const Offset(0, 4))
         ],
@@ -636,7 +636,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                 Container(
                   width: 34, height: 34,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.25),
+                    color: iconColor.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: iconColor, size: 18),
@@ -855,10 +855,10 @@ class _CreationContratPageState extends State<CreationContratPage>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: value ? _black.withOpacity(0.04) : _gray50,
+            color: value ? _black.withValues(alpha: 0.04) : _gray50,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-                color: value ? _black.withOpacity(0.25) : _gray200),
+                color: value ? _black.withValues(alpha: 0.25) : _gray200),
           ),
           child: Row(
             children: [
@@ -1077,7 +1077,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                 color: const Color(0xFFEEF2FF),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: const Color(0xFF6C63FF).withOpacity(0.2))),
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.2))),
             child: const Row(
               children: [
                 Icon(Icons.info_outline_rounded,
@@ -1254,7 +1254,7 @@ class _CreationContratPageState extends State<CreationContratPage>
               color: Colors.red[50],
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: Colors.red.withOpacity(0.3)),
+                  color: Colors.red.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [

@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sign_application/core/config/user_role.dart';
@@ -138,7 +138,7 @@ class _OnboardingPage1State extends State<OnboardingPage1>
           height: 200,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColor.kPrimary.withOpacity(0.03),
+            color: AppColor.kPrimary.withValues(alpha: 0.03),
           ),
         ),
       ),
@@ -150,7 +150,7 @@ class _OnboardingPage1State extends State<OnboardingPage1>
           height: 250,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColor.kPrimary.withOpacity(0.02),
+            color: AppColor.kPrimary.withValues(alpha: 0.02),
           ),
         ),
       ),
@@ -249,7 +249,7 @@ class _OnboardingPage2State extends State<OnboardingPage2>
           height: 180,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColor.kPrimary.withOpacity(0.02),
+            color: AppColor.kPrimary.withValues(alpha: 0.02),
           ),
         ),
       ),
@@ -261,7 +261,7 @@ class _OnboardingPage2State extends State<OnboardingPage2>
           height: 220,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColor.kPrimary.withOpacity(0.03),
+            color: AppColor.kPrimary.withValues(alpha: 0.03),
           ),
         ),
       ),

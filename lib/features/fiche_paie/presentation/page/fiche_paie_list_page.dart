@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -72,7 +72,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 30)],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30)],
           ),
           child: const Column(mainAxisSize: MainAxisSize.min, children: [
             CircularProgressIndicator(color: Color(0xFF2563EB), strokeWidth: 2.5),
@@ -191,9 +191,9 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
             child: Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.2)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
               ),
               child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
             ),
@@ -216,7 +216,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Row(mainAxisSize: MainAxisSize.min, children: [
@@ -238,7 +238,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey[100]!),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 14, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 14, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -249,7 +249,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                 Container(
                   width: 46, height: 46,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF2563EB), size: 24),
@@ -270,9 +270,9 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withOpacity(0.1),
+                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.3)),
+                    border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.3)),
                   ),
                   child: Text(fiche.typeContrat,
                       style: const TextStyle(color: Color(0xFF2563EB), fontSize: 11, fontWeight: FontWeight.w700)),
@@ -322,9 +322,9 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.12)),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [

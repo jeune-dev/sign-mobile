@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -44,6 +44,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   bool _statsLoading = true;
 
   final Set<String> _downloading = {};
+  static final _dateFmt = DateFormat('dd/MM/yyyy');
 
   @override
   void initState() {
@@ -84,7 +85,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 30)
+              BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30)
             ],
           ),
           child: const Column(
@@ -182,7 +183,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   String _fmt(String? d) {
     if (d == null || d.isEmpty) return '—';
     try {
-      return DateFormat('dd/MM/yyyy').format(DateTime.parse(d));
+      return _dateFmt.format(DateTime.parse(d));
     } catch (_) {
       return d;
     }
@@ -284,9 +285,9 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.15)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                   ),
                   child: const Icon(Icons.arrow_back_rounded,
                       color: Colors.white, size: 20),
@@ -311,7 +312,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                     Text(
                       subtitle,
                       style: TextStyle(
-                          color: Colors.white.withOpacity(0.5), fontSize: 12),
+                          color: Colors.white.withValues(alpha: 0.5), fontSize: 12),
                     ),
                   ],
                 ),
@@ -320,7 +321,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -356,8 +357,8 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
 
   Widget _statBadge(String label, int value, {Color color = Colors.white}) {
     final bg = color == Colors.white
-        ? Colors.white.withOpacity(0.12)
-        : color.withOpacity(0.25);
+        ? Colors.white.withValues(alpha: 0.12)
+        : color.withValues(alpha: 0.25);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -385,7 +386,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
             const SizedBox(height: 3),
             Text(label,
                 style: TextStyle(
-                    color: color.withOpacity(0.7),
+                    color: color.withValues(alpha: 0.7),
                     fontSize: 10,
                     fontWeight: FontWeight.w600)),
           ],
@@ -416,7 +417,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
         border: Border.all(color: const Color(0xFFF0F0F0)),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 14,
               offset: const Offset(0, 4))
         ],
@@ -479,9 +480,9 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: statusColor.withOpacity(0.1),
+                        color: statusColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: statusColor.withOpacity(0.3)),
+                        border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                       ),
                       child: Text(statusLabel,
                           style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
@@ -491,7 +492,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: estCreateur ? Colors.black.withOpacity(0.07) : Colors.blue.withOpacity(0.08),
+                          color: estCreateur ? Colors.black.withValues(alpha: 0.07) : Colors.blue.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(

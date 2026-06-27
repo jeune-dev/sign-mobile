@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
 
 void showToast(
@@ -103,12 +103,12 @@ class _ToastCard extends StatelessWidget {
             border: Border.all(color: Colors.grey.shade100, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.10),
+                color: Colors.black.withValues(alpha: 0.10),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
               BoxShadow(
-                color: accent.withOpacity(0.08),
+                color: accent.withValues(alpha: 0.08),
                 blurRadius: 12,
                 offset: const Offset(0, 2),
               ),
@@ -244,7 +244,7 @@ class _ProgressBarState extends State<_ProgressBar>
           widthFactor: 1 - _ctrl.value,
           child: Container(
             decoration: BoxDecoration(
-              color: widget.color.withOpacity(0.5),
+              color: widget.color.withValues(alpha: 0.5),
               borderRadius: const BorderRadius.only(
                 bottomRight: Radius.circular(2),
               ),

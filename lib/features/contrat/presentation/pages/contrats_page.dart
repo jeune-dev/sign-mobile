@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -311,7 +311,7 @@ class _ContratsPageState extends State<ContratsPage> {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [Color(0xFF1a1a1a), Color(0xFF3a3a3a)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(22),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 16, offset: const Offset(0, 6))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 16, offset: const Offset(0, 6))],
             ),
             child: Row(
               children: [
@@ -321,7 +321,7 @@ class _ContratsPageState extends State<ContratsPage> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
                         child: const Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(Icons.description_outlined, size: 12, color: Colors.white70),
                           SizedBox(width: 4),
@@ -337,13 +337,13 @@ class _ContratsPageState extends State<ContratsPage> {
                               child: Text('$_totalAll', style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w900, letterSpacing: -2, height: 1)),
                             ),
                       const SizedBox(height: 4),
-                      Text('Sur 9 types de contrats', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11)),
+                      Text('Sur 9 types de contrats', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11)),
                     ],
                   ),
                 ),
                 Container(
                   width: 64, height: 64,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.08), borderRadius: BorderRadius.circular(18)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(18)),
                   child: const Icon(Icons.description_rounded, color: Colors.white38, size: 32),
                 ),
               ],
@@ -368,11 +368,11 @@ class _ContratsPageState extends State<ContratsPage> {
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.grey[100]!),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Row(
         children: [
-          Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 18)),
+          Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: color, size: 18)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -399,7 +399,7 @@ class _ContratsPageState extends State<ContratsPage> {
         decoration: BoxDecoration(
           color: Colors.white, borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.grey[100]!),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 12, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,7 +421,7 @@ class _ContratsPageState extends State<ContratsPage> {
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: Colors.black.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
                     child: Text(_statsLoading ? '…' : '${stats.total}', style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w800, fontSize: 13)),
                   ),
                 ],
@@ -463,7 +463,7 @@ class _ContratsPageState extends State<ContratsPage> {
   Widget _chip(IconData icon, String value, Color color, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-      decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withOpacity(0.2))),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8), border: Border.all(color: color.withValues(alpha: 0.2))),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -471,7 +471,7 @@ class _ContratsPageState extends State<ContratsPage> {
           const SizedBox(width: 3),
           Text(value, style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 11)),
           const SizedBox(width: 3),
-          Flexible(child: Text(label, style: TextStyle(color: color.withOpacity(0.7), fontSize: 9), maxLines: 1, overflow: TextOverflow.clip)),
+          Flexible(child: Text(label, style: TextStyle(color: color.withValues(alpha: 0.7), fontSize: 9), maxLines: 1, overflow: TextOverflow.clip)),
         ],
       ),
     );
@@ -523,17 +523,17 @@ class _ContractTypeModal extends StatelessWidget {
                   onTap: () => onTypeSelected(type),
                   child: Container(
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: type.color.withOpacity(0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: type.color.withOpacity(0.2))),
+                    decoration: BoxDecoration(color: type.color.withValues(alpha: 0.04), borderRadius: BorderRadius.circular(16), border: Border.all(color: type.color.withValues(alpha: 0.2))),
                     child: Row(
                       children: [
-                        Container(width: 48, height: 48, decoration: BoxDecoration(color: type.color.withOpacity(0.12), borderRadius: BorderRadius.circular(14)), child: Icon(type.icon, color: type.color, size: 24)),
+                        Container(width: 48, height: 48, decoration: BoxDecoration(color: type.color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)), child: Icon(type.icon, color: type.color, size: 24)),
                         const SizedBox(width: 14),
                         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           Text(type.titre, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87)),
                           const SizedBox(height: 3),
                           Text(type.description, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                         ])),
-                        Container(width: 32, height: 32, decoration: BoxDecoration(color: type.color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)), child: Icon(Icons.arrow_forward_rounded, color: type.color, size: 16)),
+                        Container(width: 32, height: 32, decoration: BoxDecoration(color: type.color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)), child: Icon(Icons.arrow_forward_rounded, color: type.color, size: 16)),
                       ],
                     ),
                   ),

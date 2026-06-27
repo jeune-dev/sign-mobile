@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:sign_application/core/widgets/empty_state.dart';
 import 'package:sign_application/core/widgets/shimmer_list.dart';
@@ -128,7 +128,7 @@ class _ClientsPageState extends State<ClientsPage> {
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.18),
+            color: Colors.black.withValues(alpha: 0.18),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -141,7 +141,7 @@ class _ClientsPageState extends State<ClientsPage> {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
             ),
             child: const Icon(Icons.people_rounded,
@@ -176,7 +176,7 @@ class _ClientsPageState extends State<ClientsPage> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(isLoading ? 0.05 : 0.12),
+                color: Colors.white.withValues(alpha: isLoading ? 0.05 : 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: isLoading
@@ -205,7 +205,7 @@ class _ClientsPageState extends State<ClientsPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -276,7 +276,7 @@ class _ClientsPageState extends State<ClientsPage> {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -347,10 +347,10 @@ class _ClientsPageState extends State<ClientsPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border:
-                      Border.all(color: color.withOpacity(0.25)),
+                      Border.all(color: color.withValues(alpha: 0.25)),
                 ),
                 child: Text(
                   'Voir',
@@ -397,7 +397,7 @@ class _ClientsPageState extends State<ClientsPage> {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Center(
@@ -538,9 +538,9 @@ class _ClientDetailSheet extends StatelessWidget {
               padding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Colors.green.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.green.withOpacity(0.3)),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
               ),
               child: Text(
                 client.statut!,
@@ -611,7 +611,7 @@ class _ClientDetailSheet extends StatelessWidget {
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Center(
@@ -639,7 +639,7 @@ class _ClientDetailSheet extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: color, size: 18),

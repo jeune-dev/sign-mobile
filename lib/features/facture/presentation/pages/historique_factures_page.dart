@@ -1,4 +1,4 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -164,7 +164,7 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
         child: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Icon(Icons.arrow_back_rounded,
@@ -186,7 +186,7 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
             Text(
               '$_totalItems facture${_totalItems > 1 ? 's' : ''}',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withValues(alpha: 0.5),
                 fontSize: 11,
                 fontWeight: FontWeight.w400,
               ),
@@ -335,7 +335,7 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
         border: Border.all(color: Colors.grey[100]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -352,7 +352,7 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
                   width: 46,
                   height: 46,
                   decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.12),
+                    color: iconColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(Icons.receipt_long_rounded,
@@ -388,7 +388,7 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF00C896).withOpacity(0.1),
+                    color: const Color(0xFF00C896).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -521,9 +521,9 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
+        color: color.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.12)),
+        border: Border.all(color: color.withValues(alpha: 0.12)),
       ),
       child: Row(
         children: [
@@ -567,7 +567,7 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
         border: Border(top: BorderSide(color: Colors.grey[100]!)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),

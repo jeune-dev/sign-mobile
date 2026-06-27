@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -207,7 +207,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
             child: Container(
               width: 40, height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
@@ -221,7 +221,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
                 const Text('Signature du contrat',
                     style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
                 Text(titre,
-                    style: TextStyle(color: Colors.white.withOpacity(0.55), fontSize: 11),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.55), fontSize: 11),
                     maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
@@ -229,7 +229,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
+              color: Colors.white.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
@@ -254,7 +254,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
             Container(
               width: 60, height: 60,
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12)]),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 12)]),
               child: const Center(child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5)),
             ),
             const SizedBox(height: 14),
@@ -288,7 +288,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 14, offset: const Offset(0, 3))],
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 14, offset: const Offset(0, 3))],
               ),
               child: PDFView(
                 filePath: _pdfPath!,

@@ -48,6 +48,7 @@ class EtatsLogementListePage extends StatefulWidget {
 class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
   List<EtatLogement>? _etats;
   final Set<String> _downloading = {};
+  static final _dateFmt = DateFormat('dd/MM/yyyy');
 
   @override
   void initState() {
@@ -337,7 +338,7 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
   String _fmt(String? d) {
     if (d == null || d.isEmpty) return '—';
     try {
-      return DateFormat('dd/MM/yyyy').format(DateTime.parse(d));
+      return _dateFmt.format(DateTime.parse(d));
     } catch (_) {
       return d;
     }

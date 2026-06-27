@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:open_file/open_file.dart';
 
@@ -48,7 +48,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
           child: Container(
             margin: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.arrow_back_rounded,
@@ -72,7 +72,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
               Text(
                 'Page $_currentPage sur $_totalPages',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.55),
+                  color: Colors.white.withValues(alpha: 0.55),
                   fontSize: 11,
                 ),
               ),
@@ -108,7 +108,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
+                            color: Colors.black.withValues(alpha: 0.12),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
@@ -266,7 +266,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
                 borderRadius: BorderRadius.circular(18),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
+                    color: Colors.black.withValues(alpha: 0.08),
                     blurRadius: 12,
                   ),
                 ],

@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +31,8 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
   int _statsTotal = 0, _statsSignes = 0, _statsEnAttente = 0;
   bool _statsLoading = true;
   final Set<String> _downloading = {};
+  static final _dateFmt    = DateFormat('dd/MM/yyyy');
+  static final _montantFmt = NumberFormat('#,###', 'fr_FR');
 
   @override
   void initState() {
@@ -67,7 +69,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
               color: Colors.white, borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 30)]),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30)]),
           child: const Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -129,13 +131,13 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
 
   String _fmt(String? d) {
     if (d == null || d.isEmpty) return '—';
-    try { return DateFormat('dd/MM/yyyy').format(DateTime.parse(d)); }
+    try { return _dateFmt.format(DateTime.parse(d)); }
     catch (_) { return d; }
   }
 
   String _montant(dynamic v, String devise) {
     if (v == null) return '—';
-    try { return '${NumberFormat('#,###', 'fr_FR').format(num.parse(v.toString())).replaceAll(',', ' ')} $devise'; }
+    try { return '${_montantFmt.format(num.parse(v.toString())).replaceAll(',', ' ')} $devise'; }
     catch (_) { return '$v $devise'; }
   }
 
@@ -222,9 +224,9 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                 child: Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.15))),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15))),
                   child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
                 ),
               ),
@@ -238,14 +240,14 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                             fontWeight: FontWeight.w900, letterSpacing: -0.5, height: 1.1)),
                     const SizedBox(height: 2),
                     Text('Location immobilière',
-                        style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
                   ],
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.white.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Row(mainAxisSize: MainAxisSize.min, children: [
@@ -274,8 +276,8 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
 
   Widget _statBadge(String label, int value, {Color color = Colors.white}) {
     final bg = color == Colors.white
-        ? Colors.white.withOpacity(0.12)
-        : color.withOpacity(0.25);
+        ? Colors.white.withValues(alpha: 0.12)
+        : color.withValues(alpha: 0.25);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -292,7 +294,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                             fontWeight: FontWeight.w900, height: 1))),
             const SizedBox(height: 3),
             Text(label,
-                style: TextStyle(color: color.withOpacity(0.7),
+                style: TextStyle(color: color.withValues(alpha: 0.7),
                     fontSize: 10, fontWeight: FontWeight.w600)),
           ],
         ),
@@ -314,7 +316,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xFFF0F0F0)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 14, offset: const Offset(0, 4))],
       ),
       child: Column(
@@ -355,9 +357,9 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
+                    color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: statusColor.withOpacity(0.3)),
+                    border: Border.all(color: statusColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(statusLabel,
                       style: TextStyle(color: statusColor,
@@ -452,9 +454,9 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF059669).withOpacity(0.08),
+                  color: const Color(0xFF059669).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF059669).withOpacity(0.3)),
+                  border: Border.all(color: const Color(0xFF059669).withValues(alpha: 0.3)),
                 ),
                 child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                   Icon(Icons.fact_check_outlined, color: Color(0xFF059669), size: 16),

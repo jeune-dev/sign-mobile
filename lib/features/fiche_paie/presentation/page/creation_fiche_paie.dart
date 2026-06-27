@@ -1,4 +1,4 @@
-// 📁 lib/features/fiche_paie/presentation/page/creation_fiche_paie.dart
+﻿// 📁 lib/features/fiche_paie/presentation/page/creation_fiche_paie.dart
 
 import 'dart:async';
 import 'package:dio/dio.dart';
@@ -289,7 +289,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     final col = letters.isNotEmpty ? palette[letters.codeUnitAt(0) % palette.length] : _P.accent;
     return CircleAvatar(
       radius: r,
-      backgroundColor: col.withOpacity(0.12),
+      backgroundColor: col.withValues(alpha: 0.12),
       child: Text(letters, style: TextStyle(fontSize: r * 0.75, fontWeight: FontWeight.w700, color: col)),
     );
   }
@@ -301,7 +301,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
         color: _P.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: _P.divider),
-        boxShadow: [BoxShadow(color: _P.ink.withOpacity(0.04), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: _P.ink.withValues(alpha: 0.04), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
@@ -408,7 +408,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
               bottomLeft:  Radius.circular(val && hasChildren ? 0 : 12),
               bottomRight: Radius.circular(val && hasChildren ? 0 : 12),
             ),
-            border: Border.all(color: val ? _P.accent.withOpacity(0.35) : _P.divider),
+            border: Border.all(color: val ? _P.accent.withValues(alpha: 0.35) : _P.divider),
           ),
           child: Row(children: [
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -451,15 +451,15 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
           firstChild: Container(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
             decoration: BoxDecoration(
-              color: _P.accentSoft.withOpacity(0.45),
+              color: _P.accentSoft.withValues(alpha: 0.45),
               borderRadius: const BorderRadius.only(
                 bottomLeft:  Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
               border: Border(
-                left:   BorderSide(color: _P.accent.withOpacity(0.2)),
-                right:  BorderSide(color: _P.accent.withOpacity(0.2)),
-                bottom: BorderSide(color: _P.accent.withOpacity(0.2)),
+                left:   BorderSide(color: _P.accent.withValues(alpha: 0.2)),
+                right:  BorderSide(color: _P.accent.withValues(alpha: 0.2)),
+                bottom: BorderSide(color: _P.accent.withValues(alpha: 0.2)),
               ),
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: childrenBuilder()),
@@ -526,11 +526,11 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [_P.successSoft, _P.accentSoft.withOpacity(0.5)],
+              colors: [_P.successSoft, _P.accentSoft.withValues(alpha: 0.5)],
               begin: Alignment.topLeft, end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _P.success.withOpacity(0.25)),
+            border: Border.all(color: _P.success.withValues(alpha: 0.25)),
           ),
           child: Row(children: [
             _initials(_selected, 24),
@@ -547,7 +547,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
               onTap: () => setState(() => _selected = null),
               child: Container(
                 padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: _P.danger.withOpacity(0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: _P.danger.withValues(alpha: 0.1), shape: BoxShape.circle),
                 child: const Icon(Icons.close_rounded, size: 16, color: _P.danger),
               ),
             ),
@@ -582,7 +582,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
             color: _P.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _P.divider),
-            boxShadow: [BoxShadow(color: _P.ink.withOpacity(0.07), blurRadius: 20, offset: const Offset(0, 6))],
+            boxShadow: [BoxShadow(color: _P.ink.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))],
           ),
           constraints: const BoxConstraints(maxHeight: 260),
           child: ClipRRect(
