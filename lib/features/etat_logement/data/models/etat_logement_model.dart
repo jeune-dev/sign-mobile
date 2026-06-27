@@ -65,9 +65,11 @@ class EtatLogementModel extends EtatLogement {
   });
 
   factory EtatLogementModel.fromJson(Map<String, dynamic> json) {
-    // Le contrat associé peut être renvoyé sous la clé 'Contrat' (include Sequelize)
-    final contrat = json['Contrat'] is Map
-        ? Map<String, dynamic>.from(json['Contrat'])
+    // Le contrat associé est renvoyé sous la clé 'contrat' (alias include Sequelize).
+    // On tolère aussi 'Contrat' (ancien comportement sans alias).
+    final rawContrat = json['contrat'] ?? json['Contrat'];
+    final contrat = rawContrat is Map
+        ? Map<String, dynamic>.from(rawContrat)
         : null;
 
     int asInt(dynamic v) =>
