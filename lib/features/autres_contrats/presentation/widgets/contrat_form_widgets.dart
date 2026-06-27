@@ -1,6 +1,9 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:signature/signature.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
@@ -896,4 +899,148 @@ Future<DateTime?> cPickDate(BuildContext context, {DateTime? initial, DateTime? 
       child: child!,
     ),
   );
+}
+
+// ─── Signature pad ────────────────────────────────────────────────────────────
+
+/// Ouvre le pad de signature dans une dialog.
+/// Retourne le [File] PNG enregistré dans le répertoire temporaire, ou null si annulé.
+Future<File?> openSignaturePad(BuildContext context) async {
+  final controller = SignatureController(
+    penStrokeWidth: 3,
+    penColor: Colors.black,
+    exportBackgroundColor: Colors.white,
+  );
+
+  try {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Votre signature', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: double.infinity,
+              height: 180,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8F8FA),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Signature(
+                  controller: controller,
+                  width: double.infinity,
+                  height: 180,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text('Dessinez votre signature ci-dessus', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => controller.clear(),
+            child: const Text('Effacer', style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Annuler', style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.isEmpty) return;
+              final data = await controller.toPngBytes();
+              if (!dialogContext.mounted) return;
+              if (data != null) {
+                final tempDir = await getTemporaryDirectory();
+                final file = File('${tempDir.path}/sig_contrat_${DateTime.now().millisecondsSinceEpoch}.png');
+                await file.writeAsBytes(data);
+                if (dialogContext.mounted) Navigator.pop(dialogContext, file);
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.black,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Valider'),
+          ),
+        ],
+      ),
+    );
+  } finally {
+    controller.dispose();
+  }
+  return null;
+}
+
+/// Widget d'affichage du champ signature (preview + tap pour ouvrir le pad).
+class CSignatureSection extends StatelessWidget {
+  final File? image;
+  final VoidCallback onTap;
+  final Color accentColor;
+
+  const CSignatureSection({
+    super.key,
+    required this.image,
+    required this.onTap,
+    required this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            text: 'Votre signature',
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kLabelColor),
+            children: [TextSpan(text: '  *', style: TextStyle(color: accentColor, fontWeight: FontWeight.w800))],
+          ),
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            height: 110,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFFF8F8FA),
+              border: Border.all(
+                color: image != null ? accentColor : const Color(0xFFE5E7EB),
+                width: image != null ? 2 : 1,
+              ),
+            ),
+            child: image != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(image!, fit: BoxFit.contain),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.draw_outlined, size: 28, color: accentColor),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Signez ici',
+                        style: TextStyle(color: accentColor, fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      const Text(
+                        'Touchez pour ouvrir le pad de signature',
+                        style: TextStyle(color: kLabelColor, fontSize: 11),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
 }

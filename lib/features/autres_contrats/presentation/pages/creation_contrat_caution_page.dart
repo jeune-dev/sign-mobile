@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -36,11 +38,17 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
   final _villeCtrl   = TextEditingController();
 
   String _typeCaution = 'simple';
+  File? _signatureImage;
 
   @override
   void dispose() {
     _montantCtrl.dispose(); _dureeCtrl.dispose(); _villeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _openSignaturePad() async {
+    final file = await openSignaturePad(context);
+    if (file != null && mounted) setState(() => _signatureImage = file);
   }
 
   void _onNext() {
@@ -57,7 +65,12 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
 
   void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_signatureImage == null) {
+      _showError('Veuillez apposer votre signature');
+      return;
+    }
+    final sigBase64 = base64Encode(await _signatureImage!.readAsBytes());
     context.read<AutresContratsBloc>().add(CreerContrat(ContratType.caution.apiValue, {
       'autrePartieId': _client!.id,
       'data': {
@@ -66,7 +79,7 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
         'type_caution':    _typeCaution,
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
-      'signature_generateur': '',
+      'signature_generateur': sigBase64,
     }));
   }
 
@@ -253,6 +266,16 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
           accentColor: _accent,
           children: [
             CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar…'),
+          ],
+        ),
+        kGapLg,
+        CSection(
+          title: 'Signature',
+          icon: Icons.draw_outlined,
+          accentColor: _accent,
+          subtitle: 'Signez pour valider la création du contrat',
+          children: [
+            CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
           ],
         ),
       ],

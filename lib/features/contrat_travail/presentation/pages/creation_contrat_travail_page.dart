@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:signature/signature.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_event.dart';
@@ -33,6 +37,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
   DateTime? _dateDebut;
   DateTime? _dateFin;
   Client? _selectedClient;
+  File? _signatureImage;
 
   // Planning : liste de { jour, debut, fin }
   final List<_JourTravail> _planning = [
@@ -479,6 +484,65 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
     super.dispose();
   }
 
+  Future<void> _openSignaturePad() async {
+    final controller = SignatureController(
+      penStrokeWidth: 3,
+      penColor: Colors.black,
+      exportBackgroundColor: Colors.white,
+    );
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Votre signature', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                height: 180,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F8FA),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Signature(controller: controller, width: double.infinity, height: 180),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('Dessinez votre signature ci-dessus', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => controller.clear(), child: const Text('Effacer', style: TextStyle(color: Color(0xFF6B7280)))),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuler', style: TextStyle(color: Color(0xFF6B7280)))),
+            ElevatedButton(
+              onPressed: () async {
+                if (controller.isEmpty) return;
+                final data = await controller.toPngBytes();
+                if (!dialogContext.mounted) return;
+                if (data != null) {
+                  final tempDir = await getTemporaryDirectory();
+                  final file = File('${tempDir.path}/sig_travail_${DateTime.now().millisecondsSinceEpoch}.png');
+                  await file.writeAsBytes(data);
+                  if (mounted) setState(() => _signatureImage = file);
+                  if (dialogContext.mounted) Navigator.pop(dialogContext);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
   Future<void> _pickDate({required void Function(DateTime) onPicked, DateTime? initial}) async {
     final dt = await showDatePicker(
       context: context,
@@ -489,7 +553,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
     if (dt != null) onPicked(dt);
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClient == null) {
       showToast(context, 'Champ requis', 'Veuillez sélectionner un salarié', ToastificationType.error);
@@ -499,23 +563,26 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       showToast(context, 'Champ requis', 'Veuillez sélectionner la date de début', ToastificationType.error);
       return;
     }
-    // Vérifier qu'au moins un jour a heures début et fin
     final planningInvalide = _planning.any((j) => j.debut == null || j.fin == null);
     if (_planning.isEmpty || planningInvalide) {
       showToast(context, 'Planning incomplet', 'Veuillez renseigner les heures pour chaque jour de travail', ToastificationType.error);
       return;
     }
+    if (_signatureImage == null) {
+      showToast(context, 'Signature requise', 'Veuillez apposer votre signature', ToastificationType.error);
+      return;
+    }
+    final sigBase64 = base64Encode(await _signatureImage!.readAsBytes());
 
     context.read<ContratTravailBloc>().add(CreerContratTravailEvent({
       'salarieId': _selectedClient!.id,
       'poste': _posteCtrl.text.trim(),
       'type_contrat': _typeContrat,
       'lieu_travail': _lieuCtrl.text.trim(),
-      // Nouveau format planning
       'jour_travail': _planning.map((j) => {
         'jour':  j.jour,
-        'debut': _fmtTimeBd(j.debut!), // HH:MM:SS
-        'fin':   _fmtTimeBd(j.fin!),   // HH:MM:SS
+        'debut': _fmtTimeBd(j.debut!),
+        'fin':   _fmtTimeBd(j.fin!),
       }).toList(),
       'date_debut': _dateDebut!.toIso8601String().substring(0, 10),
       if (_dateFin != null) 'date_fin': _dateFin!.toIso8601String().substring(0, 10),
@@ -525,8 +592,8 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       'remuneration_jours_feries': _remunerationFeries,
       'remuneration_absences_maladie': _remunerationMaladie,
       'avance_salaire': _avanceSalaire,
-      'missions': [], // Tableau vide pour l'instant (requis par backend)
-      'signature_employeur': '', // String vide (requis par backend)
+      'missions': [],
+      'signature_employeur': sigBase64,
     }));
   }
 
@@ -701,6 +768,38 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                 value: _avanceSalaire,
                 activeColor: Colors.black,
                 onChanged: (v) => setState(() => _avanceSalaire = v),
+              ),
+              const SizedBox(height: 24),
+              const Text('Votre signature', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _openSignaturePad,
+                child: Container(
+                  height: 110,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    color: const Color(0xFFF8F8FA),
+                    border: Border.all(
+                      color: _signatureImage != null ? Colors.black : const Color(0xFFE5E7EB),
+                      width: _signatureImage != null ? 2 : 1,
+                    ),
+                  ),
+                  child: _signatureImage != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(_signatureImage!, fit: BoxFit.contain),
+                        )
+                      : const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.draw_outlined, size: 28, color: Colors.black54),
+                            SizedBox(height: 6),
+                            Text('Signez ici', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13)),
+                            Text('Touchez pour ouvrir le pad de signature', style: TextStyle(color: Color(0xFF6B7280), fontSize: 11)),
+                          ],
+                        ),
+                ),
               ),
               const SizedBox(height: 32),
               BlocBuilder<ContratTravailBloc, ContratTravailState>(

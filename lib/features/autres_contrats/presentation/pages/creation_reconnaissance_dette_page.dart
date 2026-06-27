@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,12 +45,18 @@ class _State extends State<CreationReconnaissanceDettePage> {
   String    _devise     = 'FCFA';
   bool      _echelonne  = false;
   DateTime? _dateLimite;
+  File?     _signatureImage;
 
   @override
   void dispose() {
     _montantCtrl.dispose(); _motifCtrl.dispose(); _nbEchCtrl.dispose();
     _montantEchCtrl.dispose(); _freqCtrl.dispose(); _villeCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _openSignaturePad() async {
+    final file = await openSignaturePad(context);
+    if (file != null && mounted) setState(() => _signatureImage = file);
   }
 
   void _onNext() {
@@ -68,7 +76,9 @@ class _State extends State<CreationReconnaissanceDettePage> {
 
   void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
 
-  void _submit() {
+  Future<void> _submit() async {
+    if (_signatureImage == null) { _showError('Veuillez apposer votre signature'); return; }
+    final sigBase64 = base64Encode(await _signatureImage!.readAsBytes());
     context.read<AutresContratsBloc>().add(CreerContrat(ContratType.reconnaissanceDette.apiValue, {
       'autrePartieId': _client!.id,
       'data': {
@@ -82,7 +92,7 @@ class _State extends State<CreationReconnaissanceDettePage> {
         if (_echelonne && _freqCtrl.text.isNotEmpty)       'frequence_paiements': _freqCtrl.text.trim(),
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
-      'signature_generateur': '',
+      'signature_generateur': sigBase64,
     }));
   }
 
@@ -439,6 +449,16 @@ class _State extends State<CreationReconnaissanceDettePage> {
               icon: Icons.location_city_outlined,
               hint: 'Ex: Dakar, Abidjan…',
             ),
+          ],
+        ),
+        kGapLg,
+        CSection(
+          title: 'Signature',
+          icon: Icons.draw_outlined,
+          accentColor: _accent,
+          subtitle: 'Signez pour valider la création du contrat',
+          children: [
+            CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
           ],
         ),
       ],
