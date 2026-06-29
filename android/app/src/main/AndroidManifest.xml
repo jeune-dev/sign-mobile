@@ -50,6 +50,17 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Canal FCM par défaut (Android 8+) — doit correspondre à _kChannelId dans FcmService -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="sign_push_channel" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@android:color/black" />
+
         <!-- Accès au stockage externe sur Android 10 (API 29) -->
         <meta-data
             android:name="android.content.APP_RESTRICTIONS"
