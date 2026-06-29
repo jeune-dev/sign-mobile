@@ -1,6 +1,9 @@
 ﻿import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:signature/signature.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
@@ -110,6 +113,14 @@ class _CreationContratPageState extends State<CreationContratPage>
   bool _sousLocation = false, _animaux = false, _travaux = false;
   final _clausesCtrl = TextEditingController();
 
+  // ─── Signature ──────────────────────────────────────────────
+  final SignatureController _signatureController = SignatureController(
+    penStrokeWidth: 3,
+    penColor: Colors.black,
+    exportBackgroundColor: Colors.white,
+  );
+  bool _signConsent = false;
+
   static const _draftKey = 'draft_contrat_bail';
   Timer? _draftSaveTimer;
 
@@ -190,6 +201,7 @@ class _CreationContratPageState extends State<CreationContratPage>
     }
     _depotMontantCtrl.dispose();
     _clausesCtrl.dispose();
+    _signatureController.dispose();
     super.dispose();
   }
 
@@ -297,7 +309,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   }
 
   // ── Soumission ────────────────────────────────────────────
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_locatairesSelectionnes.isEmpty) {
       _showError('Sélectionnez au moins un locataire');
@@ -311,6 +323,19 @@ class _CreationContratPageState extends State<CreationContratPage>
       _showError('La date de début est requise');
       return;
     }
+    if (_signatureController.isEmpty) {
+      _showError('Veuillez apposer votre signature avant de créer le contrat');
+      return;
+    }
+    if (!_signConsent) {
+      _showError('Veuillez accepter les termes du contrat');
+      return;
+    }
+
+    final Uint8List? sigBytes = await _signatureController.toPngBytes();
+    if (sigBytes == null) return;
+    final String signatureBase64 = 'data:image/png;base64,${base64Encode(sigBytes)}';
+
     setState(() => _submitting = true);
 
     context.read<ContratBloc>().add(CreerContratBailEvent({
@@ -364,6 +389,7 @@ class _CreationContratPageState extends State<CreationContratPage>
         'travaux':        _travaux ? 'Oui' : 'Non',
         'personnalisees': _clausesCtrl.text.trim(),
       },
+      'signature_bailleur': signatureBase64,
     }));
   }
 
@@ -456,6 +482,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                     _buildSectionPaiement(),
                     _buildSectionDepot(),
                     _buildSectionClauses(),
+                    _buildSectionSignature(),
                   ],
                 ),
               ),
@@ -1453,6 +1480,94 @@ class _CreationContratPageState extends State<CreationContratPage>
                 labelBuilder: (e) => e == 'ALL' ? 'Tout mode de paiement' : e),
           ),
         ],
+      ],
+    );
+  }
+
+  // ── 7. Signature ───────────────────────────────────────────
+  Widget _buildSectionSignature() {
+    return _section(
+      Icons.draw_rounded,
+      const Color(0xFF6C63FF),
+      'Signature du bailleur',
+      [
+        // Bannière info
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF6C63FF).withValues(alpha: 0.07),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.25)),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF6C63FF)),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Signez ci-dessous pour valider et créer ce contrat de bail.',
+                  style: TextStyle(fontSize: 12, color: Color(0xFF3730A3), height: 1.4),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // Pad de signature inline
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.4), width: 2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Signature(
+              controller: _signatureController,
+              height: 180,
+              backgroundColor: const Color(0xFFFAFAFA),
+            ),
+          ),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            icon: const Icon(Icons.clear, size: 15, color: _gray400),
+            label: const Text('Effacer', style: TextStyle(color: _gray400, fontSize: 12)),
+            onPressed: () => _signatureController.clear(),
+          ),
+        ),
+
+        // Case à cocher consentement
+        GestureDetector(
+          onTap: () => setState(() => _signConsent = !_signConsent),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 22, height: 22,
+                decoration: BoxDecoration(
+                  color: _signConsent ? _black : _white,
+                  border: Border.all(color: _signConsent ? _black : _gray400),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: _signConsent
+                    ? const Icon(Icons.check, color: Colors.white, size: 14)
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'En signant, je reconnais avoir lu et accepté l\'intégralité des termes '
+                  'de ce contrat de bail. Ma signature électronique a valeur légale.',
+                  style: TextStyle(fontSize: 11, color: _gray600, height: 1.5),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
