@@ -950,7 +950,8 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
   // 0 = totalité, 1 = moitié, 2 = personnalisé
   int _quickChip = 2;
 
-  double get _montant => widget.doc.montant;
+  double get _montantHT => widget.doc.montant;
+  double get _montant => _montantHT * (1 + (widget.doc.tva ?? 0) / 100);
   double get _dejaPaye => widget.doc.avance;
   double get _reste => _montant - _dejaPaye;
   double get _pourcent => _montant > 0 ? (_dejaPaye / _montant).clamp(0.0, 1.0) : 0.0;
