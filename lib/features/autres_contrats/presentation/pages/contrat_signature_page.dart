@@ -1,5 +1,6 @@
 ﻿import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +40,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
   PDFViewController? _pdfController;
 
   // ── Signature ─────────────────────────────────────────────────────────────
-  File? _signatureImage;
+  Uint8List? _signatureBytes;
   bool _accepted = false;
   bool _signing = false;
 
@@ -75,8 +76,8 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
       penColor: Colors.black,
       exportBackgroundColor: Colors.white,
     );
-    File? result;
-    await showDialog<void>(
+
+    final bytes = await showDialog<Uint8List>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
@@ -113,11 +114,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
               if (controller.isEmpty) return;
               final data = await controller.toPngBytes();
               if (data == null) return;
-              final dir = await getTemporaryDirectory();
-              final file = File('${dir.path}/sig_sign_${DateTime.now().millisecondsSinceEpoch}.png');
-              await file.writeAsBytes(data);
-              result = file;
-              if (dialogContext.mounted) Navigator.pop(dialogContext);
+              if (dialogContext.mounted) Navigator.pop(dialogContext, data);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.black,
@@ -129,9 +126,10 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
         ],
       ),
     );
+
     controller.dispose();
-    if (result != null && mounted) {
-      setState(() => _signatureImage = result);
+    if (bytes != null && mounted) {
+      setState(() => _signatureBytes = bytes);
     }
   }
 
@@ -140,12 +138,12 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
       _showError('Veuillez accepter les conditions du contrat');
       return;
     }
-    if (_signatureImage == null) {
+    if (_signatureBytes == null) {
       _showError('Veuillez apposer votre signature');
       return;
     }
     setState(() => _signing = true);
-    final sigBase64 = base64Encode(await _signatureImage!.readAsBytes());
+    final sigBase64 = base64Encode(_signatureBytes!);
     if (!mounted) return;
     context.read<AutresContratsBloc>().add(SignerContrat(widget.type, widget.contrat.id, sigBase64));
   }
@@ -432,14 +430,14 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
                 color: const Color(0xFFF8F8FA),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: _signatureImage != null ? Colors.black : const Color(0xFFE5E7EB),
-                  width: _signatureImage != null ? 2 : 1,
+                  color: _signatureBytes != null ? Colors.black : const Color(0xFFE5E7EB),
+                  width: _signatureBytes != null ? 2 : 1,
                 ),
               ),
-              child: _signatureImage != null
+              child: _signatureBytes != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.file(_signatureImage!, fit: BoxFit.contain),
+                      child: Image.memory(_signatureBytes!, fit: BoxFit.contain),
                     )
                   : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                       const Icon(Icons.draw_outlined, size: 24, color: Colors.black38),
