@@ -24,7 +24,7 @@ class _State extends State<CreationContratConfidentialitePage> {
   static const int _totalSteps = 3;
   static const _steps = ['Partie', 'Confidentialité', 'Détails'];
 
-  static const _accent = Color(0xFF1D4ED8);
+  static const _accent = Color(0xFF1A1A1A);
   static const _icon   = Icons.lock_outline;
   static const _titre  = 'Accord de confidentialité';
 
@@ -100,9 +100,9 @@ class _State extends State<CreationContratConfidentialitePage> {
   // Couleur selon niveau
   Color get _niveauColor {
     switch (_niveauConf) {
-      case 'faible': return Colors.green;
-      case 'élevé':  return Colors.red;
-      default:       return Colors.orange;
+      case 'faible': return Color(0xFFA1A1AA);
+      case 'élevé':  return Color(0xFF1A1A1A);
+      default:       return Color(0xFF6B7280);
     }
   }
 
@@ -235,11 +235,11 @@ class _State extends State<CreationContratConfidentialitePage> {
               _buildLabel('Niveau de confidentialité', required: true),
               const SizedBox(height: 8),
               Row(children: [
-                _levelChip('faible', 'Faible', Colors.green),
+                _levelChip('faible', 'Faible', Color(0xFFA1A1AA)),
                 const SizedBox(width: 8),
-                _levelChip('moyen', 'Moyen', Colors.orange),
+                _levelChip('moyen', 'Moyen', Color(0xFF6B7280)),
                 const SizedBox(width: 8),
-                _levelChip('élevé', 'Élevé', Colors.red),
+                _levelChip('élevé', 'Élevé', Color(0xFF1A1A1A)),
               ]),
               const SizedBox(height: 8),
               AnimatedContainer(
@@ -268,8 +268,8 @@ class _State extends State<CreationContratConfidentialitePage> {
           accentColor: _accent,
           subtitle: 'Durée et sanctions applicables',
           children: [
-            CField(controller: _dureeCtrl, label: 'Durée de confidentialité', accentColor: _accent,
-                icon: Icons.timer_outlined, hint: 'Ex: 3 ans, indéterminée…'),
+            CDurationField(controller: _dureeCtrl, label: 'Durée de confidentialité', accentColor: _accent,
+                icon: Icons.timer_outlined, autoriserIndetermine: true),
             kGap,
             CField(controller: _sanctionsCtrl, label: 'Sanctions en cas de violation', accentColor: _accent,
                 maxLines: 3, hint: 'Ex: dommages et intérêts, résiliation immédiate, poursuites judiciaires…'),

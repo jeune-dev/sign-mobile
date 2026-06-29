@@ -348,12 +348,146 @@ class CField extends StatelessWidget {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
+          // Clavier numérique sans formateur explicite → chiffres uniquement.
+          inputFormatters: inputFormatters ??
+              (keyboardType == TextInputType.number
+                  ? [FilteringTextInputFormatter.digitsOnly]
+                  : null),
           style: const TextStyle(fontSize: 14, color: kValueColor, fontWeight: FontWeight.w500),
           decoration: _fieldDec(hint, icon, accentColor),
           validator: required
               ? (v) => (v == null || v.trim().isEmpty) ? 'Champ requis' : null
               : null,
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Champ durée : nombre (chiffres uniquement) + unité ─────────────────────────
+//
+// Écrit dans [controller] une chaîne combinée « 3 mois » pour rester compatible
+// avec l'envoi existant (duree_mission, etc.). La saisie n'accepte que des chiffres,
+// l'unité est choisie dans une liste fermée → impossible de saisir « hhsvs ».
+
+const List<String> kUnitesDuree = ['jour(s)', 'semaine(s)', 'mois', 'année(s)'];
+
+class CDurationField extends StatefulWidget {
+  /// Libellé de l'unité « sans nombre » (durée indéterminée).
+  static const String uniteIndeterminee = 'Indéterminée';
+
+  final TextEditingController controller;
+  final String label;
+  final Color accentColor;
+  final IconData? icon;
+  final bool required;
+  final List<String> unites;
+  // Ajoute l'option « Indéterminée » (masque alors le champ nombre).
+  final bool autoriserIndetermine;
+
+  const CDurationField({
+    super.key,
+    required this.controller,
+    required this.label,
+    required this.accentColor,
+    this.icon,
+    this.required = true,
+    this.unites = kUnitesDuree,
+    this.autoriserIndetermine = false,
+  });
+
+  @override
+  State<CDurationField> createState() => _CDurationFieldState();
+}
+
+class _CDurationFieldState extends State<CDurationField> {
+  final TextEditingController _nbCtrl = TextEditingController();
+  late String _unite;
+
+  List<String> get _unites => widget.autoriserIndetermine
+      ? [...widget.unites, CDurationField.uniteIndeterminee]
+      : widget.unites;
+
+  bool get _estIndetermine => _unite == CDurationField.uniteIndeterminee;
+
+  @override
+  void initState() {
+    super.initState();
+    _unite = _unites.first;
+    // Pré-remplissage si le contrôleur contient déjà « 3 mois » ou « Indéterminée »
+    final existant = widget.controller.text.trim();
+    if (existant == CDurationField.uniteIndeterminee && widget.autoriserIndetermine) {
+      _unite = CDurationField.uniteIndeterminee;
+    } else {
+      final parts = existant.split(RegExp(r'\s+'));
+      if (parts.length >= 2 && int.tryParse(parts.first) != null) {
+        _nbCtrl.text = parts.first;
+        final u = parts.sublist(1).join(' ');
+        if (_unites.contains(u)) _unite = u;
+      }
+    }
+    _sync();
+  }
+
+  void _sync() {
+    if (_estIndetermine) {
+      widget.controller.text = CDurationField.uniteIndeterminee;
+      return;
+    }
+    final nb = _nbCtrl.text.trim();
+    widget.controller.text = nb.isEmpty ? '' : '$nb $_unite';
+  }
+
+  @override
+  void dispose() {
+    _nbCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _CLabel(label: widget.label, required: widget.required, accentColor: widget.accentColor),
+        const SizedBox(height: 6),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 2,
+              child: TextFormField(
+                controller: _nbCtrl,
+                enabled: !_estIndetermine,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                onChanged: (_) => _sync(),
+                style: const TextStyle(fontSize: 14, color: kValueColor, fontWeight: FontWeight.w500),
+                decoration: _fieldDec('Ex: 3', widget.icon, widget.accentColor),
+                validator: (widget.required && !_estIndetermine)
+                    ? (v) => (v == null || v.trim().isEmpty) ? 'Requis' : null
+                    : null,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 3,
+              child: DropdownButtonFormField<String>(
+                initialValue: _unite,
+                isExpanded: true,
+                style: const TextStyle(fontSize: 14, color: kValueColor, fontWeight: FontWeight.w500),
+                decoration: _fieldDec(null, Icons.schedule_outlined, widget.accentColor),
+                items: _unites
+                    .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                    .toList(),
+                onChanged: (v) {
+                  if (v == null) return;
+                  setState(() => _unite = v);
+                  _sync();
+                },
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -913,16 +1047,28 @@ Future<File?> openSignaturePad(BuildContext context) async {
   );
 
   try {
-    await showDialog<void>(
+    // On RÉCUPÈRE le fichier renvoyé par Navigator.pop(dialogContext, file).
+    // Auparavant le résultat de showDialog était ignoré et la fonction
+    // renvoyait toujours null → la signature n'était jamais enregistrée.
+    return await showDialog<File?>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
+      builder: (dialogContext) {
+        // AlertDialog enveloppe son contenu dans un IntrinsicWidth, qui mesure
+        // ses enfants sous des contraintes de largeur NON bornées. Le widget
+        // Signature dimensionne son canevas via un ConstrainedBox dont la largeur
+        // vaut `width ?? double.infinity` : avec double.infinity, sa largeur
+        // intrinsèque est infinie → le pad s'effondre et reste invisible.
+        // On fixe donc une largeur FINIE dérivée de l'écran.
+        final double padWidth =
+            (MediaQuery.of(dialogContext).size.width - 96).clamp(240.0, 420.0);
+        return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Votre signature', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: double.infinity,
+              width: padWidth,
               height: 180,
               decoration: BoxDecoration(
                 color: const Color(0xFFF8F8FA),
@@ -933,7 +1079,7 @@ Future<File?> openSignaturePad(BuildContext context) async {
                 borderRadius: BorderRadius.circular(14),
                 child: Signature(
                   controller: controller,
-                  width: double.infinity,
+                  width: padWidth,
                   height: 180,
                 ),
               ),
@@ -971,12 +1117,12 @@ Future<File?> openSignaturePad(BuildContext context) async {
             child: const Text('Valider'),
           ),
         ],
-      ),
+        );
+      },
     );
   } finally {
     controller.dispose();
   }
-  return null;
 }
 
 /// Widget d'affichage du champ signature (preview + tap pour ouvrir le pad).

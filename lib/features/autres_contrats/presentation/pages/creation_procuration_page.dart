@@ -24,7 +24,7 @@ class _State extends State<CreationProcurationPage> {
   static const int _totalSteps = 3;
   static const _steps = ['Mandataire', 'Mandat', 'Finalisation'];
 
-  static const _accent = Color(0xFFD97706);
+  static const _accent = Color(0xFF1A1A1A);
   static const _icon   = Icons.gavel_outlined;
   static const _titre  = 'Procuration';
 
@@ -242,8 +242,8 @@ class _State extends State<CreationProcurationPage> {
                 icon: Icons.admin_panel_settings_outlined,
                 hint: 'Listez précisément les actes autorisés : signer, encaisser, vendre, représenter…'),
             kGap,
-            CField(controller: _dureeCtrl, label: 'Durée du mandat', accentColor: _accent,
-                icon: Icons.timer_outlined, hint: 'Ex: 6 mois, jusqu\'au 31/12/2025, indéterminée…'),
+            CDurationField(controller: _dureeCtrl, label: 'Durée du mandat', accentColor: _accent,
+                icon: Icons.timer_outlined, autoriserIndetermine: true),
           ],
         ),
       ],

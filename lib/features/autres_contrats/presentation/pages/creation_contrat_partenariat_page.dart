@@ -24,7 +24,7 @@ class _State extends State<CreationContratPartenariatPage> {
   static const int _totalSteps = 3;
   static const _steps = ['Partenaire', 'Accord', 'Revenus'];
 
-  static const _accent = Color(0xFF7C3AED);
+  static const _accent = Color(0xFF1A1A1A);
   static const _icon   = Icons.people_alt_outlined;
   static const _titre  = 'Contrat de partenariat';
 
@@ -193,7 +193,7 @@ class _State extends State<CreationContratPartenariatPage> {
           children: [
             CField(controller: _objetCtrl, label: 'Objet du partenariat', accentColor: _accent, maxLines: 3, hint: 'Décrivez la nature et les objectifs du partenariat…'),
             kGap,
-            CField(controller: _dureeCtrl, label: 'Durée', accentColor: _accent, icon: Icons.timer_outlined, hint: 'Ex: 1 an, 24 mois…'),
+            CDurationField(controller: _dureeCtrl, label: 'Durée', accentColor: _accent, icon: Icons.timer_outlined),
           ],
         ),
         kGapLg,

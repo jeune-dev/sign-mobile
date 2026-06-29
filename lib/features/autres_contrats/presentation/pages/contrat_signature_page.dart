@@ -349,6 +349,9 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
 
           // ── Pad signature inline ──────────────────────────────────────
           Container(
+            // La Column parente est en CrossAxisAlignment.start : sans largeur
+            // explicite, le pad s'effondre à 0 px de large et reste invisible.
+            width: double.infinity,
             decoration: BoxDecoration(
               border: Border.all(color: Colors.black.withValues(alpha: 0.3), width: 2),
               borderRadius: BorderRadius.circular(14),
@@ -357,6 +360,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
               borderRadius: BorderRadius.circular(12),
               child: Signature(
                 controller: _signatureController,
+                width: double.infinity,
                 height: 180,
                 backgroundColor: const Color(0xFFFAFAFA),
               ),

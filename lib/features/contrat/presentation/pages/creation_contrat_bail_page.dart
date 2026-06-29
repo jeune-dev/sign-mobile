@@ -403,7 +403,7 @@ class _CreationContratPageState extends State<CreationContratPage>
       message: 'Voulez-vous créer l\'état des lieux de ce logement maintenant ?',
       confirmLabel: 'État des lieux',
       cancelLabel: 'Plus tard',
-      confirmColor: const Color(0xFF059669),
+      confirmColor: const Color(0xFF1A1A1A),
       icon: Icons.fact_check_outlined,
     );
 
@@ -555,8 +555,8 @@ class _CreationContratPageState extends State<CreationContratPage>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF6C63FF).withValues(alpha: 0.8),
-                      const Color(0xFF6C63FF).withValues(alpha: 0.5),
+                      const Color(0xFF1A1A1A).withValues(alpha: 0.8),
+                      const Color(0xFF1A1A1A).withValues(alpha: 0.5),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
@@ -713,7 +713,11 @@ class _CreationContratPageState extends State<CreationContratPage>
             maxLines: maxLines,
             readOnly: readOnly || disabled,
             onTap: onTap,
-            inputFormatters: inputFormatters,
+            // Champs numériques (loyer, charges, dépôt, surface…) : chiffres uniquement par défaut.
+            inputFormatters: inputFormatters ??
+                (type == TextInputType.number
+                    ? [FilteringTextInputFormatter.digitsOnly]
+                    : null),
             validator: required
                 ? (v) => (v == null || v.trim().isEmpty)
                     ? 'Ce champ est requis'
@@ -738,7 +742,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                   borderSide: const BorderSide(color: _black, width: 1.5)),
               errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.red)),
+                  borderSide: const BorderSide(color: Color(0xFF1A1A1A))),
               disabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: const BorderSide(color: _gray100)),
@@ -818,7 +822,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                         });
                       },
                       child: const Icon(Icons.check_circle_rounded,
-                          size: 16, color: Colors.green),
+                          size: 16, color: Color(0xFF1A1A1A)),
                     ),
                 ],
               ),
@@ -944,7 +948,7 @@ class _CreationContratPageState extends State<CreationContratPage>
             color: _gray600),
         children: required
             ? [const TextSpan(
-                text: ' *', style: TextStyle(color: Colors.red))]
+                text: ' *', style: TextStyle(color: Color(0xFF1A1A1A)))]
             : [],
       ),
     );
@@ -967,7 +971,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionLocataires() {
     return _section(
       Icons.person_search_rounded,
-      const Color(0xFF6C63FF),
+      const Color(0xFF1A1A1A),
       'Sélection du locataire',
       [
         if (_locatairesSelectionnes.isNotEmpty) ...[
@@ -1035,16 +1039,16 @@ class _CreationContratPageState extends State<CreationContratPage>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                color: Colors.red[50],
+                color: Color(0xFFF4F4F5),
                 borderRadius: BorderRadius.circular(10)),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Colors.red[400], size: 16),
+                Icon(Icons.error_outline, color: Color(0xFF6B7280), size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                     child: Text(_rechercheErreur,
                         style: TextStyle(
-                            color: Colors.red[700], fontSize: 12))),
+                            color: Color(0xFF374151), fontSize: 12))),
               ],
             ),
           ),
@@ -1080,7 +1084,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                             fontSize: 11, color: _gray400)),
                     trailing: already
                         ? const Icon(Icons.check_circle_rounded,
-                            color: Colors.green, size: 20)
+                            color: Color(0xFF1A1A1A), size: 20)
                         : const Icon(Icons.add_circle_outline_rounded,
                             color: _black, size: 20),
                     onTap: () {
@@ -1101,21 +1105,21 @@ class _CreationContratPageState extends State<CreationContratPage>
             margin: const EdgeInsets.only(top: 10),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-                color: const Color(0xFFEEF2FF),
+                color: const Color(0xFFF4F4F5),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: const Color(0xFF6C63FF).withValues(alpha: 0.2))),
+                    color: const Color(0xFF1A1A1A).withValues(alpha: 0.2))),
             child: const Row(
               children: [
                 Icon(Icons.info_outline_rounded,
-                    size: 16, color: Color(0xFF6C63FF)),
+                    size: 16, color: Color(0xFF1A1A1A)),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Tapez le nom ou l\'email d\'un locataire pour le rechercher.\nVous pouvez en sélectionner plusieurs.',
                     style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF3730A3),
+                        color: Color(0xFF1A1A1A),
                         height: 1.5),
                   ),
                 ),
@@ -1191,7 +1195,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionBien() {
     return _section(
       Icons.home_outlined,
-      const Color(0xFF00C896),
+      const Color(0xFF1A1A1A),
       'Bien immobilier',
       [
         _field('Adresse', _bienAdresseCtrl,
@@ -1247,7 +1251,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionBail() {
     return _section(
       Icons.calendar_month_outlined,
-      const Color(0xFFFFB347),
+      const Color(0xFF6B7280),
       'Conditions du bail',
       [
         // Date début
@@ -1278,20 +1282,20 @@ class _CreationContratPageState extends State<CreationContratPage>
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red[50],
+              color: Color(0xFFF4F4F5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: Colors.red.withValues(alpha: 0.3)),
+                  color: Color(0xFF6B7280).withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
                 Icon(Icons.warning_amber_rounded,
-                    color: Colors.red[600], size: 18),
+                    color: Color(0xFF4B5563), size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(_dateError!,
                       style: TextStyle(
-                          color: Colors.red[700],
+                          color: Color(0xFF374151),
                           fontSize: 12,
                           fontWeight: FontWeight.w500)),
                 ),
@@ -1319,7 +1323,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionPaiement() {
     return _section(
       Icons.payments_outlined,
-      const Color(0xFF4ECDC4),
+      const Color(0xFF1A1A1A),
       'Conditions de paiement',
       [
         _row2(
@@ -1445,7 +1449,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                   child: const Padding(
                     padding: EdgeInsets.only(top: 10),
                     child: Icon(Icons.remove_circle_outline_rounded,
-                        size: 20, color: Colors.red),
+                        size: 20, color: Color(0xFF1A1A1A)),
                   ),
                 ),
               ],
@@ -1460,7 +1464,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionDepot() {
     return _section(
       Icons.shield_outlined,
-      const Color(0xFF45B7D1),
+      const Color(0xFF1A1A1A),
       'Dépôt de garantie / Caution',
       [
         _toggle('Dépôt de garantie prévu', _depotPrevu,
@@ -1488,7 +1492,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionSignature() {
     return _section(
       Icons.draw_rounded,
-      const Color(0xFF6C63FF),
+      const Color(0xFF1A1A1A),
       'Signature du bailleur',
       [
         // Bannière info
@@ -1496,18 +1500,18 @@ class _CreationContratPageState extends State<CreationContratPage>
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF6C63FF).withValues(alpha: 0.07),
+            color: const Color(0xFF1A1A1A).withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.25)),
+            border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.25)),
           ),
           child: const Row(
             children: [
-              Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF6C63FF)),
+              Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF1A1A1A)),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Signez ci-dessous pour valider et créer ce contrat de bail.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF3730A3), height: 1.4),
+                  style: TextStyle(fontSize: 12, color: Color(0xFF1A1A1A), height: 1.4),
                 ),
               ),
             ],
@@ -1517,14 +1521,16 @@ class _CreationContratPageState extends State<CreationContratPage>
 
         // Pad de signature inline
         Container(
+          width: double.infinity,
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.4), width: 2),
+            border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.4), width: 2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: Signature(
               controller: _signatureController,
+              width: double.infinity,
               height: 180,
               backgroundColor: const Color(0xFFFAFAFA),
             ),
@@ -1576,7 +1582,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionClauses() {
     return _section(
       Icons.rule_folder_outlined,
-      const Color(0xFFFF6B6B),
+      const Color(0xFF1A1A1A),
       'Clauses du contrat',
       [
         _toggle('Sous-location autorisée', _sousLocation,
@@ -1647,9 +1653,9 @@ class _SuccessDialogState extends State<_SuccessDialog> {
           Container(
             width: 72, height: 72,
             decoration: const BoxDecoration(
-                color: Color(0xFFE8F5E9), shape: BoxShape.circle),
+                color: Color(0xFFF4F4F5), shape: BoxShape.circle),
             child: const Icon(Icons.check_rounded,
-                color: Colors.green, size: 40),
+                color: Color(0xFF1A1A1A), size: 40),
           ),
           const SizedBox(height: 20),
           const Text('Contrat créé !',

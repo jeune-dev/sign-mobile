@@ -120,6 +120,9 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
                 style: TextStyle(fontSize: 12, color: Colors.grey[600])),
             const SizedBox(height: 16),
             Container(
+              // Column en CrossAxisAlignment.start : sans largeur explicite, le pad
+              // s'effondre à 0 px et reste invisible.
+              width: double.infinity,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey.shade300, width: 2),
                 borderRadius: BorderRadius.circular(12),
@@ -128,6 +131,7 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
                 borderRadius: BorderRadius.circular(10),
                 child: Signature(
                   controller: controller,
+                  width: double.infinity,
                   height: 180,
                   backgroundColor: Colors.grey.shade50,
                 ),

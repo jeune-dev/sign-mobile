@@ -183,6 +183,7 @@ class _SignerContratPageState extends State<SignerContratPage> {
                 const Text('Votre signature', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 8),
                 Container(
+                  width: double.infinity,
                   decoration: BoxDecoration(
                     border: Border.all(color: Colors.grey.shade300, width: 2),
                     borderRadius: BorderRadius.circular(12),
@@ -191,6 +192,7 @@ class _SignerContratPageState extends State<SignerContratPage> {
                     borderRadius: BorderRadius.circular(10),
                     child: Signature(
                       controller: _signatureController,
+                      width: double.infinity,
                       height: 180,
                       backgroundColor: Colors.grey.shade50,
                     ),

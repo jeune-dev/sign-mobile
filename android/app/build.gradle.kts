@@ -22,6 +22,8 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Requis par flutter_local_notifications (utilise les API java.time via desugaring)
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -64,6 +66,9 @@ android {
 }
 
 dependencies {
+    // Core library desugaring — requis par flutter_local_notifications
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
     // Firebase BoM — gère automatiquement les versions de tous les SDK Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
 

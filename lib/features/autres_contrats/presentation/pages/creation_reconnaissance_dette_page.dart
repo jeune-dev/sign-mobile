@@ -26,7 +26,7 @@ class _State extends State<CreationReconnaissanceDettePage> {
   static const int _totalSteps = 3;
   static const _steps = ['Débiteur', 'Dette', 'Remboursement'];
 
-  static const _accent = Color(0xFF0891B2);
+  static const _accent = Color(0xFF1A1A1A);
   static const _icon   = Icons.receipt_long_outlined;
   static const _titre  = 'Reconnaissance de dette';
 

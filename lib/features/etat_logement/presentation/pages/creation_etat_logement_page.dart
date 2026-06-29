@@ -15,7 +15,7 @@ import 'package:sign_application/features/etat_logement/presentation/bloc/etat_l
 import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_state.dart';
 
 /// Couleur d'accent dédiée à l'état des lieux.
-const Color _kAccent = Color(0xFF059669);
+const Color _kAccent = Color(0xFF1A1A1A);
 
 /// Valeurs possibles pour l'état d'un élément d'une pièce.
 const List<String> _kEtatValues = ['Neuf', 'Bon', 'Moyen', 'Mauvais'];
@@ -544,7 +544,7 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
                           fontSize: 13, fontWeight: FontWeight.w800, color: kValueColor)),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF1A1A1A), size: 20),
                   onPressed: () => setState(() {
                     _pieces.removeAt(index).dispose();
                   }),
@@ -704,6 +704,7 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
           subtitle: 'Dessinez votre signature dans le cadre',
           children: [
             Container(
+              width: double.infinity,
               decoration: BoxDecoration(
                 border: Border.all(color: _kAccent.withValues(alpha: 0.5), width: 2),
                 borderRadius: BorderRadius.circular(12),
@@ -712,6 +713,7 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
                 borderRadius: BorderRadius.circular(10),
                 child: Signature(
                   controller: _signatureController,
+                  width: double.infinity,
                   height: 200,
                   backgroundColor: _kAccent.withValues(alpha: 0.03),
                 ),

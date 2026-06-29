@@ -28,7 +28,7 @@ class _State extends State<CreationContratPrestationPage>
   static const int _totalSteps = 3;
   static const _steps = ['Partie', 'Mission', 'Finalisation'];
 
-  static const _accent  = Color(0xFF2563EB);
+  static const _accent  = Color(0xFF1A1A1A);
   static const _icon    = Icons.handshake_outlined;
   static const _titre   = 'Contrat de prestation';
 
@@ -252,7 +252,7 @@ class _State extends State<CreationContratPrestationPage>
             children: [
               CField(controller: _descCtrl, label: 'Description détaillée', accentColor: _accent, maxLines: 4, hint: 'Listez les livrables, étapes, contraintes…'),
               kGap,
-              CField(controller: _dureeCtrl, label: 'Durée estimée', accentColor: _accent, icon: Icons.timer_outlined, hint: 'Ex: 3 mois, 45 jours…'),
+              CDurationField(controller: _dureeCtrl, label: 'Durée estimée', accentColor: _accent, icon: Icons.timer_outlined),
             ],
           ),
         ],

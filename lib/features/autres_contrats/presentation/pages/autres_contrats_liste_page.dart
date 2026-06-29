@@ -14,6 +14,7 @@ import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
+import 'package:sign_application/core/services/token_service.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
@@ -47,9 +48,20 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   final Set<String> _downloading = {};
   static final _dateFmt = DateFormat('dd/MM/yyyy');
 
+  // Identifiant de l'utilisateur connecté : on part de celui passé en argument,
+  // mais il est parfois null (navigation depuis une notification, etc.).
+  // On le complète alors de façon fiable depuis le JWT.
+  String? _resolvedUserId;
+
   @override
   void initState() {
     super.initState();
+    _resolvedUserId = widget.currentUserId;
+    if (_resolvedUserId == null) {
+      di.sl<TokenService>().getUserId().then((id) {
+        if (mounted && id != null) setState(() => _resolvedUserId = id);
+      });
+    }
     context.read<AutresContratsBloc>().add(LoadContrats(widget.type));
     _loadStats();
   }
@@ -389,7 +401,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
     final isDown = _downloading.contains(c.id);
 
     final generateurId = c.generateur?['id']?.toString();
-    final estCreateur = widget.currentUserId != null && generateurId == widget.currentUserId;
+    final estCreateur = _resolvedUserId != null && generateurId == _resolvedUserId;
 
     final autrePartieNom = c.autrePartie != null
         ? '${c.autrePartie!['prenom'] ?? ''} ${c.autrePartie!['nom'] ?? ''}'
@@ -473,7 +485,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                       child: Text(statusLabel,
                           style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700)),
                     ),
-                    if (widget.currentUserId != null) ...[
+                    if (_resolvedUserId != null) ...[
                       const SizedBox(height: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

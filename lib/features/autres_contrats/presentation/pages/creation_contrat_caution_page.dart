@@ -25,7 +25,7 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
   static const int _totalSteps = 2;
   static const _steps = ['Client', 'Caution'];
 
-  static const _accent = Color(0xFFDC2626);
+  static const _accent = Color(0xFF1A1A1A);
   static const _icon   = Icons.verified_user_outlined;
   static const _titre  = 'Contrat de caution';
 
@@ -244,8 +244,8 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
               hint: '0',
             ),
             kGap,
-            CField(controller: _dureeCtrl, label: 'Durée de la caution', accentColor: _accent, icon: Icons.timer_outlined,
-                hint: 'Ex: 12 mois, indéterminée…'),
+            CDurationField(controller: _dureeCtrl, label: 'Durée de la caution', accentColor: _accent, icon: Icons.timer_outlined,
+                autoriserIndetermine: true),
           ],
         ),
         kGapLg,

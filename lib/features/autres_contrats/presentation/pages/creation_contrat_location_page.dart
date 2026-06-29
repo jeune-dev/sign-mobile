@@ -25,7 +25,7 @@ class _State extends State<CreationContratLocationPage> {
   static const int _totalSteps = 3;
   static const _steps = ['Locataire', 'Bien', 'Conditions'];
 
-  static const _accent = Color(0xFF059669);
+  static const _accent = Color(0xFF1A1A1A);
   static const _icon   = Icons.directions_car_outlined;
   static const _titre  = 'Contrat de location';
 
@@ -239,8 +239,7 @@ class _State extends State<CreationContratLocationPage> {
           icon: Icons.receipt_long_outlined,
           accentColor: _accent,
           children: [
-            CField(controller: _dureeCtrl, label: 'Durée de location', accentColor: _accent, icon: Icons.timer_outlined,
-                hint: 'Ex: 7 jours, 1 mois…'),
+            CDurationField(controller: _dureeCtrl, label: 'Durée de location', accentColor: _accent, icon: Icons.timer_outlined),
             kGap,
             CField(
               controller: _montantCtrl,

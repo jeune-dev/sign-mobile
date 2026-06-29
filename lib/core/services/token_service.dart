@@ -25,6 +25,20 @@ class TokenService {
     return await secureStorage.read(key: 'jwt_token');
   }
 
+  /// Identifiant de l'utilisateur connecté, extrait du JWT ({ id, role }).
+  /// Source fiable et toujours disponible tant qu'un token valide existe,
+  /// contrairement au `User` passé via les arguments de navigation (parfois null).
+  Future<String?> getUserId() async {
+    final token = await getValidToken();
+    if (token == null) return null;
+    try {
+      final payload = Jwt.parseJwt(token);
+      return payload['id']?.toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Retourne le token uniquement s'il est valide (non expiré).
   Future<String?> getValidToken() async {
     final token = await getToken();

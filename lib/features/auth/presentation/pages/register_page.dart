@@ -380,10 +380,30 @@ class _RegisterPageState extends State<RegisterPage> {
         Center(
           child: Hero(
             tag: 'app-logo',
-            child: Image.asset(
-              'assets/images/logosignapk.jpeg',
-              width: 130,
-              fit: BoxFit.contain,
+            // Même traitement que la page de connexion : pastille blanche
+            // circulaire qui fond le fond du logo et masque le liseré visible.
+            child: Container(
+              width: 90,
+              height: 90,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/images/logosign.jpeg',
+                  width: 90,
+                  height: 90,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
           ),
         ),

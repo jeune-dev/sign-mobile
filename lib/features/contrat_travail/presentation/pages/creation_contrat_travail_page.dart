@@ -1,6 +1,7 @@
 ﻿import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:signature/signature.dart';
@@ -302,11 +303,11 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
             Container(
               width: 32, height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFF00C896).withValues(alpha: 0.12),
+                color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.calendar_month_outlined,
-                  color: Color(0xFF00C896), size: 18),
+                  color: Color(0xFF1A1A1A), size: 18),
             ),
             const SizedBox(width: 10),
             const Text('Planning hebdomadaire *',
@@ -408,16 +409,16 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
                       decoration: BoxDecoration(
-                        color: j.debut != null ? const Color(0xFF00C896).withValues(alpha: 0.08) : Colors.grey[50],
+                        color: j.debut != null ? const Color(0xFF1A1A1A).withValues(alpha: 0.08) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: j.debut != null
-                            ? const Color(0xFF00C896).withValues(alpha: 0.4) : Colors.grey[200]!),
+                            ? const Color(0xFF1A1A1A).withValues(alpha: 0.4) : Colors.grey[200]!),
                       ),
                       child: Text(
                         j.debut != null ? _fmtTime(j.debut!) : '—',
                         style: TextStyle(
                           fontSize: 12, fontWeight: FontWeight.w700,
-                          color: j.debut != null ? const Color(0xFF00C896) : Colors.grey[400],
+                          color: j.debut != null ? const Color(0xFF1A1A1A) : Colors.grey[400],
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -439,16 +440,16 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
                       decoration: BoxDecoration(
-                        color: j.fin != null ? Colors.red.withValues(alpha: 0.06) : Colors.grey[50],
+                        color: j.fin != null ? Color(0xFF6B7280).withValues(alpha: 0.06) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: j.fin != null
-                            ? Colors.red.withValues(alpha: 0.3) : Colors.grey[200]!),
+                            ? Color(0xFF6B7280).withValues(alpha: 0.3) : Colors.grey[200]!),
                       ),
                       child: Text(
                         j.fin != null ? _fmtTime(j.fin!) : '—',
                         style: TextStyle(
                           fontSize: 12, fontWeight: FontWeight.w700,
-                          color: j.fin != null ? Colors.red[400] : Colors.grey[400],
+                          color: j.fin != null ? Color(0xFF6B7280) : Colors.grey[400],
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -464,12 +465,12 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   child: Container(
                     width: 28, height: 28,
                     decoration: BoxDecoration(
-                      color: _planning.length > 1 ? Colors.red[50] : Colors.grey[100],
+                      color: _planning.length > 1 ? Color(0xFFF4F4F5) : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(Icons.close_rounded,
                       size: 14,
-                      color: _planning.length > 1 ? Colors.red[400] : Colors.grey[300],
+                      color: _planning.length > 1 ? Color(0xFF6B7280) : Colors.grey[300],
                     ),
                   ),
                 ),
@@ -494,6 +495,10 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       penColor: Colors.black,
       exportBackgroundColor: Colors.white,
     );
+    // Largeur FINIE pour le pad : dans une AlertDialog (IntrinsicWidth), une
+    // largeur double.infinity rend le canevas Signature incalculable → pad invisible.
+    final double padWidth =
+        (MediaQuery.of(context).size.width - 96).clamp(240.0, 420.0);
     try {
       await showDialog<void>(
         context: context,
@@ -504,7 +509,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: double.infinity,
+                width: padWidth,
                 height: 180,
                 decoration: BoxDecoration(
                   color: const Color(0xFFF8F8FA),
@@ -513,7 +518,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
-                  child: Signature(controller: controller, width: double.infinity, height: 180),
+                  child: Signature(controller: controller, width: padWidth, height: 180),
                 ),
               ),
               const SizedBox(height: 8),
@@ -863,6 +868,10 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       controller: ctrl,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      // Champs numériques (salaire, jours de congés…) : chiffres uniquement.
+      inputFormatters: keyboardType == TextInputType.number
+          ? [FilteringTextInputFormatter.digitsOnly]
+          : null,
       decoration: _dec(label),
       validator: required ? (v) => (v == null || v.isEmpty) ? 'Ce champ est requis' : null : null,
     );

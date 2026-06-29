@@ -671,6 +671,7 @@ class _SignatureModalState extends State<_SignatureModal> {
 
                 // Pad
                 Container(
+                  width: double.infinity,
                   decoration: BoxDecoration(
                     border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
                     borderRadius: BorderRadius.circular(14),
@@ -679,6 +680,7 @@ class _SignatureModalState extends State<_SignatureModal> {
                     borderRadius: BorderRadius.circular(12),
                     child: Signature(
                       controller: _controller,
+                      width: double.infinity,
                       height: 170,
                       backgroundColor: const Color(0xFFFAFAFA),
                     ),
