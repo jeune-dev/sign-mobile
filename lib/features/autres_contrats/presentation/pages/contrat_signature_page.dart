@@ -1,6 +1,5 @@
 ﻿import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +39,11 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
   PDFViewController? _pdfController;
 
   // ── Signature ─────────────────────────────────────────────────────────────
-  Uint8List? _signatureBytes;
+  final SignatureController _signatureController = SignatureController(
+    penStrokeWidth: 3,
+    penColor: Colors.black,
+    exportBackgroundColor: Colors.white,
+  );
   bool _accepted = false;
   bool _signing = false;
 
@@ -48,6 +51,12 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
   void initState() {
     super.initState();
     _loadPdf();
+  }
+
+  @override
+  void dispose() {
+    _signatureController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadPdf() async {
@@ -70,81 +79,20 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
     }
   }
 
-  Future<void> _openSignaturePad() async {
-    final controller = SignatureController(
-      penStrokeWidth: 3,
-      penColor: Colors.black,
-      exportBackgroundColor: Colors.white,
-    );
-
-    final bytes = await showDialog<Uint8List>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Votre signature', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: double.infinity, height: 180,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F8FA),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Signature(controller: controller, width: double.infinity, height: 180),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text('Dessinez votre signature ci-dessus',
-                style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => controller.clear(), child: const Text('Effacer')),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (controller.isEmpty) return;
-              final data = await controller.toPngBytes();
-              if (data == null) return;
-              if (dialogContext.mounted) Navigator.pop(dialogContext, data);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Valider'),
-          ),
-        ],
-      ),
-    );
-
-    controller.dispose();
-    if (bytes != null && mounted) {
-      setState(() => _signatureBytes = bytes);
-    }
-  }
 
   Future<void> _submit() async {
     if (!_accepted) {
       _showError('Veuillez accepter les conditions du contrat');
       return;
     }
-    if (_signatureBytes == null) {
+    if (_signatureController.isEmpty) {
       _showError('Veuillez apposer votre signature');
       return;
     }
     setState(() => _signing = true);
-    final sigBase64 = base64Encode(_signatureBytes!);
-    if (!mounted) return;
+    final bytes = await _signatureController.toPngBytes();
+    if (bytes == null || !mounted) return;
+    final sigBase64 = 'data:image/png;base64,${base64Encode(bytes)}';
     context.read<AutresContratsBloc>().add(SignerContrat(widget.type, widget.contrat.id, sigBase64));
   }
 
@@ -343,11 +291,12 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
   }
 
   Widget _buildSignatureSection() {
+    const accent = Colors.black87;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [BoxShadow(color: Color(0x12000000), blurRadius: 20, offset: Offset(0, -4))],
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [BoxShadow(color: Color(0x14000000), blurRadius: 24, offset: Offset(0, -4))],
       ),
       padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).padding.bottom + 20),
       child: Column(
@@ -361,52 +310,35 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
           ),
           const SizedBox(height: 16),
 
-          // ── Conditions ────────────────────────────────────────────────
+          // ── Bannière ──────────────────────────────────────────────────
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F8FA),
+              color: Colors.black.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _accepted ? Colors.black : const Color(0xFFE5E7EB)),
+              border: Border.all(color: Colors.black.withValues(alpha: 0.12)),
             ),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.info_outline_rounded, size: 16, color: Colors.black54),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'En signant ce document, vous reconnaissez avoir lu et accepté '
-                        "l'intégralité des termes et conditions du présent contrat. "
-                        'Votre signature électronique a valeur légale et vous engage '
-                        'au même titre qu\'une signature manuscrite.',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF4B5563), height: 1.5),
-                      ),
-                    ),
-                  ],
+                Container(
+                  width: 42, height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: const Icon(Icons.draw_rounded, color: Colors.black87, size: 20),
                 ),
-                const SizedBox(height: 12),
-                GestureDetector(
-                  onTap: () => setState(() => _accepted = !_accepted),
-                  child: Row(
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 22, height: 22,
-                        decoration: BoxDecoration(
-                          color: _accepted ? Colors.black : Colors.white,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: _accepted ? Colors.black : Colors.grey[400]!),
-                        ),
-                        child: _accepted
-                            ? const Icon(Icons.check_rounded, color: Colors.white, size: 14)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      const Text('J\'accepte les termes et conditions',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87)),
+                      Text('Votre signature requise',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Colors.black87)),
+                      SizedBox(height: 2),
+                      Text('Dessinez votre signature ci-dessous pour valider ce contrat.',
+                          style: TextStyle(fontSize: 11, color: Colors.black54), maxLines: 2),
                     ],
                   ),
                 ),
@@ -415,39 +347,60 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
           ),
           const SizedBox(height: 14),
 
-          // ── Label signature ───────────────────────────────────────────
-          const Text('Votre signature *',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.black87)),
-          const SizedBox(height: 8),
-
-          // ── Pad de signature ──────────────────────────────────────────
-          GestureDetector(
-            onTap: _openSignaturePad,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: 90, width: double.infinity,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F8FA),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: _signatureBytes != null ? Colors.black : const Color(0xFFE5E7EB),
-                  width: _signatureBytes != null ? 2 : 1,
-                ),
+          // ── Pad signature inline ──────────────────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black.withValues(alpha: 0.3), width: 2),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Signature(
+                controller: _signatureController,
+                height: 180,
+                backgroundColor: const Color(0xFFFAFAFA),
               ),
-              child: _signatureBytes != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.memory(_signatureBytes!, fit: BoxFit.contain),
-                    )
-                  : Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      const Icon(Icons.draw_outlined, size: 24, color: Colors.black38),
-                      const SizedBox(height: 4),
-                      const Text('Touchez pour signer',
-                          style: TextStyle(color: Colors.black38, fontWeight: FontWeight.w600, fontSize: 12)),
-                    ]),
             ),
           ),
-          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              icon: const Icon(Icons.clear, size: 15, color: Colors.black45),
+              label: const Text('Effacer', style: TextStyle(color: Colors.black45, fontSize: 12)),
+              onPressed: () => _signatureController.clear(),
+            ),
+          ),
+
+          // ── Case à cocher consentement ────────────────────────────────
+          GestureDetector(
+            onTap: () => setState(() => _accepted = !_accepted),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 22, height: 22,
+                  decoration: BoxDecoration(
+                    color: _accepted ? Colors.black87 : Colors.white,
+                    border: Border.all(color: _accepted ? Colors.black87 : Colors.grey[400]!),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: _accepted
+                      ? const Icon(Icons.check, color: Colors.white, size: 14)
+                      : null,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'En signant, je reconnais avoir lu et accepté l\'intégralité des termes de ce contrat. '
+                    'Ma signature électronique a valeur légale.',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF4B5563), height: 1.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // ── Bouton soumettre ──────────────────────────────────────────
           SizedBox(
@@ -455,24 +408,23 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
             child: ElevatedButton(
               onPressed: _signing ? null : _submit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: Colors.black87,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.black38,
+                disabledBackgroundColor: Colors.black26,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
               ),
               child: _signing
-                  ? const SizedBox(
-                      width: 20, height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
+                  ? const SizedBox(width: 20, height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.verified_outlined, size: 18),
                         SizedBox(width: 8),
-                        Text('Signer le contrat', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        Text('Signer le contrat',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                       ],
                     ),
             ),
