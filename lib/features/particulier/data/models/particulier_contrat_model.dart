@@ -26,17 +26,19 @@ class ParticulierContratModel extends ParticulierContrat {
       final nom    = gen['nom']    ?? '';
       genNom = '$prenom $nom'.trim();
     }
+    // Fallback : champs top-level (ex. état des lieux)
+    genNom ??= json['generateurNom'] as String?;
 
     return ParticulierContratModel(
       id:                   json['id']            as String,
       type:                 json['type']          as String? ?? '',
       typeLabel:            json['typeLabel']      as String? ?? '',
-      numeroContrat:        json['numero_contrat'] as String? ?? '',
+      numeroContrat:        (json['numero_contrat'] ?? json['numero_etat_des_lieux']) as String? ?? '',
       statut:               json['statut']         as String? ?? 'en_attente',
       peutSigner:           json['peutSigner']     as bool?   ?? false,
       createdAt:            json['createdAt']      as String? ?? '',
       generateurNom:        genNom,
-      generateurEntreprise: gen?['nom_entreprise'] as String?,
+      generateurEntreprise: gen?['nom_entreprise'] as String? ?? json['generateurEntreprise'] as String?,
       generateurEmail:      gen?['email']          as String?,
       rawData:              json,
     );

@@ -51,9 +51,9 @@ class ParticulierRepositoryImpl implements ParticulierRepository {
   }
 
   @override
-  Future<Either<Failure, List<ParticulierContrat>>> getTousContrats({String? statut}) async {
+  Future<Either<Failure, List<ParticulierContrat>>> getTousContrats({String? statut, String? type}) async {
     try {
-      final contrats = await remoteDataSource.getTousContrats(statut: statut);
+      final contrats = await remoteDataSource.getTousContrats(statut: statut, type: type);
       return Right(contrats);
     } on DioException catch (e) {
       return Left(ServerFailure(errorMessage: _mapDioError(e)));

@@ -7,7 +7,7 @@ import '../entities/particulier_contrat.dart';
 abstract class ParticulierRepository {
   Future<Either<Failure, Map<String, dynamic>>> getDashboardStats();
   Future<Either<Failure, List<ParticulierFacture>>> getFactures({String? statut, int page, int limit});
-  Future<Either<Failure, List<ParticulierContrat>>> getTousContrats({String? statut});
+  Future<Either<Failure, List<ParticulierContrat>>> getTousContrats({String? statut, String? type});
   Future<Either<Failure, List<ParticulierContrat>>> getContratsByType({required String type, String? statut, int page, int limit});
   Future<Either<Failure, ParticulierContrat>> getContratDetail({required String type, required String contratId});
   Future<Either<Failure, void>> signerContrat({required String type, required String contratId, required String signature});

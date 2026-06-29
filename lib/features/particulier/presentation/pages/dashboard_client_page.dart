@@ -19,6 +19,9 @@ class DashboardClientPage extends StatefulWidget {
 class _DashboardClientPageState extends State<DashboardClientPage> {
   static final _montantFmt = NumberFormat('#,###', 'fr_FR');
 
+  DashboardLoaded? _cachedState;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -27,15 +30,21 @@ class _DashboardClientPageState extends State<DashboardClientPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ParticulierBloc, ParticulierState>(
-      builder: (context, state) {
-        if (state is ParticulierLoading) {
-          return const Center(child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5));
+    return BlocListener<ParticulierBloc, ParticulierState>(
+      listenWhen: (_, curr) =>
+          curr is DashboardLoaded || curr is ParticulierLoading || curr is ParticulierError,
+      listener: (ctx, state) {
+        if (state is DashboardLoaded) {
+          setState(() { _cachedState = state; _error = null; });
+        } else if (state is ParticulierError) {
+          if (_cachedState == null) setState(() => _error = state.message);
         }
-        if (state is ParticulierError) return _buildError(state.message);
-        if (state is DashboardLoaded)  return _buildContent(state);
-        return const Center(child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5));
       },
+      child: Builder(builder: (context) {
+        if (_cachedState != null) return _buildContent(_cachedState!);
+        if (_error != null)       return _buildError(_error!);
+        return const Center(child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5));
+      }),
     );
   }
 

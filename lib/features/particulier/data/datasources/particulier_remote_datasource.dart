@@ -7,7 +7,7 @@ import '../models/particulier_contrat_model.dart';
 abstract class ParticulierRemoteDataSource {
   Future<Map<String, dynamic>> getDashboardStats();
   Future<List<ParticulierFactureModel>> getFactures({String? statut, int page, int limit});
-  Future<List<ParticulierContratModel>> getTousContrats({String? statut});
+  Future<List<ParticulierContratModel>> getTousContrats({String? statut, String? type});
   Future<List<ParticulierContratModel>> getContratsByType({required String type, String? statut, int page, int limit});
   Future<ParticulierContratModel> getContratDetail({required String type, required String contratId});
   Future<void> signerContrat({required String type, required String contratId, required String signature});
@@ -50,9 +50,10 @@ class ParticulierRemoteDataSourceImpl implements ParticulierRemoteDataSource {
   }
 
   @override
-  Future<List<ParticulierContratModel>> getTousContrats({String? statut}) async {
+  Future<List<ParticulierContratModel>> getTousContrats({String? statut, String? type}) async {
     final params = <String, dynamic>{};
     if (statut != null) params['statut'] = statut;
+    if (type  != null) params['type']   = type;
 
     final response = await dio.get(Env.particulierContrats, queryParameters: params);
     final raw = response.data['data'];

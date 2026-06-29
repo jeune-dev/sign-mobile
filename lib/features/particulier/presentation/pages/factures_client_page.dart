@@ -16,7 +16,12 @@ class FacturesClientPage extends StatefulWidget {
 }
 
 class _FacturesClientPageState extends State<FacturesClientPage> {
-  String? _selectedStatut; // null = toutes
+  String? _selectedStatut;
+
+  // Cache local — immunise la liste contre les états d'autres onglets
+  List<ParticulierFacture> _factures = [];
+  bool   _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -25,70 +30,78 @@ class _FacturesClientPageState extends State<FacturesClientPage> {
   }
 
   void _load() {
+    setState(() { _loading = true; _error = null; });
     context.read<ParticulierBloc>().add(LoadFactures(statut: _selectedStatut));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // ── Boutons filtre ──────────────────────────────────────
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Row(
-            children: [
-              _FilterChip(
-                label: 'Toutes',
-                selected: _selectedStatut == null,
-                onTap: () { setState(() => _selectedStatut = null); _load(); },
-              ),
-              const SizedBox(width: 8),
-              _FilterChip(
-                label: 'Signées',
-                selected: _selectedStatut == 'signe',
-                selectedColor: Colors.green,
-                onTap: () { setState(() => _selectedStatut = 'signe'); _load(); },
-              ),
-              const SizedBox(width: 8),
-              _FilterChip(
-                label: 'En attente',
-                selected: _selectedStatut == 'en_attente',
-                selectedColor: Colors.orange,
-                onTap: () { setState(() => _selectedStatut = 'en_attente'); _load(); },
-              ),
-            ],
+    return BlocListener<ParticulierBloc, ParticulierState>(
+      listenWhen: (_, curr) =>
+          curr is FacturesLoaded || curr is ParticulierLoading || curr is ParticulierError,
+      listener: (ctx, state) {
+        if (state is FacturesLoaded) {
+          setState(() { _factures = state.factures; _loading = false; _error = null; });
+        } else if (state is ParticulierLoading) {
+          setState(() { _loading = true; _error = null; });
+        } else if (state is ParticulierError) {
+          setState(() { _loading = false; _error = state.message; });
+        }
+      },
+      child: Column(
+        children: [
+          // ── Boutons filtre ──────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                _FilterChip(
+                  label: 'Toutes',
+                  selected: _selectedStatut == null,
+                  onTap: () { setState(() => _selectedStatut = null); _load(); },
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: 'Signées',
+                  selected: _selectedStatut == 'signe',
+                  selectedColor: Colors.green,
+                  onTap: () { setState(() => _selectedStatut = 'signe'); _load(); },
+                ),
+                const SizedBox(width: 8),
+                _FilterChip(
+                  label: 'En attente',
+                  selected: _selectedStatut == 'en_attente',
+                  selectedColor: Colors.orange,
+                  onTap: () { setState(() => _selectedStatut = 'en_attente'); _load(); },
+                ),
+              ],
+            ),
           ),
-        ),
 
-        // ── Liste ───────────────────────────────────────────────
-        Expanded(
-          child: BlocBuilder<ParticulierBloc, ParticulierState>(
-            buildWhen: (prev, curr) => curr is FacturesLoaded || curr is ParticulierLoading || curr is ParticulierError,
-            builder: (context, state) {
-              if (state is ParticulierLoading) {
-                return const ShimmerList(itemCount: 4, padding: EdgeInsets.fromLTRB(16, 4, 16, 16));
-              }
-              if (state is ParticulierError) {
-                return _buildError(state.message);
-              }
-              if (state is FacturesLoaded) {
-                if (state.factures.isEmpty) return _buildEmpty();
+          // ── Liste ───────────────────────────────────────────────
+          Expanded(
+            child: Builder(
+              builder: (context) {
+                if (_loading) {
+                  return const ShimmerList(itemCount: 4, padding: EdgeInsets.fromLTRB(16, 4, 16, 16));
+                }
+                if (_error != null) return _buildError(_error!);
+                if (_factures.isEmpty) return _buildEmpty();
                 return RefreshIndicator(
                   color: Colors.black,
                   onRefresh: () async => _load(),
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    itemCount: state.factures.length,
+                    itemCount: _factures.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, i) => _FactureCard(facture: state.factures[i]),
+                    itemBuilder: (context, i) => _FactureCard(facture: _factures[i]),
                   ),
                 );
-              }
-              return const SizedBox.shrink();
-            },
+              },
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

@@ -8,8 +8,8 @@ class GetContratsClient {
   final ParticulierRepository repository;
   GetContratsClient(this.repository);
 
-  Future<Either<Failure, List<ParticulierContrat>>> call({String? statut}) =>
-      repository.getTousContrats(statut: statut);
+  Future<Either<Failure, List<ParticulierContrat>>> call({String? statut, String? type}) =>
+      repository.getTousContrats(statut: statut, type: type);
 }
 
 class GetContratsByTypeClient {

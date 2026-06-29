@@ -33,8 +33,13 @@ class ContratsClientPage extends StatefulWidget {
 }
 
 class _ContratsClientPageState extends State<ContratsClientPage> {
-  String? _selectedType;  // null = tous
+  String? _selectedType;   // null = tous
   String? _selectedStatut;
+
+  // Cache local pour éviter que les états du Dashboard/Factures n'écrasent la liste
+  List<ParticulierContrat> _contrats = [];
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -43,6 +48,7 @@ class _ContratsClientPageState extends State<ContratsClientPage> {
   }
 
   void _load() {
+    setState(() { _loading = true; _error = null; });
     context.read<ParticulierBloc>().add(
       LoadContrats(type: _selectedType, statut: _selectedStatut),
     );
@@ -122,34 +128,40 @@ class _ContratsClientPageState extends State<ContratsClientPage> {
 
         // ── Liste ───────────────────────────────────────────────
         Expanded(
-          child: BlocBuilder<ParticulierBloc, ParticulierState>(
-            buildWhen: (prev, curr) =>
+          child: BlocListener<ParticulierBloc, ParticulierState>(
+            listenWhen: (_, curr) =>
                 curr is ContratsLoaded || curr is ParticulierLoading || curr is ParticulierError,
-            builder: (context, state) {
-              if (state is ParticulierLoading) {
-                return const ShimmerList(itemCount: 4, padding: EdgeInsets.fromLTRB(16, 4, 16, 16));
-              }
-              if (state is ParticulierError) {
-                return _buildError(state.message);
-              }
+            listener: (ctx, state) {
               if (state is ContratsLoaded) {
-                if (state.contrats.isEmpty) return _buildEmpty();
+                setState(() { _contrats = state.contrats; _loading = false; _error = null; });
+              } else if (state is ParticulierLoading) {
+                setState(() { _loading = true; _error = null; });
+              } else if (state is ParticulierError) {
+                setState(() { _loading = false; _error = state.message; });
+              }
+            },
+            child: Builder(
+              builder: (context) {
+                if (_loading) {
+                  return const ShimmerList(itemCount: 4, padding: EdgeInsets.fromLTRB(16, 4, 16, 16));
+                }
+                if (_error != null) return _buildError(_error!);
+                if (_contrats.isEmpty) return _buildEmpty();
                 return RefreshIndicator(
                   color: Colors.black,
                   onRefresh: () async => _load(),
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    itemCount: state.contrats.length,
+                    itemCount: _contrats.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (context, i) => _ContratCard(
-                      contrat: state.contrats[i],
-                      onTap: () => _openDetail(state.contrats[i]),
+                      contrat: _contrats[i],
+                      onTap: () => _openDetail(_contrats[i]),
                     ),
                   ),
                 );
-              }
-              return const SizedBox.shrink();
-            },
+              },
+            ),
           ),
         ),
       ],

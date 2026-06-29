@@ -69,9 +69,7 @@ class ParticulierBloc extends Bloc<ParticulierEvent, ParticulierState> {
     Emitter<ParticulierState> emit,
   ) async {
     emit(ParticulierLoading());
-    final result = event.type == null
-        ? await getContratsClient(statut: event.statut)
-        : await getContratsByTypeClient(type: event.type!, statut: event.statut);
+    final result = await getContratsClient(statut: event.statut, type: event.type);
     result.fold(
       (failure) => emit(ParticulierError(failure.errorMessage)),
       (contrats) => emit(ContratsLoaded(contrats: contrats, type: event.type, statut: event.statut)),
