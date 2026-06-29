@@ -39,6 +39,10 @@ class ContratsTravailListePage extends StatefulWidget {
 class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
   _StatsSnapshot _stats = const _StatsSnapshot();
   bool _statsLoading = true;
+  List<ContratTravail> _contrats = [];
+  bool _hasMore = false;
+  bool _listLoading = true;
+  bool _isRefreshing = false;
   final Set<String> _downloading = {};
   final ScrollController _scrollController = ScrollController();
   static final _dateFmt    = DateFormat('dd/MM/yyyy');
@@ -61,10 +65,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 150) {
-      final state = context.read<ContratTravailBloc>().state;
-      if (state is ContratsTravailLoaded &&
-          state.hasMore &&
-          !state.isRefreshing) {
+      if (_hasMore && !_isRefreshing && !_listLoading) {
         context.read<ContratTravailBloc>().add(LoadMoreContratsTravail());
       }
     }
@@ -151,6 +152,17 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
       backgroundColor: const Color(0xFFF2F2F7),
       body: BlocListener<ContratTravailBloc, ContratTravailState>(
         listener: (context, state) {
+          if (state is ContratTravailLoading) {
+            if (_contrats.isEmpty) setState(() => _listLoading = true);
+          }
+          if (state is ContratsTravailLoaded) {
+            setState(() {
+              _contrats = state.contrats;
+              _hasMore = state.hasMore;
+              _isRefreshing = state.isRefreshing;
+              _listLoading = false;
+            });
+          }
           if (state is ContratTravailStatsLoading) {
             setState(() => _statsLoading = true);
           }
@@ -175,13 +187,15 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
           }
         },
         child: BlocBuilder<ContratTravailBloc, ContratTravailState>(
+          buildWhen: (prev, curr) =>
+              curr is ContratTravailLoading ||
+              curr is ContratsTravailLoaded ||
+              curr is ContratTravailError,
           builder: (context, state) {
-            final isLoading = state is ContratTravailLoading;
-            final contrats = state is ContratsTravailLoaded
-                ? state.contrats
-                : <ContratTravail>[];
-            final hasMore = state is ContratsTravailLoaded ? state.hasMore : false;
-            final isRefreshing = state is ContratsTravailLoaded && state.isRefreshing;
+            final isLoading = _listLoading;
+            final contrats = _contrats;
+            final hasMore = _hasMore;
+            final isRefreshing = _isRefreshing;
 
             return Column(
               children: [
