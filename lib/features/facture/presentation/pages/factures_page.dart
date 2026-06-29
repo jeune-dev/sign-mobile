@@ -683,31 +683,6 @@ class _FacturesPageState extends State<FacturesPage> {
                 ? Column(
                     children: [
                       GestureDetector(
-                        onTap: () => _ouvrirDocument(doc.id, doc.numeroFacture ?? ''),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 11),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF00C896).withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFF00C896).withValues(alpha: 0.3)),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.receipt_long_outlined, color: Color(0xFF00C896), size: 16),
-                              SizedBox(width: 6),
-                              Text('Voir la facture',
-                                  style: TextStyle(
-                                      color: Color(0xFF00C896),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700)),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      GestureDetector(
                         onTap: () => _confirmerRenvoyer(doc),
                         child: Container(
                           width: double.infinity,
