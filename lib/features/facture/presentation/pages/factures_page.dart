@@ -17,6 +17,7 @@ import 'package:sign_application/features/facture/presentation/bloc/facture_stat
 import 'package:sign_application/injection_container.dart' as di;
 import 'package:sign_application/features/facture/presentation/pages/cree_facture_page.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 
@@ -190,7 +191,7 @@ class _FacturesPageState extends State<FacturesPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: _LoadingDialog()),
+      builder: (_) => const PdfLoadingDialog(),
     );
     context.read<FactureBloc>().add(OuvrirDocumentEvent(documentId, titre: numeroFacture));
   }
@@ -1308,15 +1309,3 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
   }
 }
 
-class _LoadingDialog extends StatelessWidget {
-  const _LoadingDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 80, height: 80,
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-      child: const Center(child: CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5)),
-    );
-  }
-}

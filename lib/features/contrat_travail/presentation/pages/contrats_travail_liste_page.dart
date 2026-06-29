@@ -12,6 +12,7 @@ import 'package:sign_application/core/widgets/shimmer_list.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import '../bloc/contrat_travail_bloc.dart';
 import '../bloc/contrat_travail_event.dart';
@@ -81,21 +82,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
       context: context,
       barrierDismissible: false,
       builder: (_) => Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 60),
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30)]),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5),
-              SizedBox(height: 18),
-              Text('Ouverture…', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            ],
-          ),
-        ),
+        child: const PdfLoadingDialog(),
       ),
     );
     context.read<ContratTravailBloc>().add(TelechargerContratTravailEvent(contrat.id, titre: titre));

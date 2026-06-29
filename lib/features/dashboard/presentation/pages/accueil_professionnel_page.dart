@@ -13,6 +13,7 @@ import 'package:sign_application/features/facture/presentation/pages/cree_factur
 import 'package:sign_application/features/facture/presentation/bloc/facture_bloc.dart';
 import 'package:sign_application/features/contrat/presentation/widgets/contract_type_modal.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
@@ -80,7 +81,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(child: _LoadingDialog()),
+      builder: (_) => const PdfLoadingDialog(),
     );
 
     context.read<DashboardBloc>().add(OuvrirDocumentDashboardEvent(documentId, titre: numeroFacture));
@@ -709,29 +710,3 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
   }
 }
 
-class _LoadingDialog extends StatelessWidget {
-  const _LoadingDialog();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 60),
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30, offset: const Offset(0, 10))],
-      ),
-      child: const Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5),
-          SizedBox(height: 18),
-          Text('Ouverture du document…', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.black87)),
-          SizedBox(height: 4),
-          Text('Veuillez patienter', style: TextStyle(fontSize: 12, color: Colors.grey)),
-        ],
-      ),
-    );
-  }
-}

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sign_application/core/config/env.dart';
 import 'package:sign_application/core/utils/download_helper.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
 import 'package:sign_application/features/contrat/domain/entities/contrat_bail.dart';
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_bloc.dart';
 import 'package:sign_application/features/contrat/presentation/bloc/contrat_event.dart';
@@ -63,23 +64,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 60),
-          padding: const EdgeInsets.all(28),
-          decoration: BoxDecoration(
-              color: Colors.white, borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30)]),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(color: Colors.black87, strokeWidth: 2.5),
-              SizedBox(height: 18),
-              Text('Ouverture…', style: TextStyle(fontWeight: FontWeight.w600)),
-            ],
-          ),
-        ),
-      ),
+      builder: (_) => const PdfLoadingDialog(),
     );
     context.read<ContratBloc>().add(TelechargerContratEvent(c.id, titre: titre));
   }
