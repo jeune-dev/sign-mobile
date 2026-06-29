@@ -217,7 +217,6 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
     return BlocListener<EtatLogementBloc, EtatLogementState>(
       listener: (ctx, state) {
         if (state is EtatLogementSuccess) {
-          showToast(ctx, 'Succès', state.message, ToastificationType.success);
           Navigator.pop(ctx, true);
         } else if (state is EtatLogementError) {
           showToast(ctx, 'Erreur', state.message, ToastificationType.error);
@@ -626,6 +625,42 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
   Widget _buildSignature() {
     return Column(
       children: [
+        // Bannière signature
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: _kAccent.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _kAccent.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: _kAccent.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.draw_rounded, color: _kAccent, size: 22),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Votre signature requise',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: _kAccent)),
+                    SizedBox(height: 2),
+                    Text('En tant que bailleur, signez ci-dessous pour valider l\'état des lieux.',
+                        style: TextStyle(fontSize: 11, color: Colors.black54), maxLines: 2),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        kGap,
         CSection(
           title: 'Récapitulatif',
           icon: Icons.summarize_rounded,
@@ -666,19 +701,19 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
           title: 'Signature du bailleur',
           icon: Icons.draw_rounded,
           accentColor: _kAccent,
-          subtitle: 'Signez dans le cadre ci-dessous',
+          subtitle: 'Dessinez votre signature dans le cadre',
           children: [
             Container(
               decoration: BoxDecoration(
-                border: Border.all(color: kBorderColor, width: 2),
+                border: Border.all(color: _kAccent.withValues(alpha: 0.5), width: 2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Signature(
                   controller: _signatureController,
-                  height: 180,
-                  backgroundColor: kSubtleColor,
+                  height: 200,
+                  backgroundColor: _kAccent.withValues(alpha: 0.03),
                 ),
               ),
             ),

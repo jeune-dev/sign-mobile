@@ -583,25 +583,37 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: GestureDetector(
-                    onTap: isSigne ? null : () => _ouvrirSignature(e),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                          color: isSigne ? Colors.grey[300] : _kAccent,
-                          borderRadius: BorderRadius.circular(12)),
-                      child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(isSigne ? Icons.check_rounded : Icons.draw_rounded,
-                                color: Colors.white, size: 16),
-                            const SizedBox(width: 6),
-                            Text(isSigne ? 'Signé' : 'Signer (locataire)',
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700)),
-                          ]),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: isSigne
+                          ? Colors.green.withValues(alpha: 0.08)
+                          : Colors.orange.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSigne
+                            ? Colors.green.withValues(alpha: 0.3)
+                            : Colors.orange.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isSigne ? Icons.verified_rounded : Icons.schedule_rounded,
+                          color: isSigne ? Colors.green : Colors.orange,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          isSigne ? 'Locataire signé' : 'En attente locataire',
+                          style: TextStyle(
+                            color: isSigne ? Colors.green : Colors.orange,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
