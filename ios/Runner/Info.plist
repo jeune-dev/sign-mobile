@@ -47,6 +47,19 @@
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
 
+	<!-- Notifications push FCM -->
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>SIGN vous envoie des notifications pour vous informer de la signature de vos contrats et des mises à jour importantes.</string>
+
+	<!-- ATS : HTTPS uniquement, aucun cleartext autorisé -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<false/>
+	</dict>
+
 	<!-- BLK-03/AS-02 : Permissions galerie et caméra — obligatoires pour image_picker -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>SIGN utilise votre bibliothèque photo pour ajouter une photo de profil et un logo d'entreprise.</string>
