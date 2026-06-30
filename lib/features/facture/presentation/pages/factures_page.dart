@@ -16,6 +16,8 @@ import 'package:sign_application/features/facture/presentation/bloc/facture_even
 import 'package:sign_application/features/facture/presentation/bloc/facture_state.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import 'package:sign_application/features/facture/presentation/pages/cree_facture_page.dart';
+import 'package:sign_application/features/quittance_loyer/presentation/pages/quittances_liste_page.dart';
+import 'package:sign_application/features/fiche_paie/presentation/page/fiche_paie_list_page.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
 import 'package:toastification/toastification.dart';
@@ -258,6 +260,62 @@ class _FacturesPageState extends State<FacturesPage> {
     }
   }
 
+  // ── Accès aux autres documents ───────────────────────────────────────────
+  void _ouvrirQuittances() {
+    Navigator.push(
+      context,
+      // QuittanceLoyerBloc est fourni globalement (main.dart) → pas de wrap local,
+      // sinon on créerait une 2ᵉ instance désynchronisée de la création.
+      MaterialPageRoute(builder: (_) => const QuittancesListePage()),
+    );
+  }
+
+  void _ouvrirFichesPaie() {
+    Navigator.push(
+      context,
+      // FichePaieListPage fournit elle-même son bloc
+      MaterialPageRoute(builder: (_) => const FichePaieListPage()),
+    );
+  }
+
+  Widget _docAccessButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey[300]!),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: Colors.black87),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.15,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black87),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ── BUILD ─────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
@@ -329,6 +387,30 @@ class _FacturesPageState extends State<FacturesPage> {
                           borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
+                ),
+              ),
+
+              // ── Accès quittances de loyer & fiches de paie (même ligne) ──
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _docAccessButton(
+                        icon: Icons.home_work_outlined,
+                        label: 'Quittances de loyer',
+                        onTap: _ouvrirQuittances,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _docAccessButton(
+                        icon: Icons.badge_outlined,
+                        label: 'Fiches de paie',
+                        onTap: _ouvrirFichesPaie,
+                      ),
+                    ),
+                  ],
                 ),
               ),
 

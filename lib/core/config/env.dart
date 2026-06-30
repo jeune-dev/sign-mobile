@@ -4,7 +4,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 /// Priorité : 1) --dart-define (production)  2) .env local (dev)  3) valeur par défaut
 ///
 /// En production :
-///   flutter build apk --dart-define=API_BASE_URL=https://sign-backend-ha5a.onrender.com/sign ...
+///   flutter build apk --dart-define=API_BASE_URL=https://sign-back-1.onrender.com/sign ...
 class Env {
   static String _get(String key, {required String fallback}) {
     final fromDefine = _fromDefine(key);
@@ -105,9 +105,9 @@ class Env {
 
   // ─── Base ────────────────────────────────────────────────────────────────────
   static String get baseUrl {
-    final v = _get('API_BASE_URL', fallback: '');
-    assert(v.isNotEmpty, 'API_BASE_URL manquant — relance avec --dart-define=API_BASE_URL=...');
-    return v;
+    // Défaut = backend live (même que le dashboard web). Surchargé par
+    // --dart-define=API_BASE_URL=... ou .env si fourni.
+    return _get('API_BASE_URL', fallback: 'https://sign-back-1.onrender.com/sign');
   }
 
   // ─── Auth ────────────────────────────────────────────────────────────────────

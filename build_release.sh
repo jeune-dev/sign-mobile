@@ -9,7 +9,7 @@
 
 set -e
 
-API_BASE_URL="https://sign-backend-ha5a.onrender.com/sign"
+API_BASE_URL="https://sign-back-1.onrender.com/sign"
 
 echo "=== Nettoyage ==="
 flutter clean

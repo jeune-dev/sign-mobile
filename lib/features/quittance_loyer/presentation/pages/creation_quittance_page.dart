@@ -41,8 +41,8 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
   static final _montantFmt     = NumberFormat('#,###', 'fr_FR');
 
   static const _moisList = [
-    'Janvier', 'FÃ©vrier', 'Mars', 'Avril', 'Mai', 'Juin',
-    'Juillet', 'AoÃ»t', 'Septembre', 'Octobre', 'Novembre', 'DÃ©cembre',
+    'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
   ];
 
   double get _montantTotal {
@@ -78,34 +78,37 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClient == null) {
-      showToast(context, 'Champ requis', 'Veuillez sÃ©lectionner un locataire', ToastificationType.error);
+      showToast(context, 'Champ requis', 'Veuillez sélectionner un locataire', ToastificationType.error);
       return;
     }
     if (_datePaiement == null) {
-      showToast(context, 'Champ requis', 'Veuillez sÃ©lectionner la date de paiement', ToastificationType.error);
+      showToast(context, 'Champ requis', 'Veuillez sélectionner la date de paiement', ToastificationType.error);
       return;
     }
 
+    // Le backend attend { locataireId, data: {...} } (cf. creerQuittanceSchema)
     context.read<QuittanceLoyerBloc>().add(CreerQuittanceEvent({
-      'locataireId':       _selectedClient!.id,
-      'adresse_logement':  _adresseCtrl.text.trim(),
-      'type_bien':         _typeBien,
-      'mois':              _mois,
-      'annee':             int.tryParse(_anneeCtrl.text) ?? DateTime.now().year,
-      'montant_loyer':     double.tryParse(_montantLoyerCtrl.text)   ?? 0,
-      'montant_charges':   double.tryParse(_montantChargesCtrl.text) ?? 0,
-      'montant_total':     _montantTotal,
-      'date_paiement':     _datePaiement!.toIso8601String().substring(0, 10),
-      'mode_paiement':     _modePaiement,
-      'est_total':         _paiementComplet,
-      if (!_paiementComplet && _montantPayeCtrl.text.isNotEmpty)
-        'montant_paye': double.tryParse(_montantPayeCtrl.text),
-      if (_obsCtrl.text.trim().isNotEmpty) 'observations': _obsCtrl.text.trim(),
-      if (_villeCtrl.text.trim().isNotEmpty) 'ville_emission': _villeCtrl.text.trim(),
+      'locataireId': _selectedClient!.id,
+      'data': {
+        'adresse_logement':  _adresseCtrl.text.trim(),
+        'type_bien':         _typeBien,
+        'mois':              _mois,
+        'annee':             int.tryParse(_anneeCtrl.text) ?? DateTime.now().year,
+        'montant_loyer':     double.tryParse(_montantLoyerCtrl.text)   ?? 0,
+        'montant_charges':   double.tryParse(_montantChargesCtrl.text) ?? 0,
+        'montant_total':     _montantTotal,
+        'date_paiement':     _datePaiement!.toIso8601String().substring(0, 10),
+        'mode_paiement':     _modePaiement,
+        'paiement_complet':  _paiementComplet,
+        if (!_paiementComplet && _montantPayeCtrl.text.isNotEmpty)
+          'montant_paye': double.tryParse(_montantPayeCtrl.text),
+        if (_obsCtrl.text.trim().isNotEmpty) 'observations': _obsCtrl.text.trim(),
+        if (_villeCtrl.text.trim().isNotEmpty) 'ville_emission': _villeCtrl.text.trim(),
+      },
     }));
   }
 
-  // â”€â”€ DÃ©corations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // â”€â”€ Décorations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   InputDecoration _dec(String hint, {IconData? icon, Widget? suffix}) {
     return InputDecoration(
       hintText: hint,
@@ -127,7 +130,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
     padding: const EdgeInsets.only(bottom: 7),
     child: Row(children: [
       Text(text, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
-      if (req) const Text(' *', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+      if (req) const Text(' *', style: TextStyle(color: Color(0xFF1A1A1A), fontSize: 13)),
     ]),
   );
 
@@ -176,7 +179,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
       body: BlocListener<QuittanceLoyerBloc, QuittanceLoyerState>(
         listener: (context, state) {
           if (state is QuittanceLoyerSuccess) {
-            showToast(context, 'Quittance crÃ©Ã©e', 'La quittance de loyer a Ã©tÃ© crÃ©Ã©e avec succÃ¨s.', ToastificationType.success);
+            showToast(context, 'Quittance créée', 'La quittance de loyer a été créée avec succès.', ToastificationType.success);
             Navigator.pop(context);
           }
           if (state is QuittanceLoyerError) {
@@ -296,6 +299,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 const SizedBox(height: 14),
                 _label('Type de bien', req: true),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _typeBien,
                   decoration: _dec('Type de bien', icon: Icons.apartment_outlined),
                   borderRadius: BorderRadius.circular(12),
@@ -311,13 +315,14 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 ),
               ]),
 
-              // â”€â”€ PÃ©riode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // â”€â”€ Période â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _card(children: [
-                _sectionTitle('PÃ©riode', Icons.calendar_month_outlined),
+                _sectionTitle('Période', Icons.calendar_month_outlined),
                 Row(children: [
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     _label('Mois', req: true),
                     DropdownButtonFormField<String>(
+                      isExpanded: true,
                       initialValue: _mois,
                       decoration: _dec('Mois'),
                       borderRadius: BorderRadius.circular(12),
@@ -327,7 +332,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                   ])),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    _label('AnnÃ©e', req: true),
+                    _label('Année', req: true),
                     TextFormField(
                       controller: _anneeCtrl,
                       keyboardType: TextInputType.number,
@@ -362,21 +367,21 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0FDF4),
+                    color: const Color(0xFFF3F4F6),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFBBF7D0)),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Row(children: [
-                        const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF16A34A), size: 18),
+                        const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF1A1A1A), size: 18),
                         const SizedBox(width: 8),
-                        Text('Montant total', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF15803D))),
+                        Text('Montant total', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF111827))),
                       ]),
                       Text(
                         '${_montantFmt.format(_montantTotal).replaceAll(',', ' ')} FCFA',
-                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16, color: const Color(0xFF15803D)),
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16, color: const Color(0xFF111827)),
                       ),
                     ],
                   ),
@@ -405,7 +410,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                       ),
                       const SizedBox(width: 10),
                       Text(
-                        _datePaiement != null ? _dateFmtDisplay.format(_datePaiement!) : 'SÃ©lectionner une date',
+                        _datePaiement != null ? _dateFmtDisplay.format(_datePaiement!) : 'Sélectionner une date',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: _datePaiement != null ? FontWeight.w600 : FontWeight.w400,
@@ -420,14 +425,15 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 const SizedBox(height: 14),
                 _label('Mode de paiement', req: true),
                 DropdownButtonFormField<String>(
+                  isExpanded: true,
                   initialValue: _modePaiement,
                   decoration: _dec('Mode de paiement', icon: Icons.payment_outlined),
                   borderRadius: BorderRadius.circular(12),
                   items: const [
-                    DropdownMenuItem(value: 'EspÃ¨ces',           child: Text('EspÃ¨ces')),
+                    DropdownMenuItem(value: 'Espèces',           child: Text('Espèces')),
                     DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
                     DropdownMenuItem(value: 'Mobile Money',      child: Text('Mobile Money')),
-                    DropdownMenuItem(value: 'ChÃ¨que',            child: Text('ChÃ¨que')),
+                    DropdownMenuItem(value: 'Chèque',            child: Text('Chèque')),
                     DropdownMenuItem(value: 'ALL',               child: Text('Tout mode de paiement')),
                     DropdownMenuItem(value: 'Autre',             child: Text('Autre')),
                   ],
@@ -442,32 +448,36 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFE5E7EB)),
                   ),
-                  child: SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text('Paiement complet', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14)),
-                    subtitle: Text(
-                      _paiementComplet ? 'La totalitÃ© du loyer a Ã©tÃ© rÃ©glÃ©e' : 'Paiement partiel',
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  // Material transparent pour que le splash ne soit pas masqué par le fond du Container
+                  child: Material(
+                    color: Colors.transparent,
+                    child: SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Paiement complet', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14)),
+                      subtitle: Text(
+                        _paiementComplet ? 'La totalité du loyer a été réglée' : 'Paiement partiel',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      ),
+                      value: _paiementComplet,
+                      activeThumbColor: Colors.black87,
+                      onChanged: (v) => setState(() => _paiementComplet = v),
                     ),
-                    value: _paiementComplet,
-                    activeThumbColor: Colors.black87,
-                    onChanged: (v) => setState(() => _paiementComplet = v),
                   ),
                 ),
                 if (!_paiementComplet) ...[
                   const SizedBox(height: 14),
-                  _label('Montant payÃ©'),
+                  _label('Montant payé'),
                   TextFormField(
                     controller: _montantPayeCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: _dec('Montant partiel reÃ§u', icon: Icons.price_check_outlined),
+                    decoration: _dec('Montant partiel reçu', icon: Icons.price_check_outlined),
                   ),
                 ],
               ]),
 
-              // â”€â”€ Informations complÃ©mentaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              // â”€â”€ Informations complémentaires â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
               _card(children: [
-                _sectionTitle('Informations complÃ©mentaires', Icons.edit_note_outlined),
+                _sectionTitle('Informations complémentaires', Icons.edit_note_outlined),
                 _label('Observations'),
                 TextFormField(
                   controller: _obsCtrl,
@@ -475,7 +485,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                   decoration: _dec('Remarques, commentairesâ€¦', icon: Icons.notes_rounded),
                 ),
                 const SizedBox(height: 14),
-                _label("Ville d'Ã©mission"),
+                _label("Ville d'émission"),
                 TextFormField(
                   controller: _villeCtrl,
                   decoration: _dec('Ex: Dakar', icon: Icons.location_city_outlined),
@@ -501,7 +511,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                       child: isLoading
                           ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
                           : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                              Text('GÃ©nÃ©rer la quittance', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700)),
+                              Text('Générer la quittance', style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700)),
                               const SizedBox(width: 8),
                               const Icon(Icons.receipt_long_rounded, size: 18),
                             ]),

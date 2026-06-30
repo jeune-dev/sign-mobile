@@ -14,6 +14,7 @@ import 'package:sign_application/features/fiche_paie/domain/entities/fiche_paie.
 import '../bloc/fiche_paie_bloc.dart';
 import '../bloc/fiche_paie_event.dart';
 import '../bloc/fiche_paie_state.dart';
+import 'creation_fiche_paie.dart';
 
 class FichePaieListPage extends StatelessWidget {
   const FichePaieListPage({super.key});
@@ -75,7 +76,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30)],
           ),
           child: const Column(mainAxisSize: MainAxisSize.min, children: [
-            CircularProgressIndicator(color: Color(0xFF2563EB), strokeWidth: 2.5),
+            CircularProgressIndicator(color: Color(0xFF1A1A1A), strokeWidth: 2.5),
             SizedBox(height: 18),
             Text('Ouverture…', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
           ]),
@@ -114,6 +115,21 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF2F2F7),
+      floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: const Color(0xFF1A1A1A),
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Nouvelle', style: TextStyle(fontWeight: FontWeight.w700)),
+        onPressed: () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const FichePaieFormPage()))
+              .then((_) {
+            if (context.mounted) {
+              context.read<FichePaieBloc>().add(const LoadFichesPaieEvent());
+            }
+          });
+        },
+      ),
       body: BlocListener<FichePaieBloc, FichePaieState>(
         listener: (context, state) {
           if (state is FichePaieBytes) {
@@ -132,7 +148,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
               child: BlocBuilder<FichePaieBloc, FichePaieState>(
                 builder: (context, state) {
                   if (state is FichePaieLoading) {
-                    return const ShimmerList(accentColor: Color(0xFF2563EB));
+                    return const ShimmerList(accentColor: Color(0xFF1A1A1A));
                   }
                   if (state is FichePaieError) {
                     return _buildError(context, state.message);
@@ -140,7 +156,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                   if (state is FichesPaieLoaded) {
                     if (state.fiches.isEmpty) return _buildEmpty();
                     return RefreshIndicator(
-                      color: const Color(0xFF2563EB),
+                      color: const Color(0xFF1A1A1A),
                       onRefresh: () async =>
                           context.read<FichePaieBloc>().add(const LoadFichesPaieEvent()),
                       child: ListView.separated(
@@ -154,7 +170,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                               child: Padding(
                                 padding: EdgeInsets.all(16),
                                 child: CircularProgressIndicator(
-                                    color: Color(0xFF2563EB), strokeWidth: 2),
+                                    color: Color(0xFF1A1A1A), strokeWidth: 2),
                               ),
                             );
                           }
@@ -177,7 +193,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
     final topPad = MediaQuery.of(context).padding.top;
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF2563EB),
+        color: Color(0xFF1A1A1A),
         borderRadius: BorderRadius.only(
           bottomLeft:  Radius.circular(28),
           bottomRight: Radius.circular(28),
@@ -249,10 +265,10 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                 Container(
                   width: 46, height: 46,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    color: const Color(0xFF1A1A1A).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF2563EB), size: 24),
+                  child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF1A1A1A), size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -270,12 +286,12 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB).withValues(alpha: 0.1),
+                    color: const Color(0xFF1A1A1A).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.3)),
+                    border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.3)),
                   ),
                   child: Text(fiche.typeContrat,
-                      style: const TextStyle(color: Color(0xFF2563EB), fontSize: 11, fontWeight: FontWeight.w700)),
+                      style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 11, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
@@ -286,10 +302,10 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
             child: Row(
               children: [
                 Expanded(child: _infoChip(Icons.monetization_on_outlined, 'Brut',
-                    _formatMontant(fiche.salaireBrut), const Color(0xFF16A34A))),
+                    _formatMontant(fiche.salaireBrut), const Color(0xFF1A1A1A))),
                 const SizedBox(width: 10),
                 Expanded(child: _infoChip(Icons.savings_outlined, 'Net',
-                    _formatMontant(fiche.salaireNet), const Color(0xFF2563EB))),
+                    _formatMontant(fiche.salaireNet), const Color(0xFF1A1A1A))),
               ],
             ),
           ),
@@ -302,7 +318,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB),
+                  color: const Color(0xFF1A1A1A),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -351,7 +367,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
     icon: Icons.receipt_long_outlined,
     title: 'Aucune fiche de paie',
     subtitle: 'Vos fiches de paie générées apparaîtront ici',
-    accentColor: Color(0xFF2563EB),
+    accentColor: Color(0xFF1A1A1A),
   );
 
   Widget _buildError(BuildContext context, String message) {
@@ -361,8 +377,8 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
         children: [
           Container(
             width: 64, height: 64,
-            decoration: BoxDecoration(color: Colors.red[50], shape: BoxShape.circle),
-            child: Icon(Icons.error_outline, color: Colors.red[300], size: 32),
+            decoration: BoxDecoration(color: Color(0xFFF3F4F6), shape: BoxShape.circle),
+            child: Icon(Icons.error_outline, color: Color(0xFF1A1A1A), size: 32),
           ),
           const SizedBox(height: 14),
           const Text('Erreur de chargement',
@@ -374,7 +390,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
             onTap: () => context.read<FichePaieBloc>().add(const LoadFichesPaieEvent()),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(12)),
               child: const Text('Réessayer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
             ),
           ),

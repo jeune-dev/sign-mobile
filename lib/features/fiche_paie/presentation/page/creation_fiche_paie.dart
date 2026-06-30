@@ -23,15 +23,15 @@ class _P {
   static const ink         = Color(0xFF1A1A18);
   static const inkLight    = Color(0xFF6B6B66);
   static const inkFaint    = Color(0xFFB0AFA8);
-  static const accent      = Color(0xFF2563EB);
-  static const accentSoft  = Color(0xFFEEF3FF);
-  static const success     = Color(0xFF16A34A);
-  static const successSoft = Color(0xFFECFDF5);
-  static const danger      = Color(0xFFDC2626);
+  static const accent      = Color(0xFF1A1A1A);
+  static const accentSoft  = Color(0xFFF3F4F6);
+  static const success     = Color(0xFF1A1A1A);
+  static const successSoft = Color(0xFFF3F4F6);
+  static const danger      = Color(0xFF6B7280);
   static const divider     = Color(0xFFE8E7E3);
   static const toggleOff   = Color(0xFFE2E1DC);
-  static const gold        = Color(0xFFD97706);
-  static const amberBg     = Color(0xFFFEF3C7);
+  static const gold        = Color(0xFF6B7280);
+  static const amberBg     = Color(0xFFF3F4F6);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -285,7 +285,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     final p = (emp['prenom'] ?? '').toString();
     final n = (emp['nom']    ?? '').toString();
     final letters = '${p.isNotEmpty ? p[0] : ''}${n.isNotEmpty ? n[0] : ''}'.toUpperCase();
-    final palette = [_P.accent, _P.gold, _P.success, const Color(0xFF7C3AED)];
+    final palette = [_P.accent, _P.gold, _P.success, const Color(0xFF1A1A1A)];
     final col = letters.isNotEmpty ? palette[letters.codeUnitAt(0) % palette.length] : _P.accent;
     return CircleAvatar(
       radius: r,
@@ -784,7 +784,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
           SizedBox(width: 8),
           Expanded(child: Text(
             'Par défaut, le salarié est soumis à l\'IPRES, la CSS et l\'IR. Décochez si non applicable.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF78350F), height: 1.5),
+            style: TextStyle(fontSize: 12, color: Color(0xFF374151), height: 1.5),
           )),
         ]),
       ),
@@ -887,35 +887,35 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   }
 
   PreferredSizeWidget _appBar() => AppBar(
-    backgroundColor: _P.surface,
+    backgroundColor: const Color(0xFF1A1A1A),
     elevation: 0,
-    scrolledUnderElevation: 1,
-    shadowColor: _P.divider,
-    foregroundColor: _P.ink,
+    scrolledUnderElevation: 0,
+    foregroundColor: Colors.white,
     titleSpacing: 0,
     leading: GestureDetector(
       onTap: () => Navigator.pop(context),
       child: Container(
         margin: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: _P.bg, borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _P.divider),
+          color: Colors.white.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
-        child: const Icon(Icons.arrow_back_rounded, size: 20),
+        child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.white),
       ),
     ),
     title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Nouvelle fiche de paie',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _P.ink, letterSpacing: -0.3)),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.3)),
       Text('$_mois $_annee',
-          style: const TextStyle(fontSize: 12, color: _P.inkLight, fontWeight: FontWeight.w500)),
+          style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500)),
     ]),
     actions: [
       Container(
         margin: const EdgeInsets.only(right: 14),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: _P.accentSoft, borderRadius: BorderRadius.circular(8)),
-        child: const Text('Brouillon', style: TextStyle(fontSize: 12, color: _P.accent, fontWeight: FontWeight.w600)),
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
+        child: const Text('Brouillon', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
       ),
     ],
   );
