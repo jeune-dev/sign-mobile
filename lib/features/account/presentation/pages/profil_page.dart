@@ -2,10 +2,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:sign_application/core/config/user_role.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/features/account/domain/entities/account_user.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_bloc.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_event.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_state.dart';
+import 'package:sign_application/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:sign_application/features/auth/presentation/bloc/auth_event.dart';
 
 class ProfilPage extends StatefulWidget {
   final AccountUser? user;
@@ -38,26 +41,44 @@ class _ProfilPageState extends State<ProfilPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F8F8),
-      body: BlocBuilder<AccountBloc, AccountState>(
-        builder: (context, state) {
-          if (state is AccountLoading) {
-            return const Center(
-              child: CircularProgressIndicator(color: Colors.black87),
+      body: BlocListener<AccountBloc, AccountState>(
+        listener: (context, state) {
+          if (state is AccountDeleted) {
+            context.read<AuthBloc>().add(LogoutRequested());
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              AppRouter.loginRoute,
+              (route) => false,
             );
           }
-
-          AccountUser? user;
-          if (state is AccountLoaded) user = state.user;
-          if (state is AccountSuccess) user = state.user;
-          // Fallback sur le user passé en paramètre
-          user ??= widget.user;
-
-          if (user == null) {
-            return _buildError();
+          if (state is AccountError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red[700],
+              ),
+            );
           }
-
-          return _buildContent(user);
         },
+        child: BlocBuilder<AccountBloc, AccountState>(
+          builder: (context, state) {
+            if (state is AccountLoading) {
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.black87),
+              );
+            }
+
+            AccountUser? user;
+            if (state is AccountLoaded) user = state.user;
+            if (state is AccountSuccess) user = state.user;
+            user ??= widget.user;
+
+            if (user == null) {
+              return _buildError();
+            }
+
+            return _buildContent(user);
+          },
+        ),
       ),
     );
   }
@@ -256,12 +277,130 @@ class _ProfilPageState extends State<ProfilPage> {
                 ),
 
                 const SizedBox(height: 32),
+
+                // ── Politique de confidentialité ──────────────────────────
+                _buildPrivacyPolicyButton(),
+
+                const SizedBox(height: 12),
+
+                // ── Supprimer le compte (exigence Google Play) ─────────────
+                _buildDeleteAccountButton(),
+
+                const SizedBox(height: 40),
               ],
             ),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildPrivacyPolicyButton() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextButton.icon(
+        onPressed: () => Navigator.of(context).pushNamed(AppRouter.politiqueConfRoute),
+        icon: const Icon(Icons.privacy_tip_outlined, color: Colors.black87),
+        label: const Text(
+          'Politique de confidentialité',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+          alignment: Alignment.centerLeft,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDeleteAccountButton() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextButton.icon(
+        onPressed: () => _confirmDeleteAccount(),
+        icon: const Icon(Icons.delete_forever_outlined, color: Colors.red),
+        label: const Text(
+          'Supprimer mon compte',
+          style: TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+          alignment: Alignment.centerLeft,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Supprimer le compte',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+        ),
+        content: const Text(
+          'Cette action est irréversible. Toutes vos données (contrats, documents, signatures) seront définitivement supprimées.\n\nÊtes-vous sûr de vouloir continuer ?',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Annuler',
+                style: TextStyle(color: Colors.black54, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Supprimer',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<AccountBloc>().add(DeleteAccountEvent());
+    }
   }
 
   // ── Grande photo de profil ─────────────────────────────────────────────────

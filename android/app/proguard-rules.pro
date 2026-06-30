@@ -40,3 +40,31 @@
 -keepclassmembers class **$WhenMappings {
     <fields>;
 }
+
+# ─── connectivity_plus ───────────────────────────────────────────────────────
+-keep class dev.fluttercommunity.plus.connectivity.** { *; }
+-dontwarn dev.fluttercommunity.plus.connectivity.**
+
+# ─── permission_handler ──────────────────────────────────────────────────────
+-keep class com.baseflow.permissionhandler.** { *; }
+-dontwarn com.baseflow.permissionhandler.**
+
+# ─── image_picker ────────────────────────────────────────────────────────────
+-keep class io.flutter.plugins.imagepicker.** { *; }
+-dontwarn io.flutter.plugins.imagepicker.**
+
+# ─── intl_phone_field / libphonenumber ───────────────────────────────────────
+-keep class com.googlecode.libphonenumber.** { *; }
+-dontwarn com.googlecode.libphonenumber.**
+
+# ─── path_provider ───────────────────────────────────────────────────────────
+-keep class io.flutter.plugins.pathprovider.** { *; }
+-dontwarn io.flutter.plugins.pathprovider.**
+
+# ─── shared_preferences ──────────────────────────────────────────────────────
+-keep class io.flutter.plugins.sharedpreferences.** { *; }
+-dontwarn io.flutter.plugins.sharedpreferences.**
+
+# ─── url_launcher ────────────────────────────────────────────────────────────
+-keep class io.flutter.plugins.urllauncher.** { *; }
+-dontwarn io.flutter.plugins.urllauncher.**

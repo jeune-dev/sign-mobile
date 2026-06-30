@@ -24,7 +24,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:networkSecurityConfig="@xml/network_security_config"
         android:enableOnBackInvokedCallback="true"
-        android:localeConfig="@xml/locales_config">
+        android:localeConfig="@xml/locales_config"
+        android:allowBackup="false"
+        android:fullBackupContent="false">
 
         <activity
             android:name=".MainActivity"
@@ -50,16 +52,21 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Désactive Firebase Analytics — non déclaré dans Data Safety, collecte désactivée -->
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
+
         <!-- Canal FCM par défaut (Android 8+) — doit correspondre à _kChannelId dans FcmService -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="sign_push_channel" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@mipmap/ic_launcher" />
+            android:resource="@drawable/ic_launcher_foreground" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@android:color/black" />
+            android:resource="@color/notification_color" />
 
         <!-- Accès au stockage externe sur Android 10 (API 29) -->
         <meta-data

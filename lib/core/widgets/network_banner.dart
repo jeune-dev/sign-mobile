@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:data_connection_checker_tv/data_connection_checker.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 
 class NetworkBanner extends StatefulWidget {
@@ -12,7 +12,7 @@ class NetworkBanner extends StatefulWidget {
 
 class _NetworkBannerState extends State<NetworkBanner>
     with SingleTickerProviderStateMixin {
-  late StreamSubscription<DataConnectionStatus> _subscription;
+  late StreamSubscription<List<ConnectivityResult>> _subscription;
   bool _isOffline = false;
   bool _showReconnected = false;
   late AnimationController _ctrl;
@@ -27,8 +27,8 @@ class _NetworkBannerState extends State<NetworkBanner>
     );
     _slideAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
 
-    _subscription = DataConnectionChecker().onStatusChange.listen((status) {
-      final offline = status == DataConnectionStatus.disconnected;
+    _subscription = Connectivity().onConnectivityChanged.listen((results) {
+      final offline = results.every((r) => r == ConnectivityResult.none);
       if (offline != _isOffline) {
         setState(() {
           _isOffline = offline;
@@ -37,7 +37,6 @@ class _NetworkBannerState extends State<NetworkBanner>
         if (offline) {
           _ctrl.forward();
         } else {
-          // Afficher "reconnecté" 2s puis masquer
           _ctrl.forward();
           Future.delayed(const Duration(seconds: 2), () {
             if (mounted) {

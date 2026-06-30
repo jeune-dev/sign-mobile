@@ -1,12 +1,17 @@
 import java.util.Properties
 import java.io.FileInputStream
 
+// Priorité 1 : variables d'environnement CI (GitHub Actions, Bitrise, Codemagic…)
+// Priorité 2 : key.properties local (dev uniquement — ne pas committer avec de vrais credentials)
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
-
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
+
+fun signingProp(envKey: String, propKey: String): String? =
+    System.getenv(envKey)?.takeIf { it.isNotBlank() }
+        ?: keystoreProperties[propKey]?.toString()?.takeIf { it.isNotBlank() }
 
 plugins {
     id("com.android.application")
@@ -41,12 +46,15 @@ android {
     }
 
     // ✅ D'ABORD signingConfigs
+    // En CI : KEYSTORE_ALIAS, KEYSTORE_KEY_PASSWORD, KEYSTORE_FILE, KEYSTORE_STORE_PASSWORD
+    // En local : lire depuis key.properties (ne pas committer)
     signingConfigs {
         create("release") {
-            keyAlias = keystoreProperties["keyAlias"]?.toString()
-            keyPassword = keystoreProperties["keyPassword"]?.toString()
-            storeFile = keystoreProperties["storeFile"]?.toString()?.let { file(it) }
-            storePassword = keystoreProperties["storePassword"]?.toString()
+            keyAlias      = signingProp("KEYSTORE_ALIAS",          "keyAlias")
+            keyPassword   = signingProp("KEYSTORE_KEY_PASSWORD",   "keyPassword")
+            storePassword = signingProp("KEYSTORE_STORE_PASSWORD", "storePassword")
+            val storeFilePath = signingProp("KEYSTORE_FILE", "storeFile")
+            storeFile = storeFilePath?.let { file(it) }
         }
     }
 
@@ -71,9 +79,6 @@ dependencies {
 
     // Firebase BoM — gère automatiquement les versions de tous les SDK Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.0.0"))
-
-    // Firebase Analytics (obligatoire avec google-services plugin)
-    implementation("com.google.firebase:firebase-analytics")
 
     // Firebase Crashlytics — monitoring des crashes en production
     implementation("com.google.firebase:firebase-crashlytics")

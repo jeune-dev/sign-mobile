@@ -89,7 +89,7 @@ class FcmService {
     const darwinInit  = DarwinInitializationSettings();
 
     await _localNotif.initialize(
-      const InitializationSettings(android: androidInit, iOS: darwinInit),
+      settings: const InitializationSettings(android: androidInit, iOS: darwinInit),
       onDidReceiveNotificationResponse: (response) {
         // Tap sur une notification locale en foreground : on ignore la navigation
         // car on n'a plus le context ici — l'utilisateur verra le contenu en ouvrant l'app
@@ -137,10 +137,10 @@ class FcmService {
     );
 
     await _localNotif.show(
-      DateTime.now().millisecondsSinceEpoch.remainder(100000),
-      title,
-      body,
-      notifDetails,
+      id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+      title: title,
+      body: body,
+      notificationDetails: notifDetails,
     );
   }
 

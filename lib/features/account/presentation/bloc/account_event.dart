@@ -45,3 +45,5 @@ class ChangePasswordEvent extends AccountEvent {
 }
 
 class ResetAccountState extends AccountEvent {}
+
+class DeleteAccountEvent extends AccountEvent {}

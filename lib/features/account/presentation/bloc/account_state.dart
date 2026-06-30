@@ -26,3 +26,5 @@ class AccountError extends AccountState {
   final String message;
   AccountError(this.message);
 }
+
+class AccountDeleted extends AccountState {}

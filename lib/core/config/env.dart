@@ -1,7 +1,5 @@
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 /// Résolution des variables d'environnement.
-/// Priorité : 1) --dart-define (production)  2) .env local (dev)  3) valeur par défaut
+/// Priorité : 1) --dart-define (production)  2) valeur fallback hardcodée
 ///
 /// En production :
 ///   flutter build apk --dart-define=API_BASE_URL=https://sign-back-1.onrender.com/sign ...
@@ -9,12 +7,6 @@ class Env {
   static String _get(String key, {required String fallback}) {
     final fromDefine = _fromDefine(key);
     if (fromDefine.isNotEmpty) return fromDefine;
-
-    try {
-      final fromDotenv = dotenv.maybeGet(key)?.trim();
-      if (fromDotenv != null && fromDotenv.isNotEmpty) return fromDotenv;
-    } catch (_) {}
-
     return fallback;
   }
 
@@ -42,6 +34,8 @@ class Env {
         return const String.fromEnvironment('ACCOUNT_RESET_PASSWORD_PATH');
       case 'ACCOUNT_DEVICE_TOKEN_PATH':
         return const String.fromEnvironment('ACCOUNT_DEVICE_TOKEN_PATH');
+      case 'ACCOUNT_DELETE_PATH':
+        return const String.fromEnvironment('ACCOUNT_DELETE_PATH');
       case 'CLIENT_LISTE_PATH':
         return const String.fromEnvironment('CLIENT_LISTE_PATH');
       case 'CLIENT_AJOUT_PATH':
@@ -133,6 +127,8 @@ class Env {
       _get('ACCOUNT_RESET_PASSWORD_PATH', fallback: '/v1/account/reset-password');
   static String get accountDeviceToken =>
       _get('ACCOUNT_DEVICE_TOKEN_PATH', fallback: '/v1/account/device-token');
+  static String get accountDelete =>
+      _get('ACCOUNT_DELETE_PATH', fallback: '/v1/account/supprimer-compte');
 
   // ─── Client ──────────────────────────────────────────────────────────────────
   static String get clientListe =>

@@ -40,7 +40,7 @@ class ContratTravailRemoteDataSourceImpl implements ContratTravailRemoteDataSour
         result.add(ContratTravailModel.fromJson(Map<String, dynamic>.from(e as Map)));
       } catch (e, stack) {
         // SEC-02 : Log l'item corrompu sans crasher toute la liste
-        debugPrint('⚠️ ContratTravail parse error: $e');
+        if (kDebugMode) debugPrint('⚠️ ContratTravail parse error: $e');
         if (!kDebugMode) FlutterError.reportError(FlutterErrorDetails(exception: e, stack: stack));
       }
     }

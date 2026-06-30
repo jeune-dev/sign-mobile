@@ -42,7 +42,7 @@ class ParticulierRemoteDataSourceImpl implements ParticulierRemoteDataSource {
       try {
         result.add(ParticulierFactureModel.fromJson(Map<String, dynamic>.from(e as Map)));
       } catch (err, stack) {
-        debugPrint('⚠️ ParticulierFacture parse error: $err');
+        if (kDebugMode) debugPrint('⚠️ ParticulierFacture parse error: $err');
         if (!kDebugMode) FlutterError.reportError(FlutterErrorDetails(exception: err, stack: stack));
       }
     }
@@ -125,7 +125,7 @@ class ParticulierRemoteDataSourceImpl implements ParticulierRemoteDataSource {
       try {
         result.add(ParticulierContratModel.fromJson(Map<String, dynamic>.from(e as Map)));
       } catch (err, stack) {
-        debugPrint('⚠️ ParticulierContrat parse error: $err');
+        if (kDebugMode) debugPrint('⚠️ ParticulierContrat parse error: $err');
         if (!kDebugMode) FlutterError.reportError(FlutterErrorDetails(exception: err, stack: stack));
       }
     }

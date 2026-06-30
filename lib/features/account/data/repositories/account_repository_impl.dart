@@ -85,6 +85,18 @@ class AccountRepositoryImpl implements AccountRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, void>> deleteAccount() async {
+    try {
+      await remoteDataSource.deleteAccount();
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _handleDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
   String _handleDioError(DioException e) {
     final data = e.response?.data;
     if (data is Map) {

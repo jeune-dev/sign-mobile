@@ -27,4 +27,6 @@ abstract class AccountRepository {
     required String oldPassword,
     required String newPassword,
   });
+
+  Future<Either<Failure, void>> deleteAccount();
 }

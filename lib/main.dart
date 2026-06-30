@@ -55,7 +55,7 @@ void main() async {
   } catch (e) {
     // Firebase non configuré sur cette plateforme (iOS sans GoogleService-Info.plist)
     // L'app continue de fonctionner sans Crashlytics
-    debugPrint('⚠️ Firebase non initialisé : $e');
+    if (kDebugMode) debugPrint('⚠️ Firebase non initialisé : $e');
   }
 
   // Requis par media_store_plus — initialiser une seule fois avant tout

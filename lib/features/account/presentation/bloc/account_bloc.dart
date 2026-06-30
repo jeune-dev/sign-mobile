@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/usecases/delete_account.dart';
 import '../../domain/usecases/get_me.dart';
 import '../../domain/usecases/modifier_info_personnelles.dart';
 import '../../domain/usecases/change_password.dart';
@@ -9,15 +10,18 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
   final GetMe getMe;
   final ModifierInfoPersonnelles modifierInfoPersonnelles;
   final ChangePassword changePassword;
+  final DeleteAccount deleteAccount;
 
   AccountBloc({
     required this.getMe,
     required this.modifierInfoPersonnelles,
     required this.changePassword,
+    required this.deleteAccount,
   }) : super(AccountInitial()) {
     on<LoadMe>(_onLoadMe);
     on<ModifierInfoPersonnellesEvent>(_onModifierInfo);
     on<ChangePasswordEvent>(_onChangePassword);
+    on<DeleteAccountEvent>(_onDeleteAccount);
     on<ResetAccountState>((_, emit) => emit(AccountInitial()));
   }
 
@@ -70,6 +74,18 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
     result.fold(
       (failure) => emit(AccountError(failure.errorMessage)),
       (_) => emit(PasswordChanged(message: 'Mot de passe modifié avec succès')),
+    );
+  }
+
+  Future<void> _onDeleteAccount(
+    DeleteAccountEvent event,
+    Emitter<AccountState> emit,
+  ) async {
+    emit(AccountLoading());
+    final result = await deleteAccount();
+    result.fold(
+      (failure) => emit(AccountError(failure.errorMessage)),
+      (_) => emit(AccountDeleted()),
     );
   }
 }

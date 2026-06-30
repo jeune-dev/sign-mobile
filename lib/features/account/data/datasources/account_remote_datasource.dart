@@ -6,6 +6,7 @@ abstract class AccountRemoteDataSource {
   Future<AccountUserModel> getMe();
   Future<AccountUserModel> modifierInfoPersonnelles(Map<String, dynamic> fields, Map<String, String> filePaths);
   Future<void> changePassword(String oldPassword, String newPassword);
+  Future<void> deleteAccount();
 }
 
 class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
@@ -61,5 +62,10 @@ class AccountRemoteDataSourceImpl implements AccountRemoteDataSource {
       Env.accountChangePassword,
       data: {'oldPassword': oldPassword, 'newPassword': newPassword},
     );
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    await dio.delete(Env.accountDelete);
   }
 }

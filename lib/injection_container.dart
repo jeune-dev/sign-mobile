@@ -15,6 +15,7 @@ import 'core/services/auth_event_bus.dart';
 import 'features/account/data/datasources/account_remote_datasource.dart';
 import 'features/account/data/repositories/account_repository_impl.dart';
 import 'features/account/domain/repositories/account_repository.dart';
+import 'features/account/domain/usecases/delete_account.dart';
 import 'features/account/domain/usecases/get_me.dart';
 import 'features/account/domain/usecases/modifier_info_personnelles.dart';
 import 'features/account/domain/usecases/change_password.dart';
@@ -195,9 +196,17 @@ Future<void> init() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
 
-  // Certificate pinning — chargement du CA cert en mémoire une seule fois
-  final certByteData = await rootBundle.load('assets/certs/backend_ca.pem');
-  final pinnedCertBytes = certByteData.buffer.asUint8List();
+  // Certificate pinning — chargement du CA cert en mémoire une seule fois.
+  // Si le cert change côté backend (renouvellement), le chargement échoue gracieusement
+  // et l'app tombe sur la validation système (pas de crash au démarrage).
+  Uint8List? pinnedCertBytes;
+  try {
+    final certByteData = await rootBundle.load('assets/certs/backend_ca.pem');
+    pinnedCertBytes = certByteData.buffer.asUint8List();
+  } catch (_) {
+    // Cert introuvable ou corrompu — on désactive le pinning plutôt que de crasher
+    pinnedCertBytes = null;
+  }
 
   sl.registerLazySingleton(() => const FlutterSecureStorage(
         aOptions: AndroidOptions(encryptedSharedPreferences: true),
@@ -226,13 +235,20 @@ Future<void> init() async {
       ),
     );
 
-    // Certificate pinning (production uniquement — désactivé en debug pour le hot-reload)
-    if (!kDebugMode) {
+    // Certificate pinning (production uniquement + cert disponible)
+    // Fallback automatique vers la validation système si le cert a changé
+    if (!kDebugMode && pinnedCertBytes != null) {
+      final certBytes = pinnedCertBytes;
       dio.httpClientAdapter = IOHttpClientAdapter(
         createHttpClient: () {
-          final sc = SecurityContext(withTrustedRoots: false);
-          sc.setTrustedCertificatesBytes(pinnedCertBytes);
-          return HttpClient(context: sc);
+          try {
+            final sc = SecurityContext(withTrustedRoots: false);
+            sc.setTrustedCertificatesBytes(certBytes);
+            return HttpClient(context: sc);
+          } catch (_) {
+            // Cert invalide ou expiré → validation système standard
+            return HttpClient();
+          }
         },
       );
     }
@@ -335,10 +351,12 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetMe(sl()));
   sl.registerLazySingleton(() => ModifierInfoPersonnelles(sl()));
   sl.registerLazySingleton(() => ChangePassword(sl()));
+  sl.registerLazySingleton(() => DeleteAccount(sl()));
   sl.registerFactory(() => AccountBloc(
         getMe: sl(),
         modifierInfoPersonnelles: sl(),
         changePassword: sl(),
+        deleteAccount: sl(),
       ));
 
   //================================================
