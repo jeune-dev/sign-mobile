@@ -366,7 +366,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
   Widget _buildCard(ContratTravail c) {
     final isSigne    = c.statut == 'signe';
     final statusColor = isSigne ? Colors.green : const Color(0xFFFFB347);
-    final statusLabel = isSigne ? 'Signé' : 'En attente de signature';
+    final statusLabel = isSigne ? 'Signé' : 'En attente';
 
     final typeColor = _typeColor(c.typeContrat);
     final salarieNom = c.salarie != null
@@ -404,6 +404,8 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(numero,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 14,
@@ -411,6 +413,8 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                       const SizedBox(height: 3),
                       if (c.poste != null)
                         Text(c.poste!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],

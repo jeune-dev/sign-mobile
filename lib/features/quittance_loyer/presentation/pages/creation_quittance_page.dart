@@ -1,7 +1,11 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:signature/signature.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_event.dart';
@@ -30,12 +34,13 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
   final _anneeCtrl           = TextEditingController();
   final _clientSearchCtrl    = TextEditingController();
 
-  String   _typeBien      = 'appartement';
+  String   _typeBien      = 'Appartement';
   String   _mois          = 'Janvier';
   String   _modePaiement  = 'Virement bancaire';
   bool     _paiementComplet = true;
   DateTime? _datePaiement;
   Client?   _selectedClient;
+  File?     _signatureImage;
 
   static final _dateFmtDisplay = DateFormat('dd/MM/yyyy');
   static final _montantFmt     = NumberFormat('#,###', 'fr_FR');
@@ -75,7 +80,68 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
     if (dt != null) setState(() => _datePaiement = dt);
   }
 
-  void _submit() {
+  Future<void> _openSignaturePad() async {
+    final controller = SignatureController(
+      penStrokeWidth: 3,
+      penColor: Colors.black,
+      exportBackgroundColor: Colors.white,
+    );
+    final double padWidth =
+        (MediaQuery.of(context).size.width - 96).clamp(240.0, 420.0);
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Votre signature', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: padWidth,
+                height: 180,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8F8FA),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Signature(controller: controller, width: padWidth, height: 180),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('Dessinez votre signature ci-dessus', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => controller.clear(), child: const Text('Effacer', style: TextStyle(color: Color(0xFF6B7280)))),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuler', style: TextStyle(color: Color(0xFF6B7280)))),
+            ElevatedButton(
+              onPressed: () async {
+                if (controller.isEmpty) return;
+                final data = await controller.toPngBytes();
+                if (!dialogContext.mounted) return;
+                if (data != null) {
+                  final tempDir = await getTemporaryDirectory();
+                  final file = File('${tempDir.path}/sig_quittance_${DateTime.now().millisecondsSinceEpoch}.png');
+                  await file.writeAsBytes(data);
+                  if (mounted) setState(() => _signatureImage = file);
+                  if (dialogContext.mounted) Navigator.pop(dialogContext);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClient == null) {
       showToast(context, 'Champ requis', 'Veuillez sélectionner un locataire', ToastificationType.error);
@@ -85,10 +151,18 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
       showToast(context, 'Champ requis', 'Veuillez sélectionner la date de paiement', ToastificationType.error);
       return;
     }
+    if (_signatureImage == null) {
+      showToast(context, 'Signature requise', 'Veuillez apposer votre signature', ToastificationType.error);
+      return;
+    }
 
-    // Le backend attend { locataireId, data: {...} } (cf. creerQuittanceSchema)
+    final sigBase64 = 'data:image/png;base64,${base64Encode(await _signatureImage!.readAsBytes())}';
+    if (!mounted) return;
+
+    // Le backend attend { locataireId, signature_bailleur, data: {...} } (cf. creerQuittanceSchema)
     context.read<QuittanceLoyerBloc>().add(CreerQuittanceEvent({
       'locataireId': _selectedClient!.id,
+      'signature_bailleur': sigBase64,
       'data': {
         'adresse_logement':  _adresseCtrl.text.trim(),
         'type_bien':         _typeBien,
@@ -103,7 +177,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
         if (!_paiementComplet && _montantPayeCtrl.text.isNotEmpty)
           'montant_paye': double.tryParse(_montantPayeCtrl.text),
         if (_obsCtrl.text.trim().isNotEmpty) 'observations': _obsCtrl.text.trim(),
-        if (_villeCtrl.text.trim().isNotEmpty) 'ville_emission': _villeCtrl.text.trim(),
+        'ville_emission': _villeCtrl.text.trim(),
       },
     }));
   }
@@ -237,7 +311,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 else ...[
                   TextField(
                     controller: _clientSearchCtrl,
-                    decoration: _dec('Rechercher un locataireâ€¦', icon: Icons.search_rounded),
+                    decoration: _dec('Rechercher un locataire…', icon: Icons.search_rounded),
                     onChanged: (v) {
                       if (v.length >= 2) context.read<ClientBloc>().add(RechercherClientsEvent(v));
                     },
@@ -304,12 +378,12 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                   decoration: _dec('Type de bien', icon: Icons.apartment_outlined),
                   borderRadius: BorderRadius.circular(12),
                   items: const [
-                    DropdownMenuItem(value: 'appartement', child: Text('Appartement')),
-                    DropdownMenuItem(value: 'maison',      child: Text('Maison')),
-                    DropdownMenuItem(value: 'studio',      child: Text('Studio')),
-                    DropdownMenuItem(value: 'villa',       child: Text('Villa')),
-                    DropdownMenuItem(value: 'bureau',      child: Text('Bureau')),
-                    DropdownMenuItem(value: 'autre',       child: Text('Autre')),
+                    DropdownMenuItem(value: 'Appartement',     child: Text('Appartement')),
+                    DropdownMenuItem(value: 'Maison',          child: Text('Maison')),
+                    DropdownMenuItem(value: 'Studio',          child: Text('Studio')),
+                    DropdownMenuItem(value: 'Chambre',         child: Text('Chambre')),
+                    DropdownMenuItem(value: 'Local commercial', child: Text('Local commercial')),
+                    DropdownMenuItem(value: 'Autre',           child: Text('Autre')),
                   ],
                   onChanged: (v) => setState(() => _typeBien = v!),
                 ),
@@ -482,14 +556,60 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                 TextFormField(
                   controller: _obsCtrl,
                   maxLines: 3,
-                  decoration: _dec('Remarques, commentairesâ€¦', icon: Icons.notes_rounded),
+                  decoration: _dec('Remarques, commentaires…', icon: Icons.notes_rounded),
                 ),
                 const SizedBox(height: 14),
-                _label("Ville d'émission"),
+                _label("Ville d'émission", req: true),
                 TextFormField(
                   controller: _villeCtrl,
                   decoration: _dec('Ex: Dakar', icon: Icons.location_city_outlined),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? "Ville d'émission requise" : null,
                 ),
+              ]),
+
+              // â”€â”€ Signature du bailleur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+              _card(children: [
+                _sectionTitle('Signature du bailleur', Icons.draw_outlined),
+                _label('Votre signature', req: true),
+                GestureDetector(
+                  onTap: _openSignaturePad,
+                  child: Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8F8FA),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _signatureImage != null ? Colors.black : const Color(0xFFE5E7EB),
+                        width: _signatureImage != null ? 1.5 : 1,
+                      ),
+                    ),
+                    child: _signatureImage != null
+                        ? Padding(
+                            padding: const EdgeInsets.all(8),
+                            child: Image.file(_signatureImage!, fit: BoxFit.contain),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.gesture_rounded, color: Color(0xFF9CA3AF), size: 28),
+                              SizedBox(height: 6),
+                              Text('Touchez pour signer', style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+                            ],
+                          ),
+                  ),
+                ),
+                if (_signatureImage != null) ...[
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _openSignaturePad,
+                      icon: const Icon(Icons.refresh_rounded, size: 16, color: Color(0xFF6B7280)),
+                      label: const Text('Recommencer', style: TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+                    ),
+                  ),
+                ],
               ]),
 
               // â”€â”€ Bouton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

@@ -49,10 +49,11 @@ class FichePaieSuccess extends FichePaieState {
 class FichePaieBytes extends FichePaieState {
   final List<int> bytes;
   final String titre;
-  const FichePaieBytes({required this.bytes, required this.titre});
+  final String mode; // 'view' | 'download'
+  const FichePaieBytes({required this.bytes, required this.titre, this.mode = 'view'});
 
   @override
-  List<Object?> get props => [bytes, titre];
+  List<Object?> get props => [bytes, titre, mode];
 }
 
 class FichePaieError extends FichePaieState {

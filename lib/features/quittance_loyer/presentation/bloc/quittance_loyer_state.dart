@@ -25,7 +25,8 @@ class QuittanceLoyerSuccess extends QuittanceLoyerState {
 class QuittanceBytes extends QuittanceLoyerState {
   final List<int> bytes;
   final String quittanceId;
-  QuittanceBytes({required this.bytes, required this.quittanceId});
+  final String mode; // 'view' | 'download'
+  QuittanceBytes({required this.bytes, required this.quittanceId, this.mode = 'download'});
 }
 
 class QuittanceLoyerError extends QuittanceLoyerState {

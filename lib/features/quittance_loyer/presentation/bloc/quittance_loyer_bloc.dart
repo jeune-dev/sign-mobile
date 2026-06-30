@@ -79,7 +79,7 @@ class QuittanceLoyerBloc extends Bloc<QuittanceLoyerEvent, QuittanceLoyerState> 
     final result = await telechargerQuittance(event.quittanceId);
     result.fold(
       (failure) => emit(QuittanceLoyerError(failure.errorMessage)),
-      (bytes) => emit(QuittanceBytes(bytes: bytes, quittanceId: event.quittanceId)),
+      (bytes) => emit(QuittanceBytes(bytes: bytes, quittanceId: event.quittanceId, mode: event.mode)),
     );
   }
 }

@@ -1,12 +1,15 @@
 ﻿// 📁 lib/features/fiche_paie/presentation/page/creation_fiche_paie.dart
 
-import 'dart:async';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
+import 'package:sign_application/features/client/domain/entities/client.dart';
+import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
+import 'package:sign_application/features/client/presentation/bloc/client_event.dart';
+import 'package:sign_application/features/client/presentation/bloc/client_state.dart';
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_bloc.dart';
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_event.dart';
 import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_paie_state.dart';
@@ -18,20 +21,20 @@ import 'package:sign_application/core/widgets/toastNotif.dart';
 // Palette
 // ─────────────────────────────────────────────────────────────────────────────
 class _P {
-  static const bg          = Color(0xFFF6F5F3);
+  static const bg          = Color(0xFFF2F2F7);
   static const surface     = Color(0xFFFFFFFF);
-  static const ink         = Color(0xFF1A1A18);
-  static const inkLight    = Color(0xFF6B6B66);
-  static const inkFaint    = Color(0xFFB0AFA8);
-  static const accent      = Color(0xFF1A1A1A);
+  static const ink         = Color(0xFF111827);
+  static const inkLight    = Color(0xFF6B7280);
+  static const inkFaint    = Color(0xFF9CA3AF);
+  static const accent      = Color(0xFF000000);
   static const accentSoft  = Color(0xFFF3F4F6);
-  static const success     = Color(0xFF1A1A1A);
-  static const successSoft = Color(0xFFF3F4F6);
+  static const success     = Color(0xFF111827);
   static const danger      = Color(0xFF6B7280);
-  static const divider     = Color(0xFFE8E7E3);
-  static const toggleOff   = Color(0xFFE2E1DC);
+  static const divider     = Color(0xFFE5E7EB);
+  static const toggleOff   = Color(0xFFE5E7EB);
   static const gold        = Color(0xFF6B7280);
   static const amberBg     = Color(0xFFF3F4F6);
+  static const field       = Color(0xFFF8F8FA);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -61,15 +64,10 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     with SingleTickerProviderStateMixin {
 
   final _formKey = GlobalKey<FormState>();
-  late final Dio _dio;
 
-  // ── Recherche employé
-  final _searchCtrl  = TextEditingController();
-  final _searchFocus = FocusNode();
-  List<dynamic> _results   = [];
-  bool          _searching = false;
-  Timer?        _debounce;
-  dynamic       _selected;
+  // ── Recherche employé (basée sur la base clients via ClientBloc)
+  final _searchCtrl = TextEditingController();
+  Client? _selected;
 
   // ── Identification salarié
   final _ipresCtrl    = TextEditingController();
@@ -156,15 +154,11 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
-    // REST-M02 : utilise uniquement le Dio sécurisé de injection_container
-    _dio = GetIt.instance<Dio>();
   }
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _fadeCtrl.dispose();
-    _searchFocus.dispose();
     for (final c in [
       _searchCtrl, _ipresCtrl, _cssNumCtrl, _posteCtrl,
       _brutCtrl, _joursTravCtrl, _heuresTravCtrl,
@@ -178,49 +172,20 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     super.dispose();
   }
 
-  // ── Recherche ─────────────────────────────────────────────────────────────
+  // ── Recherche (base clients, via ClientBloc) ───────────────────────────────
   void _onSearchChanged(String q) {
-    _debounce?.cancel();
-    if (q.trim().isEmpty) {
-      setState(() { _results = []; _searching = false; });
-      return;
-    }
-    setState(() => _searching = true);
-    _debounce = Timer(const Duration(milliseconds: 450), () => _doSearch(q.trim()));
-  }
-
-  Future<void> _doSearch(String q) async {
-    try {
-      final res = await _dio.get(
-        '/professionnel/client/recherche-client',
-        queryParameters: {'nom': q, 'prenom': q, 'email': q, 'telephone': q},
-        options: Options(headers: {'Content-Type': 'application/json'}),
-      );
-      if (!mounted) return;
-      if (res.statusCode == 200) {
-        setState(() {
-          _results = List<dynamic>.from(
-            res.data['utilisateurs'] ?? res.data['employes'] ?? res.data['clients'] ?? [],
-          );
-          _searching = false;
-        });
-      } else {
-        setState(() { _results = []; _searching = false; });
-      }
-    } catch (_) {
-      if (!mounted) return;
-      setState(() { _results = []; _searching = false; });
+    if (q.trim().length >= 2) {
+      context.read<ClientBloc>().add(RechercherClientsEvent(q.trim()));
     }
   }
 
-  void _selectEmployee(dynamic emp) {
+  void _selectEmployee(Client emp) {
     HapticFeedback.selectionClick();
     setState(() {
       _selected = emp;
-      _results  = [];
       _searchCtrl.clear();
-      _searchFocus.unfocus();
     });
+    FocusScope.of(context).unfocus();
   }
 
   // ── Soumission ────────────────────────────────────────────────────────────
@@ -231,7 +196,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     final fiche = FichePaie(
       numeroFiche:   _numCtrl.text.trim(),
       employeurId:   widget.user?.id ?? '',
-      salarieId:     _selected!['id'].toString(),
+      salarieId:     _selected!.id,
       typeContrat:   _contrat,
       mois:          _mois,
       annee:         _annee,
@@ -281,9 +246,9 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   // UI HELPERS
   // ─────────────────────────────────────────────────────────────────────────
 
-  Widget _initials(dynamic emp, double r) {
-    final p = (emp['prenom'] ?? '').toString();
-    final n = (emp['nom']    ?? '').toString();
+  Widget _initials(Client emp, double r) {
+    final p = emp.prenom;
+    final n = emp.nom;
     final letters = '${p.isNotEmpty ? p[0] : ''}${n.isNotEmpty ? n[0] : ''}'.toUpperCase();
     final palette = [_P.accent, _P.gold, _P.success, const Color(0xFF1A1A1A)];
     final col = letters.isNotEmpty ? palette[letters.codeUnitAt(0) % palette.length] : _P.accent;
@@ -294,43 +259,41 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     );
   }
 
+  // Carte identique à la page « Nouvelle quittance » : carte blanche + titre de
+  // section avec carré noir (icône blanche), sans séparateur.
   Widget _card({required IconData icon, required String title, required List<Widget> children}) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: _P.surface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _P.divider),
-        boxShadow: [BoxShadow(color: _P.ink.withValues(alpha: 0.04), blurRadius: 16, offset: const Offset(0, 4))],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+          padding: const EdgeInsets.only(bottom: 16),
           child: Row(children: [
             Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(color: _P.accentSoft, borderRadius: BorderRadius.circular(10)),
-              child: Center(child: Icon(icon, size: 20, color: _P.accent)),
+              width: 32, height: 32,
+              decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(9)),
+              child: Icon(icon, color: Colors.white, size: 16),
             ),
-            const SizedBox(width: 12),
-            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _P.ink, letterSpacing: -0.3)),
+            const SizedBox(width: 10),
+            Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
           ]),
         ),
-        const Divider(height: 1, color: _P.divider),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
-        ),
+        ...children,
       ]),
     );
   }
 
   Widget _label(String text, {bool req = false}) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
+    padding: const EdgeInsets.only(bottom: 7),
     child: RichText(text: TextSpan(
       text: text,
-      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: _P.inkLight, letterSpacing: 0.1),
-      children: req ? [const TextSpan(text: ' *', style: TextStyle(color: _P.danger))] : [],
+      style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF111827)),
+      children: req ? [const TextSpan(text: ' *', style: TextStyle(color: Color(0xFF1A1A1A)))] : [],
     )),
   );
 
@@ -340,7 +303,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     prefixIcon: prefix,
     suffixIcon: suffix,
     filled: true,
-    fillColor: const Color(0xFFFAFAF8),
+    fillColor: _P.field,
     border:             OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.divider)),
     enabledBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.divider)),
     focusedBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.accent, width: 1.5)),
@@ -401,7 +364,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: val ? _P.accentSoft : const Color(0xFFFAFAF8),
+            color: val ? _P.accentSoft : _P.field,
             borderRadius: BorderRadius.only(
               topLeft:     const Radius.circular(12),
               topRight:    const Radius.circular(12),
@@ -499,7 +462,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            color: const Color(0xFFFAFAF8),
+            color: _P.field,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _P.divider),
           ),
@@ -521,27 +484,25 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   Widget _sectionEmploye() => _card(
     icon: Icons.person_outline, title: 'Employé',
     children: [
-      if (_selected != null) ...[
+      // Un employé sélectionné => on masque la recherche (une fiche = un seul employé).
+      if (_selected != null)
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_P.successSoft, _P.accentSoft.withValues(alpha: 0.5)],
-              begin: Alignment.topLeft, end: Alignment.bottomRight,
-            ),
+            color: _P.accentSoft,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _P.success.withValues(alpha: 0.25)),
+            border: Border.all(color: _P.divider),
           ),
           child: Row(children: [
-            _initials(_selected, 24),
+            _initials(_selected!, 24),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${_selected!['prenom']} ${_selected!['nom']}',
+              Text('${_selected!.prenom} ${_selected!.nom}',
                   style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: _P.ink)),
-              if ((_selected!['email'] ?? '').toString().isNotEmpty)
-                Text(_selected!['email'], style: const TextStyle(fontSize: 12, color: _P.inkLight)),
-              if ((_selected!['telephone'] ?? '').toString().isNotEmpty)
-                Text(_selected!['telephone'], style: const TextStyle(fontSize: 11.5, color: _P.inkFaint)),
+              if ((_selected!.email ?? '').isNotEmpty)
+                Text(_selected!.email!, style: const TextStyle(fontSize: 12, color: _P.inkLight)),
+              if ((_selected!.telephone ?? '').isNotEmpty)
+                Text(_selected!.telephone!, style: const TextStyle(fontSize: 11.5, color: _P.inkFaint)),
             ])),
             GestureDetector(
               onTap: () => setState(() => _selected = null),
@@ -552,92 +513,105 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
               ),
             ),
           ]),
-        ),
-        const SizedBox(height: 16),
-      ],
-      _label('Rechercher un employé', req: true),
-      TextField(
-        controller: _searchCtrl,
-        focusNode: _searchFocus,
-        style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
-        onChanged: _onSearchChanged,
-        decoration: _deco(
-          hint: 'Nom, prénom, email, téléphone…',
-          prefix: const Icon(Icons.search_rounded, color: _P.inkLight, size: 20),
-          suffix: _searching
-              ? const Padding(padding: EdgeInsets.all(12),
-              child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: _P.accent)))
-              : (_searchCtrl.text.isNotEmpty
-              ? GestureDetector(
-            onTap: () { _searchCtrl.clear(); setState(() => _results = []); },
-            child: const Icon(Icons.close_rounded, size: 18, color: _P.inkFaint),
-          )
-              : null),
-        ),
-      ),
-      if (_results.isNotEmpty) ...[
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: _P.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _P.divider),
-            boxShadow: [BoxShadow(color: _P.ink.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))],
+        )
+      else ...[
+        _label('Rechercher un employé', req: true),
+        TextField(
+          controller: _searchCtrl,
+          style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
+          onChanged: (v) { setState(() {}); _onSearchChanged(v); },
+          decoration: _deco(
+            hint: 'Nom, prénom, email, téléphone…',
+            prefix: const Icon(Icons.search_rounded, color: _P.inkLight, size: 20),
+            suffix: _searchCtrl.text.isNotEmpty
+                ? GestureDetector(
+                    onTap: () => setState(() => _searchCtrl.clear()),
+                    child: const Icon(Icons.close_rounded, size: 18, color: _P.inkFaint),
+                  )
+                : null,
           ),
-          constraints: const BoxConstraints(maxHeight: 260),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: ListView.separated(
-              shrinkWrap: true,
-              padding: EdgeInsets.zero,
-              itemCount: _results.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, color: _P.divider),
-              itemBuilder: (_, i) {
-                final emp = _results[i];
-                final sel = _selected != null && _selected!['id'] == emp['id'];
-                return Material(
-                  color: sel ? _P.accentSoft : Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _selectEmployee(emp),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                      child: Row(children: [
-                        _initials(emp, 20),
-                        const SizedBox(width: 12),
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text('${emp['prenom']} ${emp['nom']}',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5,
-                                  color: sel ? _P.accent : _P.ink)),
-                          if ((emp['email'] ?? '').toString().isNotEmpty)
-                            Text(emp['email'], style: const TextStyle(fontSize: 12, color: _P.inkLight)),
-                          if ((emp['telephone'] ?? '').toString().isNotEmpty)
-                            Text(emp['telephone'], style: const TextStyle(fontSize: 11.5, color: _P.inkFaint)),
-                        ])),
-                        Icon(sel ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
-                            size: 22, color: sel ? _P.success : _P.inkFaint),
-                      ]),
-                    ),
-                  ),
+        ),
+        // Résultats issus de la base clients (ClientBloc)
+        BlocBuilder<ClientBloc, ClientState>(
+          builder: (ctx, state) {
+            if (_searchCtrl.text.trim().length < 2) return const SizedBox.shrink();
+            if (state is ClientLoading) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: SizedBox(width: 18, height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: _P.accent))),
+              );
+            }
+            if (state is ClientsRechercheLoaded) {
+              if (state.clients.isEmpty) {
+                return const Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: Text('Aucun client trouvé.', style: TextStyle(fontSize: 12.5, color: _P.inkFaint)),
                 );
-              },
-            ),
+              }
+              return Container(
+                margin: const EdgeInsets.only(top: 8),
+                decoration: BoxDecoration(
+                  color: _P.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _P.divider),
+                  boxShadow: [BoxShadow(color: _P.ink.withValues(alpha: 0.07), blurRadius: 20, offset: const Offset(0, 6))],
+                ),
+                constraints: const BoxConstraints(maxHeight: 260),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: state.clients.take(6).length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: _P.divider),
+                    itemBuilder: (_, i) {
+                      final emp = state.clients[i];
+                      return Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => _selectEmployee(emp),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            child: Row(children: [
+                              _initials(emp, 20),
+                              const SizedBox(width: 12),
+                              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text('${emp.prenom} ${emp.nom}',
+                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, color: _P.ink)),
+                                if ((emp.email ?? '').isNotEmpty)
+                                  Text(emp.email!, style: const TextStyle(fontSize: 12, color: _P.inkLight)),
+                                if ((emp.telephone ?? '').isNotEmpty)
+                                  Text(emp.telephone!, style: const TextStyle(fontSize: 11.5, color: _P.inkFaint)),
+                              ])),
+                              const Icon(Icons.add_circle_outline_rounded, size: 22, color: _P.inkFaint),
+                            ]),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+        if (_searchCtrl.text.isEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: _P.bg, borderRadius: BorderRadius.circular(10)),
+            child: const Row(children: [
+              Icon(Icons.info_outline_rounded, size: 15, color: _P.inkFaint),
+              SizedBox(width: 8),
+              Expanded(child: Text(
+                'Recherchez par nom, email ou téléphone puis sélectionnez l\'employé.',
+                style: TextStyle(fontSize: 12, color: _P.inkLight, height: 1.5),
+              )),
+            ]),
           ),
-        ),
-      ],
-      if (_selected == null && _results.isEmpty && _searchCtrl.text.isEmpty) ...[
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: _P.bg, borderRadius: BorderRadius.circular(10)),
-          child: const Row(children: [
-            Icon(Icons.info_outline_rounded, size: 15, color: _P.inkFaint),
-            SizedBox(width: 8),
-            Expanded(child: Text(
-              'Recherchez par nom, email ou téléphone puis sélectionnez l\'employé.',
-              style: TextStyle(fontSize: 12, color: _P.inkLight, height: 1.5),
-            )),
-          ]),
-        ),
+        ],
       ],
     ],
   );
@@ -891,58 +865,39 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     elevation: 0,
     scrolledUnderElevation: 0,
     foregroundColor: Colors.white,
-    titleSpacing: 0,
-    leading: GestureDetector(
-      onTap: () => Navigator.pop(context),
-      child: Container(
-        margin: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-        ),
-        child: const Icon(Icons.arrow_back_rounded, size: 20, color: Colors.white),
-      ),
+    centerTitle: true,
+    leading: IconButton(
+      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.white),
+      onPressed: () => Navigator.pop(context),
     ),
-    title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Text('Nouvelle fiche de paie',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.3)),
-      Text('$_mois $_annee',
-          style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500)),
-    ]),
-    actions: [
-      Container(
-        margin: const EdgeInsets.only(right: 14),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8)),
-        child: const Text('Brouillon', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w600)),
-      ),
-    ],
+    title: const Text('Nouvelle fiche de paie',
+        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.3)),
   );
 
   Widget _submitBtn() => BlocBuilder<FichePaieBloc, FichePaieState>(
     builder: (ctx, state) {
       final loading = state is FichePaieLoading;
       return SizedBox(
-        height: 56,
+        width: double.infinity,
+        height: 54,
         child: ElevatedButton(
           onPressed: loading ? null : _submit,
           style: ElevatedButton.styleFrom(
-            backgroundColor: _P.accent,
+            backgroundColor: Colors.black,
             foregroundColor: Colors.white,
-            disabledBackgroundColor: _P.divider,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            disabledBackgroundColor: Colors.black38,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             elevation: 0,
             shadowColor: Colors.transparent,
           ),
           child: loading
               ? const SizedBox(width: 22, height: 22,
               child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
-              : const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.save_rounded, size: 20),
-            SizedBox(width: 8),
+              : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text('Enregistrer la fiche',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.2)),
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15)),
+            const SizedBox(width: 8),
+            const Icon(Icons.save_rounded, size: 18),
           ]),
         ),
       );

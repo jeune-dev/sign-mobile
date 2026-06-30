@@ -30,8 +30,10 @@ class LoadMoreFichesPaieEvent extends FichePaieEvent {}
 class TelechargerFichePaieEvent extends FichePaieEvent {
   final String ficheId;
   final String titre;
-  const TelechargerFichePaieEvent({required this.ficheId, required this.titre});
+  // 'view' = ouvrir dans le lecteur PDF ; 'download' = enregistrer dans Téléchargements
+  final String mode;
+  const TelechargerFichePaieEvent({required this.ficheId, required this.titre, this.mode = 'view'});
 
   @override
-  List<Object?> get props => [ficheId, titre];
+  List<Object?> get props => [ficheId, titre, mode];
 }

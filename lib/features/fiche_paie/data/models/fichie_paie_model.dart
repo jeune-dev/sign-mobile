@@ -17,7 +17,7 @@ class FichePaieModel extends FichePaie {
     return 0;
   }
 
-  FichePaieModel({
+  const FichePaieModel({
     super.id,
     required super.numeroFiche,
     required super.employeurId,
@@ -69,6 +69,9 @@ class FichePaieModel extends FichePaie {
     super.totalRetenues,
     super.salaireNet,
     super.fichePdf,
+    super.direction,
+    super.employeur,
+    super.salarie,
   });
 
   factory FichePaieModel.fromJson(Map<String, dynamic> json) {
@@ -139,6 +142,14 @@ class FichePaieModel extends FichePaie {
       salaireNet: _toDouble(json['salaire_net']),
 
       fichePdf: json['fiche_pdf'],
+
+      direction: json['direction'],
+      employeur: json['employeur'] != null
+          ? Map<String, dynamic>.from(json['employeur'])
+          : null,
+      salarie: json['salarie'] != null
+          ? Map<String, dynamic>.from(json['salarie'])
+          : null,
     );
   }
 

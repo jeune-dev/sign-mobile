@@ -78,7 +78,8 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 
     // Firebase BoM — gère automatiquement les versions de tous les SDK Firebase
-    implementation(platform("com.google.firebase:firebase-bom:35.0.0"))
+    // (35.0.0 n'existe pas sur les dépôts Maven/Google ; dernière publiée : 34.15.0)
+    implementation(platform("com.google.firebase:firebase-bom:34.15.0"))
 
     // Firebase Crashlytics — monitoring des crashes en production
     implementation("com.google.firebase:firebase-crashlytics")

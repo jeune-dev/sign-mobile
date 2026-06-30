@@ -614,7 +614,13 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text('Nouveau contrat de travail', style: TextStyle(fontWeight: FontWeight.bold)),
+        surfaceTintColor: Colors.black,
+        scrolledUnderElevation: 0,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text('Nouveau contrat de travail',
+            maxLines: 1, overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
         elevation: 0,
       ),
       body: BlocListener<ContratTravailBloc, ContratTravailState>(
@@ -643,9 +649,22 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                       const Icon(Icons.person, color: Colors.white, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(
-                          '${_selectedClient!.prenom} ${_selectedClient!.nom}',
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '${_selectedClient!.prenom} ${_selectedClient!.nom}',
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                            ),
+                            if ((_selectedClient!.email ?? '').isNotEmpty)
+                              Text(
+                                _selectedClient!.email!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                              ),
+                          ],
                         ),
                       ),
                       GestureDetector(
@@ -659,7 +678,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                 TextField(
                   controller: _clientSearchCtrl,
                   decoration: InputDecoration(
-                    hintText: 'Rechercher un salarié...',
+                    hintText: 'Nom, prénom ou email…',
                     prefixIcon: const Icon(Icons.search, color: Colors.grey),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     focusedBorder: OutlineInputBorder(
@@ -693,7 +712,10 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                                 style: const TextStyle(color: Colors.white, fontSize: 12),
                               ),
                             ),
-                            title: Text('${client.prenom} ${client.nom}', style: const TextStyle(fontSize: 13)),
+                            title: Text('${client.prenom} ${client.nom}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            subtitle: (client.email ?? '').isNotEmpty
+                                ? Text(client.email!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)))
+                                : null,
                             onTap: () {
                               setState(() => _selectedClient = client);
                               _clientSearchCtrl.clear();

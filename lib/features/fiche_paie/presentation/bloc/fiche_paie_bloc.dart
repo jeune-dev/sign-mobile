@@ -79,7 +79,7 @@ class FichePaieBloc extends Bloc<FichePaieEvent, FichePaieState> {
     final result = await telechargerFichePaie(event.ficheId);
     result.fold(
       (failure) => emit(FichePaieError(failure.errorMessage)),
-      (bytes)   => emit(FichePaieBytes(bytes: bytes, titre: event.titre)),
+      (bytes)   => emit(FichePaieBytes(bytes: bytes, titre: event.titre, mode: event.mode)),
     );
   }
 }

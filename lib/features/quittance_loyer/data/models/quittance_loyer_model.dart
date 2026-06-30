@@ -1,6 +1,22 @@
 import '../../domain/entities/quittance_loyer.dart';
 
 class QuittanceLoyerModel extends QuittanceLoyer {
+  // Sequelize renvoie les DECIMAL en String ("150000.00") et parfois les INT en String.
+  static double? _toDoubleOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
+  static int? _toIntOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
   const QuittanceLoyerModel({
     required super.id,
     super.numeroQuittance,
@@ -20,7 +36,9 @@ class QuittanceLoyerModel extends QuittanceLoyer {
     super.dateEmission,
     super.signatureBailleur,
     super.locataire,
+    super.bailleur,
     super.createdAt,
+    super.direction,
   });
 
   factory QuittanceLoyerModel.fromJson(Map<String, dynamic> json) {
@@ -30,22 +48,14 @@ class QuittanceLoyerModel extends QuittanceLoyer {
       adresseLogement: json['adresse_logement'],
       typeBien: json['type_bien'],
       mois: json['mois'],
-      annee: json['annee'],
-      montantLoyer: json['montant_loyer'] != null
-          ? (json['montant_loyer'] as num).toDouble()
-          : null,
-      montantCharges: json['montant_charges'] != null
-          ? (json['montant_charges'] as num).toDouble()
-          : null,
-      montantTotal: json['montant_total'] != null
-          ? (json['montant_total'] as num).toDouble()
-          : null,
+      annee: _toIntOrNull(json['annee']),
+      montantLoyer: _toDoubleOrNull(json['montant_loyer']),
+      montantCharges: _toDoubleOrNull(json['montant_charges']),
+      montantTotal: _toDoubleOrNull(json['montant_total']),
       datePaiement: json['date_paiement'],
       modePaiement: json['mode_paiement'],
       estTotal: json['est_total'],
-      montantPayePartiel: json['montant_paye_partiel'] != null
-          ? (json['montant_paye_partiel'] as num).toDouble()
-          : null,
+      montantPayePartiel: _toDoubleOrNull(json['montant_paye_partiel']),
       observations: json['observations'],
       villeEmission: json['ville_emission'],
       dateEmission: json['date_emission'],
@@ -53,7 +63,11 @@ class QuittanceLoyerModel extends QuittanceLoyer {
       locataire: json['locataire'] != null
           ? Map<String, dynamic>.from(json['locataire'])
           : null,
+      bailleur: json['bailleur'] != null
+          ? Map<String, dynamic>.from(json['bailleur'])
+          : null,
       createdAt: json['createdAt'],
+      direction: json['direction'],
     );
   }
 }

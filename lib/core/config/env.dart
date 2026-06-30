@@ -183,8 +183,10 @@ class Env {
       _get('QUITTANCE_LISTE_PATH', fallback: '/v1/professionnel/quittance-loyer');
   static String get quittanceDetail =>
       _get('QUITTANCE_DETAIL_PATH', fallback: '/v1/professionnel/quittance-loyer');
-  static String get quittanceTelecharger =>
-      _get('QUITTANCE_TELECHARGER_PATH', fallback: '/v1/professionnel/quittance-loyer');
+  // Base du téléchargement = base de la liste (/quittance-loyer). On ne lit PAS
+  // QUITTANCE_TELECHARGER_PATH : cette clé .env est mal configurée (/v1/professionnel
+  // sans le segment quittance-loyer) → 404. On dérive donc de quittanceListe, fiable.
+  static String get quittanceTelecharger => quittanceListe;
 
   // ─── Fiche de paie ────────────────────────────────────────────────────────────
   static String get fichePaieCreer =>

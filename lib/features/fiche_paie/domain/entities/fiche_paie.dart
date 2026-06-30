@@ -77,7 +77,12 @@ class FichePaie extends Equatable {
 
   final String? fichePdf;
 
-  FichePaie({
+  // 'envoye' (je suis l'employeur) ou 'recu' (je suis le salarié)
+  final String? direction;
+  final Map<String, dynamic>? employeur;
+  final Map<String, dynamic>? salarie;
+
+  const FichePaie({
     this.id,
     required this.numeroFiche,
     required this.employeurId,
@@ -137,7 +142,12 @@ class FichePaie extends Equatable {
     this.totalRetenues,
     this.salaireNet,
     this.fichePdf,
+    this.direction,
+    this.employeur,
+    this.salarie,
   });
+
+  bool get estRecue => direction == 'recu';
 
   @override
   List<Object?> get props => [
@@ -197,5 +207,6 @@ class FichePaie extends Equatable {
     totalRetenues,
     salaireNet,
     fichePdf,
+    direction,
   ];
 }

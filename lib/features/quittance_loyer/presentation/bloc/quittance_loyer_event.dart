@@ -20,7 +20,9 @@ class CreerQuittanceEvent extends QuittanceLoyerEvent {
 
 class TelechargerQuittanceEvent extends QuittanceLoyerEvent {
   final String quittanceId;
-  TelechargerQuittanceEvent(this.quittanceId);
+  // 'view' = ouvrir dans le lecteur PDF ; 'download' = enregistrer dans Téléchargements
+  final String mode;
+  TelechargerQuittanceEvent(this.quittanceId, {this.mode = 'download'});
 }
 
 class ResetQuittanceState extends QuittanceLoyerEvent {}

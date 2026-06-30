@@ -19,7 +19,10 @@ class QuittanceLoyer extends Equatable {
   final String? dateEmission;
   final String? signatureBailleur;
   final Map<String, dynamic>? locataire;
+  final Map<String, dynamic>? bailleur;
   final String? createdAt;
+  // 'envoye' (je suis le bailleur) ou 'recu' (je suis le locataire)
+  final String? direction;
 
   const QuittanceLoyer({
     required this.id,
@@ -40,9 +43,13 @@ class QuittanceLoyer extends Equatable {
     this.dateEmission,
     this.signatureBailleur,
     this.locataire,
+    this.bailleur,
     this.createdAt,
+    this.direction,
   });
 
+  bool get estRecue => direction == 'recu';
+
   @override
-  List<Object?> get props => [id, numeroQuittance];
+  List<Object?> get props => [id, numeroQuittance, direction];
 }
