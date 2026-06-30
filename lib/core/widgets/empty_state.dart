@@ -62,7 +62,10 @@ class EmptyState extends StatelessWidget {
         ),
         if (onAction != null && actionLabel != null) ...[
           const SizedBox(height: 28),
-          GestureDetector(
+          Semantics(
+            button: true,
+            label: actionLabel,
+            child: GestureDetector(
             onTap: onAction,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
@@ -86,7 +89,7 @@ class EmptyState extends StatelessWidget {
                 ),
               ),
             ),
-          ),
+          )),
         ],
       ],
     );

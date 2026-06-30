@@ -52,12 +52,10 @@ dependencies:
   intl_phone_field: ^3.2.0
   awesome_dialog: ^3.1.1
   toastification: ^3.0.3
-  # IMP-02 : Crash reporting production
-  # GP-03 : Firebase v4.x nécessite des dépendances non encore compatibles (Flutter 3.35.6)
-  # → Rester sur 3.x stable jusqu'à migration complète de l'écosystème
-  firebase_core: ^3.6.0
-  firebase_crashlytics: ^4.1.0
-  firebase_messaging: ^15.1.3
+  # IMP-02 : Crash reporting production — Firebase v4/v5/v16 (migré depuis v3)
+  firebase_core: ^4.0.0
+  firebase_crashlytics: ^5.0.0
+  firebase_messaging: ^16.0.0
   flutter_local_notifications: ^20.0.0
   jwt_decode: ^0.3.1
   url_launcher: ^6.1.14

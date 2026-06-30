@@ -56,7 +56,10 @@ class _PrimaryButtonState extends State<PrimaryButton>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: widget.text,
+      child: GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
         _controller.forward().then((_) {
@@ -99,7 +102,7 @@ class _PrimaryButtonState extends State<PrimaryButton>
           ),
         ),
       ),
-    );
+    ));
   }
 }
 

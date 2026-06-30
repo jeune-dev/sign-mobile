@@ -67,7 +67,10 @@ class _SecondaryButtonState extends State<SecondaryButton>
   Widget build(BuildContext context) {
     final icon = _buildIcon();
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: widget.text,
+      child: GestureDetector(
       onTap: () {
         _controller.forward().then((_) {
           _controller.reverse();
@@ -111,6 +114,6 @@ class _SecondaryButtonState extends State<SecondaryButton>
           ),
         ),
       ),
-    );
+    ));
   }
 }
