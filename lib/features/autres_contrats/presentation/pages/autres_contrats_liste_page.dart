@@ -629,9 +629,13 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                             children: [
                               const Icon(Icons.open_in_new_rounded, color: Colors.white, size: 15),
                               const SizedBox(width: 6),
-                              Text(
-                                c.statut == 'signe' ? 'Voir le contrat signé' : _labelVoirContrat(widget.type),
-                                style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                              Flexible(
+                                child: Text(
+                                  c.statut == 'signe' ? 'Voir le contrat signé' : _labelVoirContrat(widget.type),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+                                ),
                               ),
                             ],
                           ),

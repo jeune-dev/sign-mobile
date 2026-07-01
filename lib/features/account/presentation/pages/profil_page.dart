@@ -7,6 +7,7 @@ import 'package:sign_application/features/account/domain/entities/account_user.d
 import 'package:sign_application/features/account/presentation/bloc/account_bloc.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_event.dart';
 import 'package:sign_application/features/account/presentation/bloc/account_state.dart';
+import 'package:sign_application/features/account/presentation/pages/modifier_profil_page.dart';
 import 'package:sign_application/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sign_application/features/auth/presentation/bloc/auth_event.dart';
 
@@ -101,6 +102,15 @@ class _ProfilPageState extends State<ProfilPage> {
           backgroundColor: Colors.black,
           iconTheme: const IconThemeData(color: Colors.white),
           actions: [
+            IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Colors.white),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ModifierProfilPage(user: user),
+                ),
+              ),
+              tooltip: 'Modifier',
+            ),
             IconButton(
               icon: const Icon(Icons.refresh, color: Colors.white),
               onPressed: () => context.read<AccountBloc>().add(LoadMe()),
