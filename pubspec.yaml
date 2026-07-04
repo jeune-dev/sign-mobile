@@ -1,5 +1,30 @@
 name: sign_application
-description: "SIGN — Application de gestion et signature électronique de contrats pour professionnels et particuliers au Sénégal."
+description: "
+SIGNS – Contrats & Factures en quelques clics
+
+SIGNS est une application simple et rapide qui vous permet de créer et gérer vos contrats, factures, quittances de loyer, états des lieux et accords de confidentialité, directement depuis votre téléphone.
+
+Dans un environnement où beaucoup d'accords se font encore sans document écrit, SIGNS aide particuliers et professionnels à formaliser leurs engagements et sécuriser leurs transactions.
+
+Simple. Rapide. Structuré.
+
+Avec SIGNS, vous pouvez :
+- Créer des contrats personnalisés en quelques clics
+- Générer des factures et quittances de loyer instantanément
+- Réaliser des états des lieux clairs et organisés
+- Formaliser tout type d'accord entre deux parties
+- Centraliser et retrouver tous vos documents facilement
+
+Pourquoi utiliser SIGNS ?
+- Gain de temps grâce à des modèles prêts à l'emploi
+- Meilleure protection des accords entre parties
+- Réduction des malentendus et litiges
+- Accès simple à tous vos documents importants
+
+SIGNS rend la création de documents contractuels accessible à tous, sans expertise juridique.
+
+SIGNS – Transformez chaque accord en document clair et fiable.
+"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +41,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.0.0+3
 # IMP-07 : versionName = 1.0.0, versionCode = 1 (premier upload Play Store)
 # Pour une mise à jour : incrémenter versionCode ET versionName
 # Exemple v1.1.0 : version: 1.1.0+2
