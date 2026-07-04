@@ -101,7 +101,7 @@ class Env {
   static String get baseUrl {
     // Défaut = backend live (même que le dashboard web). Surchargé par
     // --dart-define=API_BASE_URL=... ou .env si fourni.
-    return _get('API_BASE_URL', fallback: 'https://sign-back-1.onrender.com/sign');
+    return _get('API_BASE_URL', fallback: 'https://api.app-signs.com/sign');
   }
 
   // ─── Auth ────────────────────────────────────────────────────────────────────

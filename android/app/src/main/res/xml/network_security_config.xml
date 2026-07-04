@@ -3,7 +3,7 @@
 <network-security-config>
     <!-- Domaine de production — HTTPS uniquement, pas de cleartext -->
     <domain-config cleartextTrafficPermitted="false">
-        <domain includeSubdomains="false">sign-backend-ha5a.onrender.com</domain>
+        <domain includeSubdomains="true">api.app-signs.com</domain>
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
