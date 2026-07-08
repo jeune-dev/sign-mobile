@@ -490,7 +490,13 @@ class _LoginPageState extends State<LoginPage> {
             if (phone == null || phone.number.isEmpty) {
               return 'Ce champ est requis';
             }
-            if (!phone.isValidNumber()) {
+            // isValidNumber() lance parfois une exception (NumberTooShortException)
+            // au lieu de retourner false — on la traite comme un numéro invalide.
+            try {
+              if (!phone.isValidNumber()) {
+                return 'Numéro invalide pour le pays sélectionné';
+              }
+            } catch (_) {
               return 'Numéro invalide pour le pays sélectionné';
             }
             return null;

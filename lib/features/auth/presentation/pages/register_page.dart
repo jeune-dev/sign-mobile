@@ -971,7 +971,13 @@ class _RegisterPageState extends State<RegisterPage> {
             if (phone == null || phone.number.isEmpty) {
               return 'Ce champ est obligatoire';
             }
-            if (!phone.isValidNumber()) {
+            // isValidNumber() lance parfois une exception (NumberTooShortException)
+            // au lieu de retourner false — on la traite comme un numéro invalide.
+            try {
+              if (!phone.isValidNumber()) {
+                return 'Numéro de téléphone invalide';
+              }
+            } catch (_) {
               return 'Numéro de téléphone invalide';
             }
             return null;

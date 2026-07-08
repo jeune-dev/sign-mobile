@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET"/>
 
@@ -8,8 +9,10 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/>
 
-    <!-- Médias pour Android 13+ (API 33+) — uniquement images pour photo de profil/signature -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <!-- image_picker déclare cette permission dans son propre manifeste (fusion Gradle),
+         mais elle est inutile : le plugin utilise le Photo Picker système qui ne nécessite
+         aucune permission. On la bloque explicitement pour éviter la déclaration Play Console. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove"/>
 
     <!-- Notifications push — Android 13+ (API 33+) requiert déclaration explicite -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
