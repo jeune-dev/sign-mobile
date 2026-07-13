@@ -22,7 +22,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
   Future<void> _handleUpdate() async {
     if (_launching) return;
     setState(() => _launching = true);
-    await AppUpdateLauncher.openImmediateUpdate(widget.config.storeUrl);
+    await AppUpdateLauncher.openStore(widget.config.storeUrl);
     if (mounted) setState(() => _launching = false);
   }
 

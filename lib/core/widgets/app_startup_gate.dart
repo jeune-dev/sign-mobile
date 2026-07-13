@@ -56,7 +56,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
         config: config,
         onUpdate: () {
           Navigator.of(dialogContext).pop();
-          AppUpdateLauncher.openFlexibleUpdate(config.storeUrl);
+          AppUpdateLauncher.openStore(config.storeUrl);
         },
         onLater: () async {
           Navigator.of(dialogContext).pop();
