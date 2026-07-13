@@ -17,6 +17,8 @@ abstract class AuthRemoteDataSource {
     required String telephone,
     required String carte_identite_national_num,
     required String role,
+    String? typeDocumentIdentite,
+    XFile? documentIdentite,
     XFile? photoProfil,
     XFile? logo,
     String? rc,
@@ -127,6 +129,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String telephone,
     required String carte_identite_national_num,
     required String role,
+    String? typeDocumentIdentite,
+    XFile? documentIdentite,
     String? rc,
     String? ninea,
     XFile? photoProfil,
@@ -148,6 +152,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       'telephone': telephone,
       'carte_identite_national_num': carte_identite_national_num,
       'role': role,
+      if (typeDocumentIdentite != null) 'type_document_identite': typeDocumentIdentite,
       if (rc != null) 'rc': rc,
       if (ninea != null) 'ninea': ninea,
       if (nomEntreprise != null) 'nomEntreprise': nomEntreprise,
@@ -182,6 +187,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         await MultipartFile.fromFile(
           File(signature.path).path,
           filename: signature.path.split('/').last,
+        ),
+      ));
+    }
+
+    if (documentIdentite != null) {
+      formData.files.add(MapEntry(
+        'documentIdentite',
+        await MultipartFile.fromFile(
+          File(documentIdentite.path).path,
+          filename: documentIdentite.path.split('/').last,
         ),
       ));
     }

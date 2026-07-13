@@ -29,6 +29,13 @@ class RegisterRequested extends AuthEvent {
   final String adresse;
   final String telephone;
   final String carte_identite_national_num;
+  // Type du document dont carte_identite_national_num est le numéro :
+  // 'carte_identite' | 'permis' | 'passeport'. Optionnel pour ne pas
+  // casser le flow si jamais absent (cohérent avec le backend, qui
+  // l'accepte optionnel pour rester compatible avec les anciennes
+  // versions déjà publiées sur le Play Store).
+  final String? typeDocumentIdentite;
+  final XFile? documentIdentite;
   final String role;
   final XFile? photoProfil;
   final XFile? logo;
@@ -51,6 +58,8 @@ class RegisterRequested extends AuthEvent {
     required this.telephone,
     required this.carte_identite_national_num,
     required this.role,
+    this.typeDocumentIdentite,
+    this.documentIdentite,
     this.photoProfil,
     this.logo,
     this.rc,
@@ -71,6 +80,8 @@ class RegisterRequested extends AuthEvent {
     adresse,
     telephone,
     carte_identite_national_num,
+    typeDocumentIdentite,
+    documentIdentite,
     role,
     photoProfil,
     logo,

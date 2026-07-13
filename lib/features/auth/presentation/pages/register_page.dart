@@ -46,6 +46,10 @@ class _RegisterPageState extends State<RegisterPage> {
   File? _profileImage;
   File? _logoImage;
   File? _signatureImage;
+
+  // ── Document d'identité (carte / permis / passeport) ──
+  String _selectedDocumentType = 'carte_identite';
+  File? _documentIdentiteImage;
   bool _obscurePassword = true;
 
   // ── Critères mot de passe ──
@@ -90,6 +94,14 @@ class _RegisterPageState extends State<RegisterPage> {
           _logoImage = File(pickedFile.path);
         }
       });
+    }
+  }
+
+  Future<void> _pickDocumentIdentiteImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (pickedFile != null && mounted) {
+      setState(() => _documentIdentiteImage = File(pickedFile.path));
     }
   }
 
@@ -192,6 +204,17 @@ class _RegisterPageState extends State<RegisterPage> {
 
   void _submitRegistration() {
     if (_formKeys[1].currentState!.validate()) {
+      // Le sélecteur d'image n'est pas un TextFormField : la validation
+      // "obligatoire" est vérifiée manuellement ici avant l'envoi.
+      if (_documentIdentiteImage == null) {
+        showToast(
+          context,
+          'Photo requise',
+          "Merci d'ajouter une photo de votre document d'identité pour continuer.",
+          ToastificationType.error,
+        );
+        return;
+      }
       context.read<AuthBloc>().add(
         RegisterRequested(
           nom: _lastNameController.text.trim(),
@@ -201,6 +224,10 @@ class _RegisterPageState extends State<RegisterPage> {
           adresse: _addressController.text.trim(),
           telephone: _phoneNumber ?? '',
           carte_identite_national_num: _cinController.text.trim(),
+          typeDocumentIdentite: _selectedDocumentType,
+          documentIdentite: _documentIdentiteImage != null
+              ? XFile(_documentIdentiteImage!.path)
+              : null,
           role: _selectedRole ?? 'Particulier',
           photoProfil: _profileImage != null ? XFile(_profileImage!.path) : null,
           logo: _logoImage != null ? XFile(_logoImage!.path) : null,
@@ -609,7 +636,11 @@ class _RegisterPageState extends State<RegisterPage> {
           validator: (v) => (v == null || v.isEmpty) ? 'Ce champ est obligatoire' : null,
         ),
         const SizedBox(height: 16),
+        _buildDocumentTypeSelector(),
+        const SizedBox(height: 16),
         _buildCinInputField(),
+        const SizedBox(height: 16),
+        _buildDocumentIdentitePhotoSection(),
         const SizedBox(height: 16),
         _buildRoleDropdown(),
         const SizedBox(height: 20),
@@ -876,30 +907,190 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
-  // ─────────────────────── CIN INPUT — chiffres uniquement (CORRECTION 4) ──
-  Widget _buildCinInputField() {
+  // ─────────────────────── TYPE DE DOCUMENT D'IDENTITÉ ──────────────────────
+  static const List<Map<String, dynamic>> _documentTypeOptions = [
+    {'value': 'carte_identite', 'label': "Carte d'identité", 'icon': Icons.badge_outlined},
+    {'value': 'permis', 'label': 'Permis de conduire', 'icon': Icons.directions_car_outlined},
+    {'value': 'passeport', 'label': 'Passeport', 'icon': Icons.flight_takeoff_outlined},
+  ];
+
+  Widget _buildDocumentTypeSelector() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel("Numéro de carte d'identité", isRequired: true),
+        _fieldLabel('Type de document', isRequired: true),
+        const SizedBox(height: 10),
+        Row(
+          children: _documentTypeOptions.map((opt) {
+            final isSelected = _selectedDocumentType == opt['value'];
+            final isLast = opt == _documentTypeOptions.last;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(right: isLast ? 0 : 8),
+                child: GestureDetector(
+                  onTap: () => setState(() {
+                    _selectedDocumentType = opt['value'] as String;
+                  }),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColor.kPrimary : const Color(0xFFF8F8FA),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isSelected ? AppColor.kPrimary : AppColor.kLine,
+                        width: 1.4,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: AppColor.kPrimary.withValues(alpha: 0.25),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          child: Icon(
+                            opt['icon'] as IconData,
+                            key: ValueKey('${opt['value']}_$isSelected'),
+                            size: 22,
+                            color: isSelected ? Colors.white : AppColor.kGrayscale40,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          opt['label'] as String,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected ? Colors.white : AppColor.kGrayscaleDark100,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
+  String get _documentNumberLabel {
+    switch (_selectedDocumentType) {
+      case 'permis':
+        return 'Numéro de permis de conduire';
+      case 'passeport':
+        return 'Numéro de passeport';
+      default:
+        return "Numéro de carte d'identité";
+    }
+  }
+
+  String get _documentNumberHint {
+    switch (_selectedDocumentType) {
+      case 'permis':
+        return 'Ex: SN-2024-00123';
+      case 'passeport':
+        return 'Ex: 12AB34567';
+      default:
+        return 'Ex: 12345678';
+    }
+  }
+
+  // ─────────────────────── NUMÉRO DE DOCUMENT — validation adaptée au type ──
+  Widget _buildCinInputField() {
+    final isNumericOnly = _selectedDocumentType == 'carte_identite';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel(_documentNumberLabel, isRequired: true),
         const SizedBox(height: 8),
         TextFormField(
           controller: _cinController,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          keyboardType: isNumericOnly ? TextInputType.number : TextInputType.text,
+          inputFormatters: isNumericOnly
+              ? [FilteringTextInputFormatter.digitsOnly]
+              : [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
           style: GoogleFonts.plusJakartaSans(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
           ),
-          decoration: _baseDecoration(hint: 'Ex: 12345678', icon: Icons.badge_outlined),
+          decoration: _baseDecoration(hint: _documentNumberHint, icon: Icons.badge_outlined),
           validator: (v) {
             if (v == null || v.isEmpty) return 'Ce champ est obligatoire';
-            if (!RegExp(r'^\d+$').hasMatch(v)) {
+            if (isNumericOnly && !RegExp(r'^\d+$').hasMatch(v)) {
               return 'Seuls les chiffres sont autorisés';
+            }
+            if (!isNumericOnly && !RegExp(r'^[A-Za-z0-9\-]+$').hasMatch(v)) {
+              return 'Format invalide';
             }
             return null;
           },
+        ),
+      ],
+    );
+  }
+
+  // ─────────────────────── PHOTO DU DOCUMENT D'IDENTITÉ ─────────────────────
+  Widget _buildDocumentIdentitePhotoSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _fieldLabel('Photo du document', isRequired: true),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: _pickDocumentIdentiteImage,
+          child: Container(
+            height: 110,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: const Color(0xFFF8F8FA),
+              border: Border.all(
+                color: _documentIdentiteImage != null ? AppColor.kPrimary : AppColor.kLine,
+                width: _documentIdentiteImage != null ? 2 : 1,
+              ),
+            ),
+            child: _documentIdentiteImage != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(_documentIdentiteImage!, fit: BoxFit.cover),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.camera_alt_outlined, size: 30, color: AppColor.kPrimary),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Ajouter une photo du document',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppColor.kPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        'Obligatoire — cliquez pour sélectionner',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: AppColor.kGrayscale40,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
         ),
       ],
     );

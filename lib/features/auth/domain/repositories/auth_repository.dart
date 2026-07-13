@@ -21,6 +21,8 @@ abstract class AuthRepository {
     required String telephone,
     required String carte_identite_national_num,
     required String role,
+    String? typeDocumentIdentite,
+    XFile? documentIdentite,
     XFile? photoProfil,
     XFile? logo,
     String? rc,

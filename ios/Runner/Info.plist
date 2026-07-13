@@ -60,6 +60,12 @@
 		<false/>
 	</dict>
 
+	<!-- Déclare l'app comme exempte de conformité export (TLS standard
+	     uniquement, aucun chiffrement propriétaire) — évite la question de
+	     conformité export à chaque upload sur App Store Connect -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<!-- BLK-03/AS-02 : Permissions galerie et caméra — obligatoires pour image_picker -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>SIGN utilise votre bibliothèque photo pour ajouter une photo de profil et un logo d'entreprise.</string>

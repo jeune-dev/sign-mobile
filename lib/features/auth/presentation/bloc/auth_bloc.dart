@@ -62,6 +62,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       telephone: event.telephone,
       carte_identite_national_num: event.carte_identite_national_num,
       role: event.role,
+      typeDocumentIdentite: event.typeDocumentIdentite,
+      documentIdentite: event.documentIdentite,
       photoProfil: event.photoProfil,
       logo: event.logo,
       rc: event.rc,
