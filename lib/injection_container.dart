@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'core/config/env.dart';
 import 'core/services/token_service.dart';
 import 'core/services/auth_event_bus.dart';
+import 'core/services/app_version_service.dart';
 
 // Account
 import 'features/account/data/datasources/account_remote_datasource.dart';
@@ -339,6 +340,12 @@ Future<void> init() async {
 
     return dio;
   });
+
+  //================================================
+  // APP VERSION / FORCE UPDATE
+  //================================================
+
+  sl.registerLazySingleton(() => AppVersionService(dio: sl()));
 
   //================================================
   // FEATURE — ACCOUNT

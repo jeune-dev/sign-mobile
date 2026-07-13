@@ -111,6 +111,8 @@ class Env {
       _get('AUTH_REGISTER_PATH', fallback: '/v1/auth/register');
   static String get authRefresh =>
       _get('AUTH_REFRESH_PATH', fallback: '/v1/auth/refresh');
+  static String get appVersion =>
+      _get('APP_VERSION_PATH', fallback: '/v1/app-version');
   static String get authLogout =>
       _get('AUTH_LOGOUT_PATH', fallback: '/v1/auth/logout');
 

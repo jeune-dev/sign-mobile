@@ -25,6 +25,7 @@ import 'package:sign_application/features/etat_logement/presentation/bloc/etat_l
 import 'package:sign_application/features/autres_contrats/presentation/bloc/autres_contrats_bloc.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:sign_application/core/services/fcm_service.dart';
+import 'package:sign_application/core/widgets/app_startup_gate.dart';
 import 'package:sign_application/injection_container.dart' as di;
 
 void main() async {
@@ -137,7 +138,7 @@ class _MyAppState extends State<MyApp> {
             child: child!,
           );
         },
-        home: const OnboardingPage1(),
+        home: const AppStartupGate(child: OnboardingPage1()),
         onGenerateRoute: AppRouter.onGenerateRoute,
       ),
     );
