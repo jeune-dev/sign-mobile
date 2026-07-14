@@ -37,8 +37,11 @@ class AppVersionService {
 
       final config = AppVersionConfig.fromJson(Map<String, dynamic>.from(data));
 
-      // 1. Mise à jour obligatoire — priorité absolue, ignore tout le reste.
-      if (config.forceUpdate || SemVer.isLowerThan(currentVersion, config.minimumVersion)) {
+      // 1. Mise à jour obligatoire — seulement si l'utilisateur est en
+      // dessous de la version minimale ET que le toggle "Forcer" est actif.
+      // Ne jamais bloquer un utilisateur déjà à jour, même si le toggle
+      // "Forcer" reste activé côté admin.
+      if (config.forceUpdate && SemVer.isLowerThan(currentVersion, config.minimumVersion)) {
         return AppVersionCheckResult(AppUpdateStatus.forced, config);
       }
 

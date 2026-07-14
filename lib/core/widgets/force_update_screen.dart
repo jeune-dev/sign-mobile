@@ -55,7 +55,9 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                 ),
                 const SizedBox(height: 36),
                 Text(
-                  'Mise à jour requise',
+                  widget.config.title.isNotEmpty
+                      ? widget.config.title
+                      : 'Mise à jour requise',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 25,
@@ -63,23 +65,27 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                     color: isDark ? Colors.white : AppColor.kGrayscaleDark100,
                   ),
                 ),
+                if (widget.config.subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.config.subtitle,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColor.kGrayscale40,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 14),
                 Text(
-                  'Une nouvelle version est nécessaire pour continuer à utiliser l\'application.',
+                  widget.config.message.isNotEmpty
+                      ? widget.config.message
+                      : 'Une nouvelle version est nécessaire pour continuer à utiliser l\'application.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14.5,
                     height: 1.55,
-                    color: AppColor.kGrayscale40,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Cette mise à jour améliore la sécurité, la stabilité et les performances.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13.5,
-                    height: 1.5,
                     color: AppColor.kGrayscale40,
                   ),
                 ),
