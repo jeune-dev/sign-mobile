@@ -35,9 +35,9 @@ class ContratTravailModel extends ContratTravail {
 
   factory ContratTravailModel.fromJson(Map<String, dynamic> json) {
     // Cast sûr pour les sous-objets/tableaux JSON — évite tout crash de type
-    Map<String, dynamic>? _toMap(dynamic v) =>
+    Map<String, dynamic>? toMap(dynamic v) =>
         v is Map ? Map<String, dynamic>.from(v) : null;
-    List<dynamic>? _toList(dynamic v) =>
+    List<dynamic>? toList(dynamic v) =>
         v is List ? List<dynamic>.from(v) : null;
 
     return ContratTravailModel(
@@ -45,11 +45,11 @@ class ContratTravailModel extends ContratTravail {
       numeroContrat:   json['numero_contrat']  as String?,
       poste:           json['poste']           as String?,
       // missions est DataTypes.JSON → tableau
-      missions:        _toList(json['missions']),
+      missions:        toList(json['missions']),
       lieuTravail:     json['lieu_travail']    as String?,
       typeContrat:     json['type_contrat']    as String?,
       // jour_travail est DataTypes.JSON → [{jour, debut, fin}, ...]
-      jourTravail:     _toList(json['jour_travail']),
+      jourTravail:     toList(json['jour_travail']),
       heureDebut:      json['heure_debut']     as String?,
       heureFin:        json['heure_fin']       as String?,
       tempsPause:      json['temps_pause']     as String?,
@@ -76,7 +76,7 @@ class ContratTravailModel extends ContratTravail {
       signatureSalarie:   json['signature_salarie']   as String?,
       statut:          json['statut']          as String?,
       // backend alias : as 'salarie' (models/index.js)
-      salarie:         _toMap(json['salarie']),
+      salarie:         toMap(json['salarie']),
       createdAt:       json['createdAt']       as String?,
     );
   }

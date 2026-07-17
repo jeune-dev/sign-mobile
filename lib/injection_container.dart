@@ -53,6 +53,7 @@ import 'features/facture/data/repositories/facture_repository_impl.dart';
 import 'features/facture/domain/repositories/facture_repository.dart';
 import 'features/facture/domain/usecases/get_factures.dart';
 import 'features/facture/domain/usecases/creer_facture.dart';
+import 'features/facture/domain/usecases/creer_facture_client_manuel.dart';
 import 'features/facture/domain/usecases/ouvrir_document.dart';
 import 'features/facture/domain/usecases/mettre_a_jour_facture.dart';
 import 'features/facture/domain/usecases/renvoyer_facture.dart';
@@ -313,6 +314,30 @@ Future<void> init() async {
           AuthEventBus.instance.emitLogout();
         }
 
+        // Messages différenciés pour les codes que le backend ne documente pas
+        // toujours avec un 'message' exploitable — évite d'afficher une erreur
+        // technique brute (ex: "Http status error [429]") à l'utilisateur final.
+        final statusCode = e.response?.statusCode;
+        final hasBackendMessage = e.response?.data is Map &&
+            ((e.response!.data as Map)['message'] != null ||
+                (e.response!.data as Map)['error'] != null);
+        if (!hasBackendMessage &&
+            (statusCode == 403 || statusCode == 429 || statusCode == 503)) {
+          final friendlyMessage = switch (statusCode) {
+            403 => "Vous n'avez pas la permission d'effectuer cette action.",
+            429 => 'Trop de requêtes envoyées. Veuillez patienter quelques instants avant de réessayer.',
+            503 => 'Le service est momentanément indisponible. Veuillez réessayer plus tard.',
+            _ => 'Une erreur est survenue',
+          };
+          e = DioException(
+            requestOptions: e.requestOptions,
+            response: e.response,
+            type: e.type,
+            error: e.error,
+            message: friendlyMessage,
+          );
+        }
+
         // OPT-05 : Retry automatique sur erreurs réseau transitoires (max 2 tentatives)
         final isNetworkError = e.type == DioExceptionType.connectionTimeout ||
             e.type == DioExceptionType.receiveTimeout ||
@@ -422,12 +447,14 @@ Future<void> init() async {
       () => FactureRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetFactures(sl()));
   sl.registerLazySingleton(() => CreerFacture(sl()));
+  sl.registerLazySingleton(() => CreerFactureClientManuel(sl()));
   sl.registerLazySingleton(() => OuvrirDocument(sl()));
   sl.registerLazySingleton(() => MettreAJourFacture(sl()));
   sl.registerLazySingleton(() => RenvoyerFacture(sl()));
   sl.registerFactory(() => FactureBloc(
         getFactures: sl(),
         creerFacture: sl(),
+        creerFactureClientManuel: sl(),
         ouvrirDocument: sl(),
         mettreAJourFacture: sl(),
         renvoyerFacture: sl(),

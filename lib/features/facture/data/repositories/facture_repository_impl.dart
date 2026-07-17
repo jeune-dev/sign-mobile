@@ -39,6 +39,18 @@ class FactureRepositoryImpl implements FactureRepository {
   }
 
   @override
+  Future<Either<Failure, void>> creerFactureClientManuel(Map<String, dynamic> data) async {
+    try {
+      await remoteDataSource.creerFactureClientManuel(data);
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _handleDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<int>>> ouvrirDocument(String documentId) async {
     try {
       final bytes = await remoteDataSource.ouvrirDocument(documentId);

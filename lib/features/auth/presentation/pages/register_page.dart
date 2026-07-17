@@ -56,7 +56,6 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _hasUpperCase = false;
   bool _hasLowerCase = false;
   bool _hasDigit = false;
-  bool _hasSpecialChar = false;
   bool _hasMinLength = false;
   bool _passwordFocused = false;
 
@@ -74,14 +73,16 @@ class _RegisterPageState extends State<RegisterPage> {
       _hasUpperCase = value.contains(RegExp(r'[A-Z]'));
       _hasLowerCase = value.contains(RegExp(r'[a-z]'));
       _hasDigit = value.contains(RegExp(r'[0-9]'));
-      _hasSpecialChar =
-          value.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>_\-+=\[\]\\\/~`]'));
       _hasMinLength = value.length >= 8;
     });
   }
 
+  // Alignée sur la politique backend (validations/common.js) : majuscule +
+  // minuscule + chiffre + 8 caractères minimum. Le caractère spécial n'est
+  // PAS exigé par le backend — l'imposer ici bloquerait des mots de passe
+  // pourtant valides côté serveur.
   bool get _isPasswordValid =>
-      _hasUpperCase && _hasLowerCase && _hasDigit && _hasSpecialChar && _hasMinLength;
+      _hasUpperCase && _hasLowerCase && _hasDigit && _hasMinLength;
 
   Future<void> _pickImage({required bool isProfile}) async {
     final picker = ImagePicker();
@@ -1285,7 +1286,6 @@ class _RegisterPageState extends State<RegisterPage> {
           _buildCriteriaRow('Une lettre majuscule (A–Z)', _hasUpperCase),
           _buildCriteriaRow('Une lettre minuscule (a–z)', _hasLowerCase),
           _buildCriteriaRow('Un chiffre (0–9)', _hasDigit),
-          _buildCriteriaRow('Un caractère spécial (!@#\$%...)', _hasSpecialChar),
         ],
       ),
     );
@@ -1320,7 +1320,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _fieldLabel('Rôle', isRequired: true),
+        _fieldLabel('Choisissez votre profil', isRequired: true),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           initialValue: _selectedRole,

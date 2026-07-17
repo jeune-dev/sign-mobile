@@ -28,6 +28,8 @@ class Facture extends Equatable {
   final List<dynamic>? items;
   final Map<String, dynamic>? client;
   final String? statut; // 'en_attente' | 'partiel' | 'payee'
+  /// Horodatage automatique serveur — jamais choisi depuis le mobile.
+  final String? dateGeneration;
 
   const Facture({
     required this.id,
@@ -42,6 +44,7 @@ class Facture extends Equatable {
     this.items,
     this.client,
     this.statut,
+    this.dateGeneration,
   });
 
   @override

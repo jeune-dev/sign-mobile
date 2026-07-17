@@ -89,9 +89,9 @@ class _ProfilPageState extends State<ProfilPage> {
     final logoUrl = _buildUrl(user.logo);
     final signatureUrl = _buildUrl(user.signature);
 
-    final _role       = UserRoleX.fromString(user.role);
-    final isPro       = _role.isPro;
-    final isEntreprise = _role.isEntreprise;
+    final role      = UserRoleX.fromString(user.role);
+    final isPro       = role.isPro;
+    final isEntreprise = role.isEntreprise;
 
     return CustomScrollView(
       slivers: [

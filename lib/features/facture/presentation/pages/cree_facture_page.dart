@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
@@ -35,7 +35,15 @@ class _CreeFactureState extends State<CreeFacture> {
   Client? _clientSelectionne;
   DateTime? _dateEcheance;
 
-  List<Map<String, dynamic>> _items = [
+  // ── Client non inscrit (saisie manuelle) ────────────────────────────────
+  bool _modeClientManuel = false;
+  final _clientManuelNomController = TextEditingController();
+  final _clientManuelPrenomController = TextEditingController();
+  final _clientManuelEmailController = TextEditingController();
+  final _clientManuelTelephoneController = TextEditingController();
+  final _clientManuelAdresseController = TextEditingController();
+
+  final List<Map<String, dynamic>> _items = [
     {'type': 'service', 'designation': '', 'quantite': 1, 'prix_unitaire': 0.0}
   ];
 
@@ -43,7 +51,6 @@ class _CreeFactureState extends State<CreeFacture> {
   String? _selectedMoyenPaiement;
   String? _selectedTva;
   final List<String> _tvaOptions = ['0', '10', '18'];
-  final List<String> _typesItem = ['produit', 'service'];
 
   @override
   void initState() {
@@ -59,7 +66,21 @@ class _CreeFactureState extends State<CreeFacture> {
     _lieuExecutionController.dispose();
     _avanceController.dispose();
     _montantPayeController.dispose();
+    _clientManuelNomController.dispose();
+    _clientManuelPrenomController.dispose();
+    _clientManuelEmailController.dispose();
+    _clientManuelTelephoneController.dispose();
+    _clientManuelAdresseController.dispose();
     super.dispose();
+  }
+
+  void _toggleModeClientManuel() {
+    setState(() {
+      _modeClientManuel = !_modeClientManuel;
+      _clientSelectionne = null;
+      _clientsTrouves = [];
+      _rechercheController.clear();
+    });
   }
 
   void _ajouterItem({String type = 'service'}) {
@@ -131,22 +152,107 @@ class _CreeFactureState extends State<CreeFacture> {
     }
   }
 
+  /// Sélecteur Service/Produit — deux boutons pill bien visibles, pour que
+  /// l'utilisateur perçoive immédiatement qu'il peut choisir (contrairement
+  /// à l'ancien dropdown discret que personne ne remarquait).
+  Widget _typeItemToggle({required String selected, required ValueChanged<String> onChanged}) {
+    Widget pill(String type, IconData icon, String label) {
+      final bool active = selected == type;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => onChanged(type),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: active ? Colors.black : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 15, color: active ? Colors.white : Colors.grey[600]),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: active ? Colors.white : Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(24)),
+      child: Row(
+        children: [
+          pill('service', Icons.build_outlined, 'Service'),
+          pill('produit', Icons.inventory_2_outlined, 'Produit'),
+        ],
+      ),
+    );
+  }
+
   void _soumettreFacture() {
     if (!_formKey.currentState!.validate()) return;
-    if (_clientSelectionne == null) {
+
+    if (_modeClientManuel) {
+      if (_clientManuelNomController.text.trim().isEmpty ||
+          _clientManuelPrenomController.text.trim().isEmpty ||
+          _clientManuelEmailController.text.trim().isEmpty) {
+        showToast(context, 'Champ requis', 'Nom, prénom et email du client sont requis', ToastificationType.error);
+        return;
+      }
+    } else if (_clientSelectionne == null) {
       showToast(context, 'Champ requis', 'Veuillez sélectionner un client', ToastificationType.error);
       return;
     }
+
     for (int i = 0; i < _items.length; i++) {
       final item = _items[i];
       if ((item['designation'] ?? '').toString().isEmpty) {
-        showToast(context, 'Article incomplet', 'Veuillez remplir la désignation de l\'article ${i + 1}', ToastificationType.error);
+        showToast(context, 'Produit/Service incomplet', 'Veuillez remplir la désignation de la ligne ${i + 1}', ToastificationType.error);
         return;
       }
       if ((item['prix_unitaire'] ?? 0) <= 0) {
-        showToast(context, 'Prix invalide', 'Le prix unitaire de l\'article ${i + 1} doit être supérieur à 0', ToastificationType.error);
+        showToast(context, 'Prix invalide', 'Le prix unitaire de la ligne ${i + 1} doit être supérieur à 0', ToastificationType.error);
         return;
       }
+    }
+
+    final items = _items.map((item) => {
+          'designation': item['designation'],
+          'quantite': item['type'] == 'produit' ? item['quantite'] : 1,
+          'prix_unitaire': item['prix_unitaire'],
+        }).toList();
+
+    if (_modeClientManuel) {
+      final payload = {
+        'client': {
+          'nom': _clientManuelNomController.text.trim(),
+          'prenom': _clientManuelPrenomController.text.trim(),
+          'email': _clientManuelEmailController.text.trim(),
+          'telephone': _clientManuelTelephoneController.text.trim(),
+          'adresse': _clientManuelAdresseController.text.trim(),
+        },
+        'delais_execution': _delaisExecutionController.text,
+        'date_execution': _dateEcheance?.toIso8601String(),
+        'avance': double.tryParse(_avanceController.text) ?? 0,
+        'montant_paye': double.tryParse(_montantPayeController.text) ?? 0,
+        'lieu_execution': _lieuExecutionController.text,
+        'moyen_paiement': _selectedMoyenPaiement ?? 'ESPECES',
+        'tva': int.parse(_selectedTva ?? '0'),
+        'items': items,
+      };
+      context.read<FactureBloc>().add(CreerFactureClientManuelEvent(payload));
+      return;
     }
 
     final payload = {
@@ -158,11 +264,7 @@ class _CreeFactureState extends State<CreeFacture> {
       'lieu_execution': _lieuExecutionController.text,
       'moyen_paiement': _selectedMoyenPaiement ?? 'ESPECES',
       'tva': int.parse(_selectedTva ?? '0'),
-      'items': _items.map((item) => {
-            'designation': item['designation'],
-            'quantite': item['type'] == 'produit' ? item['quantite'] : 1,
-            'prix_unitaire': item['prix_unitaire'],
-          }).toList(),
+      'items': items,
       'montant_total': _calculerMontantTotal(),
       'solde': _calculerSolde(),
     };
@@ -214,9 +316,89 @@ class _CreeFactureState extends State<CreeFacture> {
                       const SizedBox(height: 24),
 
                       // CLIENT
-                      const Text('Client *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Client *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          TextButton.icon(
+                            onPressed: _toggleModeClientManuel,
+                            icon: Icon(_modeClientManuel ? Icons.search : Icons.person_add_alt_1, size: 18),
+                            label: Text(_modeClientManuel ? 'Client inscrit' : 'Client non inscrit'),
+                            style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
-                      if (_clientSelectionne != null)
+                      if (_modeClientManuel)
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8F8FA),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.info_outline, size: 16, color: Colors.grey),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      "Client non inscrit sur l'application — ses informations seront utilisées uniquement pour cette facture.",
+                                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _clientManuelPrenomController,
+                                      decoration: const InputDecoration(labelText: 'Prénom *', isDense: true, border: OutlineInputBorder()),
+                                      validator: (v) => _modeClientManuel && (v == null || v.trim().isEmpty) ? 'Requis' : null,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextFormField(
+                                      controller: _clientManuelNomController,
+                                      decoration: const InputDecoration(labelText: 'Nom *', isDense: true, border: OutlineInputBorder()),
+                                      validator: (v) => _modeClientManuel && (v == null || v.trim().isEmpty) ? 'Requis' : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _clientManuelEmailController,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: const InputDecoration(labelText: 'Email *', isDense: true, border: OutlineInputBorder()),
+                                validator: (v) {
+                                  if (!_modeClientManuel) return null;
+                                  if (v == null || v.trim().isEmpty) return 'Requis';
+                                  if (!v.contains('@')) return 'Email invalide';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _clientManuelTelephoneController,
+                                keyboardType: TextInputType.phone,
+                                decoration: const InputDecoration(labelText: 'Téléphone', isDense: true, border: OutlineInputBorder()),
+                              ),
+                              const SizedBox(height: 12),
+                              TextFormField(
+                                controller: _clientManuelAdresseController,
+                                decoration: const InputDecoration(labelText: 'Adresse', isDense: true, border: OutlineInputBorder()),
+                              ),
+                            ],
+                          ),
+                        )
+                      else if (_clientSelectionne != null)
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -290,8 +472,8 @@ class _CreeFactureState extends State<CreeFacture> {
 
                       const SizedBox(height: 24),
 
-                      // ARTICLES
-                      const Text('Articles *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      // PRODUITS/SERVICES
+                      const Text('Produit/Service *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
                       const Text('Ajoutez des produits ou services', style: TextStyle(color: Colors.grey, fontSize: 14)),
                       const SizedBox(height: 12),
@@ -316,32 +498,12 @@ class _CreeFactureState extends State<CreeFacture> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Expanded(
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(20)),
-                                          child: DropdownButton<String>(
-                                            value: item['type'],
-                                            isDense: true,
-                                            underline: const SizedBox(),
-                                            icon: const Icon(Icons.arrow_drop_down, size: 20),
-                                            items: _typesItem.map((type) => DropdownMenuItem(
-                                              value: type,
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(type == 'produit' ? Icons.inventory_2_outlined : Icons.build_outlined, size: 14),
-                                                  const SizedBox(width: 6),
-                                                  Text(type == 'produit' ? 'Produit' : 'Service', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                                                ],
-                                              ),
-                                            )).toList(),
-                                            onChanged: (v) {
-                                              if (v != null) {
-                                                _mettreAJourItem(index, 'type', v);
-                                                if (v == 'service') _mettreAJourItem(index, 'quantite', 1);
-                                              }
-                                            },
-                                          ),
+                                        child: _typeItemToggle(
+                                          selected: item['type'],
+                                          onChanged: (v) {
+                                            _mettreAJourItem(index, 'type', v);
+                                            if (v == 'service') _mettreAJourItem(index, 'quantite', 1);
+                                          },
                                         ),
                                       ),
                                       if (_items.length > 1)
@@ -528,7 +690,10 @@ class _CreeFactureState extends State<CreeFacture> {
                                   if (v != null && v.isNotEmpty) {
                                     final a = double.tryParse(v);
                                     if (a == null || a < 0) return 'Avance invalide';
-                                    if (a > total) return 'L\'avance ne peut pas dépasser le montant total';
+                                    // Le plafond réel (montant TTC, TVA incluse) est
+                                    // vérifié côté serveur — le message d'erreur
+                                    // affiché vient du backend, pas d'un seuil
+                                    // recalculé ici (qui ignorerait la TVA).
                                   }
                                   return null;
                                 },
@@ -570,7 +735,10 @@ class _CreeFactureState extends State<CreeFacture> {
                                   if (v != null && v.isNotEmpty) {
                                     final a = double.tryParse(v);
                                     if (a == null || a < 0) return 'Montant invalide';
-                                    if (a > total) return 'Le montant payé ne peut pas dépasser le total';
+                                    // Le plafond réel (montant TTC, TVA incluse) est
+                                    // vérifié côté serveur — le message d'erreur
+                                    // affiché vient du backend, pas d'un seuil
+                                    // recalculé ici (qui ignorerait la TVA).
                                   }
                                   return null;
                                 },

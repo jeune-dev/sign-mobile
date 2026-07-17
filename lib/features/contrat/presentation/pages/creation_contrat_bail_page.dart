@@ -1,6 +1,5 @@
 ﻿import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:signature/signature.dart';
@@ -49,7 +48,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   List<dynamic> _clientsTrouves        = [];
   bool          _isRechercheLoading    = false;
   String        _rechercheErreur       = '';
-  List<dynamic> _locatairesSelectionnes = [];
+  final List<dynamic> _locatairesSelectionnes = [];
 
   // ─── Bien ──────────────────────────────────────────────────
   final _bienAdresseCtrl     = TextEditingController();
@@ -61,9 +60,12 @@ class _CreationContratPageState extends State<CreationContratPage>
   final _bienEtageCtrl       = TextEditingController();
   final _bienDescriptionCtrl = TextEditingController();
 
-  String _bienType  = 'Appartement';
-  String _bienUsage = 'Habitation';
-  bool _meuble = false, _parking = false, _cave = false, _balcon = false;
+  final ValueNotifier<String> _bienType  = ValueNotifier('Appartement');
+  final ValueNotifier<String> _bienUsage = ValueNotifier('Habitation');
+  final ValueNotifier<bool> _meuble = ValueNotifier(false);
+  final ValueNotifier<bool> _parking = ValueNotifier(false);
+  final ValueNotifier<bool> _cave = ValueNotifier(false);
+  final ValueNotifier<bool> _balcon = ValueNotifier(false);
 
   static const _typesBien = [
     'Appartement', 'Maison', 'Studio', 'Chambre', 'Villa',
@@ -76,19 +78,20 @@ class _CreationContratPageState extends State<CreationContratPage>
   DateTime? _dateFinValue;
   final _bailDureeCtrl        = TextEditingController();
   final _bailDureePreavisCtrl = TextEditingController();
-  bool  _renouvelable = true;
+  final ValueNotifier<bool> _renouvelable = ValueNotifier(true);
   String? _dateError; // erreur si début > fin
 
   // ─── Paiement ───────────────────────────────────────────────
   final _loyerCtrl          = TextEditingController();
   final _montantChargesCtrl = TextEditingController();
-  final _jourPaiementCtrl   = TextEditingController(text: '5');
-  final List<Map<String, TextEditingController>> _autresCharges = [];
+  DateTime? _datePaiementValue;
+  final _autresChargesKey = GlobalKey<_AutresChargesSectionState>();
 
-  String _devise          = 'FCFA';
-  String _periodicite     = 'Mensuel';
-  String _moyen           = 'Virement bancaire';
-  bool   _chargesIncluses = false;
+  final ValueNotifier<String> _devise      = ValueNotifier('FCFA');
+  final ValueNotifier<String> _periodicite = ValueNotifier('Mensuel');
+  final ValueNotifier<String> _moyen       = ValueNotifier('Virement bancaire');
+  final ValueNotifier<bool> _chargesIncluses    = ValueNotifier(false);
+  final ValueNotifier<bool> _taxeOrdureMenagere = ValueNotifier(false);
 
   static const _devises      = ['FCFA', 'EUR', 'USD', 'GBP'];
   static const _periodicites = ['Mensuel', 'Trimestriel', 'Semestriel', 'Annuel', 'Autre'];
@@ -106,11 +109,13 @@ class _CreationContratPageState extends State<CreationContratPage>
   // ─── Dépôt de garantie ──────────────────────────────────────
   DateTime? _depotDateValue;
   final _depotMontantCtrl = TextEditingController();
-  String _depotMode       = 'Virement bancaire';
-  bool _depotPrevu = true;
+  final ValueNotifier<String> _depotMode = ValueNotifier('Virement bancaire');
+  final ValueNotifier<bool> _depotPrevu = ValueNotifier(true);
 
   // ─── Clauses ────────────────────────────────────────────────
-  bool _sousLocation = false, _animaux = false, _travaux = false;
+  final ValueNotifier<bool> _sousLocation = ValueNotifier(false);
+  final ValueNotifier<bool> _animaux = ValueNotifier(false);
+  final ValueNotifier<bool> _travaux = ValueNotifier(false);
   final _clausesCtrl = TextEditingController();
 
   // ─── Signature ──────────────────────────────────────────────
@@ -119,7 +124,7 @@ class _CreationContratPageState extends State<CreationContratPage>
     penColor: Colors.black,
     exportBackgroundColor: Colors.white,
   );
-  bool _signConsent = false;
+  final ValueNotifier<bool> _signConsent = ValueNotifier(false);
 
   static const _draftKey = 'draft_contrat_bail';
   Timer? _draftSaveTimer;
@@ -128,14 +133,14 @@ class _CreationContratPageState extends State<CreationContratPage>
     _bienAdresseCtrl, _bienVilleCtrl, _bienCodePostalCtrl, _bienPaysCtrl,
     _bienSuperficieCtrl, _bienNbPiecesCtrl, _bienEtageCtrl, _bienDescriptionCtrl,
     _bailDureeCtrl, _bailDureePreavisCtrl, _loyerCtrl, _montantChargesCtrl,
-    _jourPaiementCtrl, _depotMontantCtrl, _clausesCtrl,
+    _depotMontantCtrl, _clausesCtrl,
   ];
 
   static const _draftFieldNames = [
     'bienAdresse', 'bienVille', 'bienCodePostal', 'bienPays',
     'bienSuperficie', 'bienNbPieces', 'bienEtage', 'bienDescription',
     'bailDuree', 'bailDureePreavis', 'loyer', 'montantCharges',
-    'jourPaiement', 'depotMontant', 'clauses',
+    'depotMontant', 'clauses',
   ];
 
   void _scheduleSave() {
@@ -194,14 +199,27 @@ class _CreationContratPageState extends State<CreationContratPage>
     _bailDureePreavisCtrl.dispose();
     _loyerCtrl.dispose();
     _montantChargesCtrl.dispose();
-    _jourPaiementCtrl.dispose();
-    for (final ac in _autresCharges) {
-      ac['label']!.dispose();
-      ac['montant']!.dispose();
-    }
     _depotMontantCtrl.dispose();
     _clausesCtrl.dispose();
     _signatureController.dispose();
+    _bienType.dispose();
+    _bienUsage.dispose();
+    _meuble.dispose();
+    _parking.dispose();
+    _cave.dispose();
+    _balcon.dispose();
+    _renouvelable.dispose();
+    _devise.dispose();
+    _periodicite.dispose();
+    _moyen.dispose();
+    _chargesIncluses.dispose();
+    _taxeOrdureMenagere.dispose();
+    _depotMode.dispose();
+    _depotPrevu.dispose();
+    _sousLocation.dispose();
+    _animaux.dispose();
+    _travaux.dispose();
+    _signConsent.dispose();
     super.dispose();
   }
 
@@ -327,7 +345,7 @@ class _CreationContratPageState extends State<CreationContratPage>
       _showError('Veuillez apposer votre signature avant de créer le contrat');
       return;
     }
-    if (!_signConsent) {
+    if (!_signConsent.value) {
       _showError('Veuillez accepter les termes du contrat');
       return;
     }
@@ -346,47 +364,50 @@ class _CreationContratPageState extends State<CreationContratPage>
         'ville':           _bienVilleCtrl.text.trim(),
         'code_postal':     _bienCodePostalCtrl.text.trim(),
         'pays':            _bienPaysCtrl.text.trim(),
-        'type':            _bienType,
+        'type':            _bienType.value,
         'superficie':      double.tryParse(_bienSuperficieCtrl.text) ?? 0,
         'nombre_pieces':   int.tryParse(_bienNbPiecesCtrl.text) ?? 0,
         'etage':           int.tryParse(_bienEtageCtrl.text) ?? 0,
-        'meuble':          _meuble,
-        'parking':         _parking,
-        'cave':            _cave,
-        'balcon_terrasse': _balcon,
-        'usage':           _bienUsage,
+        'meuble':          _meuble.value,
+        'parking':         _parking.value,
+        'cave':            _cave.value,
+        'balcon_terrasse': _balcon.value,
+        'usage':           _bienUsage.value,
         'description':     _bienDescriptionCtrl.text.trim(),
       },
       'bail': {
         'date_debut':    _toIso(_dateDebutValue),
         'duree':         _bailDureeCtrl.text.trim(),
         'date_fin':      _toIso(_dateFinValue),
-        'renouvelable':  _renouvelable,
+        'renouvelable':  _renouvelable.value,
         'duree_preavis': _bailDureePreavisCtrl.text.trim(),
       },
       'paiement': {
         'montant_loyer':    double.tryParse(_loyerCtrl.text) ?? 0,
-        'devise':           _devise,
-        'charges_incluses': _chargesIncluses,
+        'devise':           _devise.value,
+        'charges_incluses': _chargesIncluses.value,
         'montant_charges':  double.tryParse(_montantChargesCtrl.text) ?? 0,
-        'autres_charges':   _autresCharges.map((ac) => {
-              'label':   ac['label']!.text.trim(),
-              'montant': double.tryParse(ac['montant']!.text) ?? 0,
-            }).toList(),
-        'jour_paiement': int.tryParse(_jourPaiementCtrl.text) ?? 5,
-        'periodicite':   _periodicite,
-        'moyen':         _moyen,
+        'taxe_ordure_menagere': _taxeOrdureMenagere.value,
+        'autres_charges':   (_autresChargesKey.currentState?.charges ?? const [])
+            .map((ac) => {
+                  'label':   ac['label']!.text.trim(),
+                  'montant': double.tryParse(ac['montant']!.text) ?? 0,
+                }).toList(),
+        'date_paiement': _toIso(_datePaiementValue),
+        'jour_paiement': _datePaiementValue?.day ?? 5,
+        'periodicite':   _periodicite.value,
+        'moyen':         _moyen.value,
       },
       'depot_garantie': {
-        'prevu':          _depotPrevu,
+        'prevu':          _depotPrevu.value,
         'montant':        double.tryParse(_depotMontantCtrl.text) ?? 0,
         'date_versement': _toIso(_depotDateValue),
-        'mode_paiement':  _depotMode,
+        'mode_paiement':  _depotMode.value,
       },
       'clauses': {
-        'sous_location':  _sousLocation ? 'Oui' : 'Non',
-        'animaux':        _animaux ? 'Oui' : 'Non',
-        'travaux':        _travaux ? 'Oui' : 'Non',
+        'sous_location':  _sousLocation.value ? 'Oui' : 'Non',
+        'animaux':        _animaux.value ? 'Oui' : 'Non',
+        'travaux':        _travaux.value ? 'Oui' : 'Non',
         'personnalisees': _clausesCtrl.text.trim(),
       },
       'signature_bailleur': signatureBase64,
@@ -834,8 +855,10 @@ class _CreationContratPageState extends State<CreationContratPage>
   }
 
   // ── Dropdown ───────────────────────────────────────────────
-  Widget _dropdown<T>(String label, T value, List<T> items,
-      void Function(T?) onChanged, {bool required = false, String Function(T)? labelBuilder}) {
+  /// Le champ est piloté par un [ValueNotifier] : seul ce widget se
+  /// reconstruit lors d'un changement, pas toute la page.
+  Widget _dropdown<T>(String label, ValueNotifier<T> notifier, List<T> items,
+      {bool required = false, String Function(T)? labelBuilder}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
@@ -843,33 +866,38 @@ class _CreationContratPageState extends State<CreationContratPage>
         children: [
           _label(label, required: required),
           const SizedBox(height: 6),
-          DropdownButtonFormField<T>(
-            initialValue: value,
-            isExpanded: true,
-            onChanged: onChanged,
-            style: const TextStyle(fontSize: 14, color: _black),
-            icon: const Icon(Icons.keyboard_arrow_down_rounded,
-                color: _gray400),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: _gray50,
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _gray200)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _gray200)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _black, width: 1.5)),
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 13),
-            ),
-            items: items
-                .map((e) => DropdownMenuItem(
-                    value: e,
-                    child: Text(labelBuilder != null ? labelBuilder(e) : e.toString())))
-                .toList(),
+          ValueListenableBuilder<T>(
+            valueListenable: notifier,
+            builder: (context, value, _) {
+              return DropdownButtonFormField<T>(
+                initialValue: value,
+                isExpanded: true,
+                onChanged: (v) { if (v != null) notifier.value = v; },
+                style: const TextStyle(fontSize: 14, color: _black),
+                icon: const Icon(Icons.keyboard_arrow_down_rounded,
+                    color: _gray400),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: _gray50,
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _gray200)),
+                  enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _gray200)),
+                  focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _black, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 13),
+                ),
+                items: items
+                    .map((e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(labelBuilder != null ? labelBuilder(e) : e.toString())))
+                    .toList(),
+              );
+            },
           ),
         ],
       ),
@@ -877,64 +905,133 @@ class _CreationContratPageState extends State<CreationContratPage>
   }
 
   // ── Toggle switch ──────────────────────────────────────────
-  Widget _toggle(String label, bool value, void Function(bool) onChanged,
-      {String? subtitle}) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
-        onTap: () => onChanged(!value),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: value ? _black.withValues(alpha: 0.04) : _gray50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-                color: value ? _black.withValues(alpha: 0.25) : _gray200),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                            color: value ? _black : _gray600)),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(subtitle,
-                          style: const TextStyle(
-                              fontSize: 11, color: _gray400)),
-                    ],
-                  ],
-                ),
+  /// Sélecteur Oui/Non — deux boutons pill bien visibles pour un choix
+  /// binaire explicite (ex: activer une taxe optionnelle).
+  /// Piloté par un [ValueNotifier<bool>] : seul ce widget se reconstruit
+  /// au tap, la page racine n'est plus rebuild à chaque interaction.
+  Widget _ouiNonToggle(String label, ValueNotifier<bool> notifier) {
+    Widget pill(bool value, bool v, String text) {
+      final bool active = value == v;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => notifier.value = v,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: active ? _black : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: active ? _white : _gray600,
               ),
-              const SizedBox(width: 12),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 44, height: 24,
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  color: value ? _black : _gray200,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 200),
-                  alignment: value
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                      width: 20, height: 20,
-                      decoration: const BoxDecoration(
-                          color: _white, shape: BoxShape.circle)),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(label,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 13, color: _gray600)),
+          ),
+          const SizedBox(width: 12),
+          ValueListenableBuilder<bool>(
+            valueListenable: notifier,
+            builder: (context, value, _) => Container(
+              width: 130,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: _gray50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _gray200),
+              ),
+              child: Row(children: [
+                pill(value, true, 'Oui'),
+                pill(value, false, 'Non'),
+              ]),
+            ),
+          ),
+        ],
       ),
+    );
+  }
+
+  /// Piloté par un [ValueNotifier<bool>] : seul ce widget se reconstruit
+  /// au tap, la page racine n'est plus rebuild à chaque interaction.
+  Widget _toggle(String label, ValueNotifier<bool> notifier, {String? subtitle}) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: notifier,
+      builder: (context, value, _) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: GestureDetector(
+            onTap: () => notifier.value = !value,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: value ? _black.withValues(alpha: 0.04) : _gray50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                    color: value ? _black.withValues(alpha: 0.25) : _gray200),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(label,
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                                color: value ? _black : _gray600)),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 2),
+                          Text(subtitle,
+                              style: const TextStyle(
+                                  fontSize: 11, color: _gray400)),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 44, height: 24,
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: value ? _black : _gray200,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 200),
+                      alignment: value
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                          width: 20, height: 20,
+                          decoration: const BoxDecoration(
+                              color: _white, shape: BoxShape.circle)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -1207,8 +1304,7 @@ class _CreationContratPageState extends State<CreationContratPage>
         ),
         _row2(
           _field('Pays', _bienPaysCtrl, hint: 'Sénégal'),
-          _dropdown('Type de bien', _bienType, _typesBien,
-              (v) => setState(() => _bienType = v!), required: true),
+          _dropdown('Type de bien', _bienType, _typesBien, required: true),
         ),
         _row2(
           _field('Superficie (m²)', _bienSuperficieCtrl,
@@ -1219,26 +1315,21 @@ class _CreationContratPageState extends State<CreationContratPage>
         _row2(
           _field('Étage', _bienEtageCtrl,
               hint: '2', type: TextInputType.number),
-          _dropdown('Usage', _bienUsage, _usagesBien,
-              (v) => setState(() => _bienUsage = v!)),
+          _dropdown('Usage', _bienUsage, _usagesBien),
         ),
         const SizedBox(height: 4),
         _label('Équipements inclus'),
         const SizedBox(height: 8),
         Row(children: [
-          Expanded(child: _toggle('Meublé', _meuble,
-              (v) => setState(() => _meuble = v))),
+          Expanded(child: _toggle('Meublé', _meuble)),
           const SizedBox(width: 8),
-          Expanded(child: _toggle('Parking', _parking,
-              (v) => setState(() => _parking = v))),
+          Expanded(child: _toggle('Parking', _parking)),
         ]),
         const SizedBox(height: 4),
         Row(children: [
-          Expanded(child: _toggle('Cave', _cave,
-              (v) => setState(() => _cave = v))),
+          Expanded(child: _toggle('Cave', _cave)),
           const SizedBox(width: 8),
-          Expanded(child: _toggle('Balcon', _balcon,
-              (v) => setState(() => _balcon = v))),
+          Expanded(child: _toggle('Balcon', _balcon)),
         ]),
         const SizedBox(height: 12),
         _field('Description', _bienDescriptionCtrl,
@@ -1312,7 +1403,6 @@ class _CreationContratPageState extends State<CreationContratPage>
             hint: '3 mois'),
 
         _toggle('Renouvellement automatique', _renouvelable,
-            (v) => setState(() => _renouvelable = v),
             subtitle:
                 'Le bail se reconduit tacitement à l\'expiration'),
       ],
@@ -1331,131 +1421,31 @@ class _CreationContratPageState extends State<CreationContratPage>
               hint: '500 000',
               type: TextInputType.number,
               required: true),
-          _dropdown('Devise', _devise, _devises,
-              (v) => setState(() => _devise = v!)),
+          _dropdown('Devise', _devise, _devises),
         ),
-        _toggle('Charges incluses dans le loyer', _chargesIncluses,
-            (v) => setState(() => _chargesIncluses = v)),
+        _toggle('Charges incluses dans le loyer', _chargesIncluses),
         const SizedBox(height: 4),
-        if (!_chargesIncluses)
-          _field('Montant des charges', _montantChargesCtrl,
-              hint: '50 000', type: TextInputType.number),
-        _row2(
-          _field("Jour d'échéance", _jourPaiementCtrl,
-              hint: '5', type: TextInputType.number),
-          _dropdown('Périodicité', _periodicite, _periodicites,
-              (v) => setState(() => _periodicite = v!)),
+        ValueListenableBuilder<bool>(
+          valueListenable: _chargesIncluses,
+          builder: (context, chargesIncluses, _) => chargesIncluses
+              ? const SizedBox.shrink()
+              : _field('Montant des charges', _montantChargesCtrl,
+                  hint: '50 000', type: TextInputType.number),
         ),
+        const SizedBox(height: 4),
+        _ouiNonToggle('Taxe Ordure Ménagère (3,6%)', _taxeOrdureMenagere),
+        const SizedBox(height: 4),
+        _dateField(
+          'Date Paiement Loyer',
+          value: _datePaiementValue,
+          onPicked: (dt) => setState(() => _datePaiementValue = dt),
+        ),
+        _dropdown('Périodicité', _periodicite, _periodicites),
         _dropdown('Mode de paiement', _moyen, _moyens,
-            (v) => setState(() => _moyen = v!),
             required: true,
             labelBuilder: (e) => e == 'ALL' ? 'Tout mode de paiement' : e),
         const SizedBox(height: 8),
-        // Autres charges
-        Row(
-          children: [
-            const Text('Autres charges',
-                style: TextStyle(
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                    color: _gray600)),
-            const Spacer(),
-            GestureDetector(
-              onTap: () => setState(() => _autresCharges.add({
-                    'label':   TextEditingController(),
-                    'montant': TextEditingController(),
-                  })),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                    color: _black,
-                    borderRadius: BorderRadius.circular(8)),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add, color: Colors.white, size: 14),
-                    SizedBox(width: 4),
-                    Text('Ajouter',
-                        style: TextStyle(
-                            color: _white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ..._autresCharges.asMap().entries.map((entry) {
-          final i = entry.key; final ac = entry.value;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TextFormField(
-                    controller: ac['label'],
-                    style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Ex: Eau',
-                      hintStyle: const TextStyle(
-                          color: _gray400, fontSize: 12),
-                      filled: true, fillColor: _gray50,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: _gray200)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: _gray200)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 11),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: ac['montant'],
-                    keyboardType: TextInputType.number,
-                    style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Montant',
-                      hintStyle: const TextStyle(
-                          color: _gray400, fontSize: 12),
-                      filled: true, fillColor: _gray50,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: _gray200)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: _gray200)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 11),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  onTap: () => setState(() {
-                    ac['label']!.dispose();
-                    ac['montant']!.dispose();
-                    _autresCharges.removeAt(i);
-                  }),
-                  child: const Padding(
-                    padding: EdgeInsets.only(top: 10),
-                    child: Icon(Icons.remove_circle_outline_rounded,
-                        size: 20, color: Color(0xFF1A1A1A)),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }),
+        _AutresChargesSection(key: _autresChargesKey),
       ],
     );
   }
@@ -1468,22 +1458,29 @@ class _CreationContratPageState extends State<CreationContratPage>
       'Dépôt de garantie / Caution',
       [
         _toggle('Dépôt de garantie prévu', _depotPrevu,
-            (v) => setState(() => _depotPrevu = v),
             subtitle: 'Le locataire verse un dépôt à l\'entrée dans les lieux'),
-        if (_depotPrevu) ...[
-          const SizedBox(height: 10),
-          _field('Montant du dépôt (FCFA)', _depotMontantCtrl,
-              hint: '500 000', type: TextInputType.number),
-          _row2(
-            _dateField('Date de versement',
-                value: _depotDateValue,
-                onPicked: (dt) =>
-                    setState(() => _depotDateValue = dt)),
-            _dropdown('Mode de paiement', _depotMode, _moyens,
-                (v) => setState(() => _depotMode = v!),
-                labelBuilder: (e) => e == 'ALL' ? 'Tout mode de paiement' : e),
-          ),
-        ],
+        ValueListenableBuilder<bool>(
+          valueListenable: _depotPrevu,
+          builder: (context, depotPrevu, _) => depotPrevu
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 10),
+                    _field('Montant du dépôt (FCFA)', _depotMontantCtrl,
+                        hint: '500 000', type: TextInputType.number),
+                    _row2(
+                      _dateField('Date de versement',
+                          value: _depotDateValue,
+                          onPicked: (dt) =>
+                              setState(() => _depotDateValue = dt)),
+                      _dropdown('Mode de paiement', _depotMode, _moyens,
+                          labelBuilder: (e) =>
+                              e == 'ALL' ? 'Tout mode de paiement' : e),
+                    ),
+                  ],
+                )
+              : const SizedBox.shrink(),
+        ),
       ],
     );
   }
@@ -1546,32 +1543,35 @@ class _CreationContratPageState extends State<CreationContratPage>
         ),
 
         // Case à cocher consentement
-        GestureDetector(
-          onTap: () => setState(() => _signConsent = !_signConsent),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                width: 22, height: 22,
-                decoration: BoxDecoration(
-                  color: _signConsent ? _black : _white,
-                  border: Border.all(color: _signConsent ? _black : _gray400),
-                  borderRadius: BorderRadius.circular(5),
+        ValueListenableBuilder<bool>(
+          valueListenable: _signConsent,
+          builder: (context, signConsent, _) => GestureDetector(
+            onTap: () => _signConsent.value = !signConsent,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 22, height: 22,
+                  decoration: BoxDecoration(
+                    color: signConsent ? _black : _white,
+                    border: Border.all(color: signConsent ? _black : _gray400),
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: signConsent
+                      ? const Icon(Icons.check, color: Colors.white, size: 14)
+                      : null,
                 ),
-                child: _signConsent
-                    ? const Icon(Icons.check, color: Colors.white, size: 14)
-                    : null,
-              ),
-              const SizedBox(width: 10),
-              const Expanded(
-                child: Text(
-                  'En signant, je reconnais avoir lu et accepté l\'intégralité des termes '
-                  'de ce contrat de bail. Ma signature électronique a valeur légale.',
-                  style: TextStyle(fontSize: 11, color: _gray600, height: 1.5),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'En signant, je reconnais avoir lu et accepté l\'intégralité des termes '
+                    'de ce contrat de bail. Ma signature électronique a valeur légale.',
+                    style: TextStyle(fontSize: 11, color: _gray600, height: 1.5),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -1586,16 +1586,13 @@ class _CreationContratPageState extends State<CreationContratPage>
       'Clauses du contrat',
       [
         _toggle('Sous-location autorisée', _sousLocation,
-            (v) => setState(() => _sousLocation = v),
             subtitle:
                 'Le locataire peut sous-louer tout ou partie du bien'),
         const SizedBox(height: 4),
         _toggle('Animaux de compagnie acceptés', _animaux,
-            (v) => setState(() => _animaux = v),
             subtitle: 'Les animaux domestiques sont autorisés'),
         const SizedBox(height: 4),
         _toggle('Travaux sans accord préalable', _travaux,
-            (v) => setState(() => _travaux = v),
             subtitle:
                 'Le locataire peut effectuer des travaux mineurs sans demande'),
         const SizedBox(height: 14),
@@ -1706,6 +1703,150 @@ class _SuccessDialogState extends State<_SuccessDialog> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Section "Autres charges" — liste dynamique isolée dans son propre State
+/// pour que l'ajout/suppression/saisie d'une ligne ne reconstruise pas tout
+/// le formulaire de contrat de bail. Le parent lit `charges` via une
+/// GlobalKey<_AutresChargesSectionState> au moment de la soumission.
+class _AutresChargesSection extends StatefulWidget {
+  const _AutresChargesSection({super.key});
+
+  @override
+  State<_AutresChargesSection> createState() => _AutresChargesSectionState();
+}
+
+class _AutresChargesSectionState extends State<_AutresChargesSection> {
+  static const _black   = Color(0xFF09090B);
+  static const _white   = Color(0xFFFFFFFF);
+  static const _gray50  = Color(0xFFFAFAFA);
+  static const _gray200 = Color(0xFFE4E4E7);
+  static const _gray400 = Color(0xFFA1A1AA);
+  static const _gray600 = Color(0xFF52525B);
+
+  final List<Map<String, TextEditingController>> charges = [];
+
+  @override
+  void dispose() {
+    for (final ac in charges) {
+      ac['label']!.dispose();
+      ac['montant']!.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('Autres charges',
+                style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: _gray600)),
+            const Spacer(),
+            GestureDetector(
+              onTap: () => setState(() => charges.add({
+                    'label':   TextEditingController(),
+                    'montant': TextEditingController(),
+                  })),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                    color: _black,
+                    borderRadius: BorderRadius.circular(8)),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text('Ajouter',
+                        style: TextStyle(
+                            color: _white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ...charges.asMap().entries.map((entry) {
+          final i = entry.key; final ac = entry.value;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextFormField(
+                    controller: ac['label'],
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Ex: Eau',
+                      hintStyle: const TextStyle(
+                          color: _gray400, fontSize: 12),
+                      filled: true, fillColor: _gray50,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: _gray200)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: _gray200)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 11),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: ac['montant'],
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Montant',
+                      hintStyle: const TextStyle(
+                          color: _gray400, fontSize: 12),
+                      filled: true, fillColor: _gray50,
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: _gray200)),
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: _gray200)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 11),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => setState(() {
+                    ac['label']!.dispose();
+                    ac['montant']!.dispose();
+                    charges.removeAt(i);
+                  }),
+                  child: const Padding(
+                    padding: EdgeInsets.only(top: 10),
+                    child: Icon(Icons.remove_circle_outline_rounded,
+                        size: 20, color: Color(0xFF1A1A1A)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 }

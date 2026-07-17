@@ -46,6 +46,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
   final Set<String> _downloading = {};
   final ScrollController _scrollController = ScrollController();
   static final _dateFmt    = DateFormat('dd/MM/yyyy');
+  static final _dateHeureFmt = DateFormat('dd/MM/yyyy à HH:mm');
   static final _montantFmt = NumberFormat('#,###', 'fr_FR');
 
   @override
@@ -137,6 +138,12 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
   String _formatDate(String? d) {
     if (d == null || d.isEmpty) return '—';
     try { return _dateFmt.format(DateTime.parse(d)); }
+    catch (_) { return d; }
+  }
+
+  String _formatDateHeure(String? d) {
+    if (d == null || d.isEmpty) return 'En attente de signature';
+    try { return _dateHeureFmt.format(DateTime.parse(d).toLocal()); }
     catch (_) { return d; }
   }
 
@@ -464,6 +471,13 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                     const SizedBox(width: 10),
                     Expanded(child: _infoChip(Icons.calendar_today_outlined, 'Début',
                         _formatDate(c.dateDebut), const Color(0xFFFFB347))),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: _infoChip(Icons.schedule_outlined, 'Heure signature',
+                        _formatDateHeure(c.dateSignature), const Color(0xFF4ECDC4))),
                   ],
                 ),
               ],

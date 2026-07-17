@@ -13,11 +13,14 @@ class ContratBailModel extends ContratBail {
     super.dateDebutBail,
     super.locataires,
     super.proprietaire,
+    super.signatureDate,
+    super.taxeOrdureMenagere,
+    super.montantTaxeOrdure,
   });
 
   factory ContratBailModel.fromJson(Map<String, dynamic> json) {
     // Cast sûr pour les sous-objets JSON
-    Map<String, dynamic>? _toMap(dynamic v) =>
+    Map<String, dynamic>? toMap(dynamic v) =>
         v is Map ? Map<String, dynamic>.from(v) : null;
 
     return ContratBailModel(
@@ -38,7 +41,12 @@ class ContratBailModel extends ContratBail {
           : null,
       // backend expose le bailleur sous l'alias 'bailleur' (models/index.js)
       // certaines routes peuvent aussi renvoyer 'proprietaire'
-      proprietaire: _toMap(json['bailleur']) ?? _toMap(json['proprietaire']),
+      proprietaire: toMap(json['bailleur']) ?? toMap(json['proprietaire']),
+      signatureDate: (json['signature_date'] ?? json['createdAt'])?.toString(),
+      taxeOrdureMenagere: json['taxe_ordure_menagere'] as bool?,
+      montantTaxeOrdure: json['montant_taxe_ordure'] != null
+          ? double.tryParse(json['montant_taxe_ordure'].toString())
+          : null,
     );
   }
 }

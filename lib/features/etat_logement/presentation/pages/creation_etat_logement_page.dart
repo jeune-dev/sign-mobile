@@ -60,6 +60,137 @@ class _PieceForm {
       );
 }
 
+/// Carte d'édition d'une pièce, isolée du State racine : les changements de
+/// dropdown/toggle ne reconstruisent que cette carte, pas toute la page.
+class _PieceCard extends StatefulWidget {
+  final int index;
+  final _PieceForm piece;
+  final Color accentColor;
+  final VoidCallback onDelete;
+
+  const _PieceCard({
+    super.key,
+    required this.index,
+    required this.piece,
+    required this.accentColor,
+    required this.onDelete,
+  });
+
+  @override
+  State<_PieceCard> createState() => _PieceCardState();
+}
+
+class _PieceCardState extends State<_PieceCard> {
+  _PieceForm get piece => widget.piece;
+  Color get _accent => widget.accentColor;
+
+  Widget _etatDrop(String label, String? value, ValueChanged<String?> onChanged) {
+    return CDropdown<String>(
+      label: label,
+      value: value ?? 'Bon',
+      accentColor: _accent,
+      items: _kEtatValues
+          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: kCardColor,
+        borderRadius: BorderRadius.circular(kCardRadius),
+        boxShadow: kCardShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Icon(Icons.meeting_room_outlined, size: 16, color: _accent),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text('Pièce ${widget.index + 1}',
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w800, color: kValueColor)),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF1A1A1A), size: 20),
+                  onPressed: widget.onDelete,
+                ),
+              ],
+            ),
+          ),
+          Divider(height: 1, color: kBorderColor),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                CField(
+                  controller: piece.nom,
+                  label: 'Nom de la pièce',
+                  accentColor: _accent,
+                ),
+                kGap,
+                _etatDrop('Sol', piece.etatSol, (v) => setState(() => piece.etatSol = v)),
+                kGapSm,
+                _etatDrop('Murs', piece.etatMurs, (v) => setState(() => piece.etatMurs = v)),
+                kGapSm,
+                _etatDrop('Plafond', piece.etatPlafond, (v) => setState(() => piece.etatPlafond = v)),
+                kGapSm,
+                _etatDrop('Fenêtres', piece.etatFenetres, (v) => setState(() => piece.etatFenetres = v)),
+                kGapSm,
+                _etatDrop('Portes', piece.etatPortes, (v) => setState(() => piece.etatPortes = v)),
+                kGapSm,
+                _etatDrop('Électricité', piece.etatElectricite, (v) => setState(() => piece.etatElectricite = v)),
+                kGapSm,
+                _etatDrop('Éclairage', piece.etatEclairage, (v) => setState(() => piece.etatEclairage = v)),
+                kGapSm,
+                _etatDrop('Propreté', piece.proprete, (v) => setState(() => piece.proprete = v)),
+                kGap,
+                CToggle(
+                  title: 'Présence d\'humidité',
+                  value: piece.humidite,
+                  accentColor: _accent,
+                  onChanged: (v) => setState(() => piece.humidite = v),
+                ),
+                kGapSm,
+                CToggle(
+                  title: 'Dégradations constatées',
+                  value: piece.degradations,
+                  accentColor: _accent,
+                  onChanged: (v) => setState(() => piece.degradations = v),
+                ),
+                kGap,
+                CField(
+                  controller: piece.observations,
+                  label: 'Observations',
+                  accentColor: _accent,
+                  required: false,
+                  maxLines: 2,
+                  hint: 'Détails, fissures, traces…',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class CreationEtatLogementPage extends StatefulWidget {
   final ContratBail contrat;
   const CreationEtatLogementPage({super.key, required this.contrat});
@@ -515,109 +646,14 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
   }
 
   Widget _buildPieceCard(int index, _PieceForm piece) {
-    return Container(
-      decoration: BoxDecoration(
-        color: kCardColor,
-        borderRadius: BorderRadius.circular(kCardRadius),
-        boxShadow: kCardShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 30,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: _kAccent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(9),
-                  ),
-                  child: Icon(Icons.meeting_room_outlined, size: 16, color: _kAccent),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text('Pièce ${index + 1}',
-                      style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w800, color: kValueColor)),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF1A1A1A), size: 20),
-                  onPressed: () => setState(() {
-                    _pieces.removeAt(index).dispose();
-                  }),
-                ),
-              ],
-            ),
-          ),
-          Divider(height: 1, color: kBorderColor),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                CField(
-                  controller: piece.nom,
-                  label: 'Nom de la pièce',
-                  accentColor: _kAccent,
-                ),
-                kGap,
-                _etatDrop('Sol', piece.etatSol, (v) => setState(() => piece.etatSol = v)),
-                kGapSm,
-                _etatDrop('Murs', piece.etatMurs, (v) => setState(() => piece.etatMurs = v)),
-                kGapSm,
-                _etatDrop('Plafond', piece.etatPlafond, (v) => setState(() => piece.etatPlafond = v)),
-                kGapSm,
-                _etatDrop('Fenêtres', piece.etatFenetres, (v) => setState(() => piece.etatFenetres = v)),
-                kGapSm,
-                _etatDrop('Portes', piece.etatPortes, (v) => setState(() => piece.etatPortes = v)),
-                kGapSm,
-                _etatDrop('Électricité', piece.etatElectricite, (v) => setState(() => piece.etatElectricite = v)),
-                kGapSm,
-                _etatDrop('Éclairage', piece.etatEclairage, (v) => setState(() => piece.etatEclairage = v)),
-                kGapSm,
-                _etatDrop('Propreté', piece.proprete, (v) => setState(() => piece.proprete = v)),
-                kGap,
-                CToggle(
-                  title: 'Présence d\'humidité',
-                  value: piece.humidite,
-                  accentColor: _kAccent,
-                  onChanged: (v) => setState(() => piece.humidite = v),
-                ),
-                kGapSm,
-                CToggle(
-                  title: 'Dégradations constatées',
-                  value: piece.degradations,
-                  accentColor: _kAccent,
-                  onChanged: (v) => setState(() => piece.degradations = v),
-                ),
-                kGap,
-                CField(
-                  controller: piece.observations,
-                  label: 'Observations',
-                  accentColor: _kAccent,
-                  required: false,
-                  maxLines: 2,
-                  hint: 'Détails, fissures, traces…',
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _etatDrop(String label, String? value, ValueChanged<String?> onChanged) {
-    return CDropdown<String>(
-      label: label,
-      value: value ?? 'Bon',
+    return _PieceCard(
+      key: ObjectKey(piece),
+      index: index,
+      piece: piece,
       accentColor: _kAccent,
-      items: _kEtatValues
-          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-          .toList(),
-      onChanged: onChanged,
+      onDelete: () => setState(() {
+        _pieces.removeAt(index).dispose();
+      }),
     );
   }
 

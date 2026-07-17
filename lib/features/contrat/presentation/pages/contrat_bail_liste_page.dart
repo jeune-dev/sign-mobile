@@ -33,6 +33,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
   bool _statsLoading = true;
   final Set<String> _downloading = {};
   static final _dateFmt    = DateFormat('dd/MM/yyyy');
+  static final _dateHeureFmt = DateFormat('dd/MM/yyyy à HH:mm');
   static final _montantFmt = NumberFormat('#,###', 'fr_FR');
 
   @override
@@ -117,6 +118,12 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
   String _fmt(String? d) {
     if (d == null || d.isEmpty) return '—';
     try { return _dateFmt.format(DateTime.parse(d)); }
+    catch (_) { return d; }
+  }
+
+  String _fmtHeure(String? d) {
+    if (d == null || d.isEmpty) return '—';
+    try { return _dateHeureFmt.format(DateTime.parse(d).toLocal()); }
     catch (_) { return d; }
   }
 
@@ -370,6 +377,11 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                   Expanded(child: _chip(Icons.home_outlined, 'Type', c.bienType ?? '—')),
                   const SizedBox(width: 10),
                   Expanded(child: _chip(Icons.person_outline, 'Locataire', locataires)),
+                ]),
+                const SizedBox(height: 10),
+                Row(children: [
+                  Expanded(child: _chip(Icons.schedule_outlined, 'Heure signature',
+                      _fmtHeure(c.signatureDate))),
                 ]),
               ],
             ),

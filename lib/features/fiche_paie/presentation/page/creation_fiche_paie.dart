@@ -38,6 +38,372 @@ class _P {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helpers UI (fonctions top-level, sans dépendance à l'état du formulaire)
+// Extraits de _FichePaieFormPageState pour pouvoir être réutilisés par les
+// sous-widgets isolés (_ToggleSection, etc.) sans reconstruire toute la page.
+// ─────────────────────────────────────────────────────────────────────────────
+
+Widget _initials(Client emp, double r) {
+  final p = emp.prenom;
+  final n = emp.nom;
+  final letters = '${p.isNotEmpty ? p[0] : ''}${n.isNotEmpty ? n[0] : ''}'.toUpperCase();
+  final palette = [_P.accent, _P.gold, _P.success, const Color(0xFF1A1A1A)];
+  final col = letters.isNotEmpty ? palette[letters.codeUnitAt(0) % palette.length] : _P.accent;
+  return CircleAvatar(
+    radius: r,
+    backgroundColor: col.withValues(alpha: 0.12),
+    child: Text(letters, style: TextStyle(fontSize: r * 0.75, fontWeight: FontWeight.w700, color: col)),
+  );
+}
+
+Widget _card({required IconData icon, required String title, required List<Widget> children}) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3))],
+    ),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(9)),
+            child: Icon(icon, color: Colors.white, size: 16),
+          ),
+          const SizedBox(width: 10),
+          Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+        ]),
+      ),
+      ...children,
+    ]),
+  );
+}
+
+Widget _label(String text, {bool req = false}) => Padding(
+  padding: const EdgeInsets.only(bottom: 7),
+  child: RichText(text: TextSpan(
+    text: text,
+    style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF111827)),
+    children: req ? [const TextSpan(text: ' *', style: TextStyle(color: Color(0xFF1A1A1A)))] : [],
+  )),
+);
+
+InputDecoration _deco({String? hint, Widget? prefix, Widget? suffix}) => InputDecoration(
+  hintText: hint,
+  hintStyle: const TextStyle(color: _P.inkFaint, fontSize: 13.5),
+  prefixIcon: prefix,
+  suffixIcon: suffix,
+  filled: true,
+  fillColor: _P.field,
+  border:             OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.divider)),
+  enabledBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.divider)),
+  focusedBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.accent, width: 1.5)),
+  errorBorder:        OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.danger)),
+  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.danger, width: 1.5)),
+  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+);
+
+Widget _field(String label, TextEditingController ctrl, {
+  String? hint, TextInputType? type, bool req = false, int maxLines = 1,
+}) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+  _label(label, req: req),
+  TextFormField(
+    controller: ctrl,
+    keyboardType: type,
+    maxLines: maxLines,
+    style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
+    decoration: _deco(hint: hint),
+    validator: req ? (v) => (v == null || v.trim().isEmpty) ? 'Ce champ est requis' : null : null,
+  ),
+  const SizedBox(height: 14),
+]);
+
+Widget _drop<T>(String label, T value, List<T> items, void Function(T?) fn, {bool req = false}) =>
+    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _label(label, req: req),
+      DropdownButtonFormField<T>(
+        initialValue: value,
+        isExpanded: true,
+        onChanged: fn,
+        style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
+        decoration: _deco(),
+        borderRadius: BorderRadius.circular(14),
+        icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _P.inkLight),
+        items: items.map((e) => DropdownMenuItem(value: e, child: Text(e.toString()))).toList(),
+      ),
+      const SizedBox(height: 14),
+    ]);
+
+Widget _row2(Widget a, Widget b) => Row(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [Expanded(child: a), const SizedBox(width: 12), Expanded(child: b)],
+);
+
+// ── Toggle avec sous-champs animés via AnimatedCrossFade ─────────────────
+Widget _toggle(
+    String label,
+    bool val,
+    void Function(bool) fn, {
+      String? sub,
+      List<Widget> Function()? childrenBuilder,
+    }) {
+  final hasChildren = childrenBuilder != null;
+  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    GestureDetector(
+      onTap: () { HapticFeedback.lightImpact(); fn(!val); },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: val ? _P.accentSoft : _P.field,
+          borderRadius: BorderRadius.only(
+            topLeft:     const Radius.circular(12),
+            topRight:    const Radius.circular(12),
+            bottomLeft:  Radius.circular(val && hasChildren ? 0 : 12),
+            bottomRight: Radius.circular(val && hasChildren ? 0 : 12),
+          ),
+          border: Border.all(color: val ? _P.accent.withValues(alpha: 0.35) : _P.divider),
+        ),
+        child: Row(children: [
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, color: val ? _P.accent : _P.ink)),
+            if (sub != null) ...[
+              const SizedBox(height: 2),
+              Text(sub, style: const TextStyle(fontSize: 11.5, color: _P.inkFaint)),
+            ],
+          ])),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 44, height: 25,
+            padding: const EdgeInsets.all(2.5),
+            decoration: BoxDecoration(
+              color: val ? _P.accent : _P.toggleOff,
+              borderRadius: BorderRadius.circular(13),
+            ),
+            child: AnimatedAlign(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              alignment: val ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                width: 20, height: 20,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))],
+                ),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    ),
+    // Sous-champs
+    if (hasChildren)
+      AnimatedCrossFade(
+        duration: const Duration(milliseconds: 220),
+        crossFadeState: val ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+        firstChild: Container(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
+          decoration: BoxDecoration(
+            color: _P.accentSoft.withValues(alpha: 0.45),
+            borderRadius: const BorderRadius.only(
+              bottomLeft:  Radius.circular(12),
+              bottomRight: Radius.circular(12),
+            ),
+            border: Border(
+              left:   BorderSide(color: _P.accent.withValues(alpha: 0.2)),
+              right:  BorderSide(color: _P.accent.withValues(alpha: 0.2)),
+              bottom: BorderSide(color: _P.accent.withValues(alpha: 0.2)),
+            ),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: childrenBuilder()),
+        ),
+        secondChild: const SizedBox.shrink(),
+      ),
+    const SizedBox(height: 10),
+  ]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _ToggleSection : sous-widget StatefulWidget isolé pour un toggle simple
+// (bool on/off, avec ou sans sous-champs contrôlés par TextEditingController).
+// Il gère son propre setState local : cocher/décocher ne reconstruit QUE ce
+// widget, pas toute la page. La valeur finale est remontée au parent via
+// [onChanged] (simple affectation, sans setState) pour rester disponible au
+// moment de la soumission du formulaire.
+// ─────────────────────────────────────────────────────────────────────────────
+class _ToggleSection extends StatefulWidget {
+  final String label;
+  final String? sub;
+  final bool initialValue;
+  final ValueChanged<bool> onChanged;
+  final List<Widget> Function()? childrenBuilder;
+
+  const _ToggleSection({
+    required this.label,
+    required this.initialValue,
+    required this.onChanged,
+    this.sub,
+    this.childrenBuilder,
+  });
+
+  @override
+  State<_ToggleSection> createState() => _ToggleSectionState();
+}
+
+class _ToggleSectionState extends State<_ToggleSection> {
+  late bool _value;
+
+  @override
+  void initState() {
+    super.initState();
+    _value = widget.initialValue;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _toggle(
+      widget.label,
+      _value,
+      (v) {
+        setState(() => _value = v);
+        widget.onChanged(v);
+      },
+      sub: widget.sub,
+      childrenBuilder: widget.childrenBuilder,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _AbsenceToggleSection : toggle « Absence(s) ce mois » + dropdown de type
+// d'absence + champ conditionnel « Autre ». État (bool + type) géré
+// localement ; remonté au parent via callbacks (simples affectations, sans
+// setState) pour rester disponible à la soumission.
+// ─────────────────────────────────────────────────────────────────────────────
+class _AbsenceToggleSection extends StatefulWidget {
+  final bool initialAbsence;
+  final String initialTypeAbsence;
+  final TextEditingController joursAbsCtrl;
+  final TextEditingController autreAbsCtrl;
+  final ValueChanged<bool> onAbsenceChanged;
+  final ValueChanged<String> onTypeAbsenceChanged;
+
+  const _AbsenceToggleSection({
+    required this.initialAbsence,
+    required this.initialTypeAbsence,
+    required this.joursAbsCtrl,
+    required this.autreAbsCtrl,
+    required this.onAbsenceChanged,
+    required this.onTypeAbsenceChanged,
+  });
+
+  @override
+  State<_AbsenceToggleSection> createState() => _AbsenceToggleSectionState();
+}
+
+class _AbsenceToggleSectionState extends State<_AbsenceToggleSection> {
+  late bool _absence;
+  late String _typeAbsence;
+
+  @override
+  void initState() {
+    super.initState();
+    _absence = widget.initialAbsence;
+    _typeAbsence = widget.initialTypeAbsence;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _toggle(
+      'Absence(s) ce mois', _absence,
+      (v) {
+        setState(() => _absence = v);
+        widget.onAbsenceChanged(v);
+      },
+      sub: 'Maladie, congé non payé, absence injustifiée…',
+      childrenBuilder: () => [
+        _row2(
+          _field('Jours d\'absence', widget.joursAbsCtrl, hint: '3', type: TextInputType.number),
+          _drop('Type d\'absence', _typeAbsence,
+              const ['Maladie','Absence non justifiée','Congé','Autre'],
+              (v) {
+                setState(() => _typeAbsence = v!);
+                widget.onTypeAbsenceChanged(v!);
+              }),
+        ),
+        if (_typeAbsence == 'Autre')
+          _field('Préciser le motif', widget.autreAbsCtrl, hint: 'Motif…'),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _AvantagesToggleSection : toggle « Avantages en nature » + dropdown de type
+// + champ conditionnel « Autres ». Même principe que _AbsenceToggleSection.
+// ─────────────────────────────────────────────────────────────────────────────
+class _AvantagesToggleSection extends StatefulWidget {
+  final bool initialAvantages;
+  final String initialTypeAvantage;
+  final TextEditingController autreAvantCtrl;
+  final TextEditingController valeurAvantCtrl;
+  final ValueChanged<bool> onAvantagesChanged;
+  final ValueChanged<String> onTypeAvantageChanged;
+
+  const _AvantagesToggleSection({
+    required this.initialAvantages,
+    required this.initialTypeAvantage,
+    required this.autreAvantCtrl,
+    required this.valeurAvantCtrl,
+    required this.onAvantagesChanged,
+    required this.onTypeAvantageChanged,
+  });
+
+  @override
+  State<_AvantagesToggleSection> createState() => _AvantagesToggleSectionState();
+}
+
+class _AvantagesToggleSectionState extends State<_AvantagesToggleSection> {
+  late bool _avantages;
+  late String _typeAvantage;
+
+  @override
+  void initState() {
+    super.initState();
+    _avantages = widget.initialAvantages;
+    _typeAvantage = widget.initialTypeAvantage;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _toggle(
+      'Avantages en nature', _avantages,
+      (v) {
+        setState(() => _avantages = v);
+        widget.onAvantagesChanged(v);
+      },
+      sub: 'Logement, nourriture, transport fourni…',
+      childrenBuilder: () => [
+        _drop('Type d\'avantage', _typeAvantage,
+            const ['Logement','Nourriture','Transport','Autres'],
+            (v) {
+              setState(() => _typeAvantage = v!);
+              widget.onTypeAvantageChanged(v!);
+            }),
+        if (_typeAvantage == 'Autres')
+          _field('Préciser', widget.autreAvantCtrl, hint: 'Détail…'),
+        _field('Valeur estimée (FCFA)', widget.valeurAvantCtrl, hint: '30 000', type: TextInputType.number),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Widget principal
 // ─────────────────────────────────────────────────────────────────────────────
 class FichePaieFormPage extends StatelessWidget {
@@ -244,194 +610,10 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
 
   // ─────────────────────────────────────────────────────────────────────────
   // UI HELPERS
+  // (_initials, _card, _label, _deco, _field, _drop, _row2, _toggle sont
+  // désormais des fonctions top-level en tête de fichier, réutilisées par les
+  // sous-widgets isolés comme _ToggleSection.)
   // ─────────────────────────────────────────────────────────────────────────
-
-  Widget _initials(Client emp, double r) {
-    final p = emp.prenom;
-    final n = emp.nom;
-    final letters = '${p.isNotEmpty ? p[0] : ''}${n.isNotEmpty ? n[0] : ''}'.toUpperCase();
-    final palette = [_P.accent, _P.gold, _P.success, const Color(0xFF1A1A1A)];
-    final col = letters.isNotEmpty ? palette[letters.codeUnitAt(0) % palette.length] : _P.accent;
-    return CircleAvatar(
-      radius: r,
-      backgroundColor: col.withValues(alpha: 0.12),
-      child: Text(letters, style: TextStyle(fontSize: r * 0.75, fontWeight: FontWeight.w700, color: col)),
-    );
-  }
-
-  // Carte identique à la page « Nouvelle quittance » : carte blanche + titre de
-  // section avec carré noir (icône blanche), sans séparateur.
-  Widget _card({required IconData icon, required String title, required List<Widget> children}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3))],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(children: [
-            Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(9)),
-              child: Icon(icon, color: Colors.white, size: 16),
-            ),
-            const SizedBox(width: 10),
-            Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
-          ]),
-        ),
-        ...children,
-      ]),
-    );
-  }
-
-  Widget _label(String text, {bool req = false}) => Padding(
-    padding: const EdgeInsets.only(bottom: 7),
-    child: RichText(text: TextSpan(
-      text: text,
-      style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF111827)),
-      children: req ? [const TextSpan(text: ' *', style: TextStyle(color: Color(0xFF1A1A1A)))] : [],
-    )),
-  );
-
-  InputDecoration _deco({String? hint, Widget? prefix, Widget? suffix}) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: _P.inkFaint, fontSize: 13.5),
-    prefixIcon: prefix,
-    suffixIcon: suffix,
-    filled: true,
-    fillColor: _P.field,
-    border:             OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.divider)),
-    enabledBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.divider)),
-    focusedBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.accent, width: 1.5)),
-    errorBorder:        OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.danger)),
-    focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.danger, width: 1.5)),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-  );
-
-  Widget _field(String label, TextEditingController ctrl, {
-    String? hint, TextInputType? type, bool req = false, int maxLines = 1,
-  }) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    _label(label, req: req),
-    TextFormField(
-      controller: ctrl,
-      keyboardType: type,
-      maxLines: maxLines,
-      style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
-      decoration: _deco(hint: hint),
-      validator: req ? (v) => (v == null || v.trim().isEmpty) ? 'Ce champ est requis' : null : null,
-    ),
-    const SizedBox(height: 14),
-  ]);
-
-  Widget _drop<T>(String label, T value, List<T> items, void Function(T?) fn, {bool req = false}) =>
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _label(label, req: req),
-        DropdownButtonFormField<T>(
-          initialValue: value,
-          isExpanded: true,
-          onChanged: fn,
-          style: const TextStyle(fontSize: 14, color: _P.ink, fontWeight: FontWeight.w500),
-          decoration: _deco(),
-          borderRadius: BorderRadius.circular(14),
-          icon: const Icon(Icons.keyboard_arrow_down_rounded, color: _P.inkLight),
-          items: items.map((e) => DropdownMenuItem(value: e, child: Text(e.toString()))).toList(),
-        ),
-        const SizedBox(height: 14),
-      ]);
-
-  Widget _row2(Widget a, Widget b) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [Expanded(child: a), const SizedBox(width: 12), Expanded(child: b)],
-  );
-
-  // ── Toggle avec sous-champs animés via AnimatedCrossFade ─────────────────
-  Widget _toggle(
-      String label,
-      bool val,
-      void Function(bool) fn, {
-        String? sub,
-        List<Widget> Function()? childrenBuilder,
-      }) {
-    final hasChildren = childrenBuilder != null;
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      GestureDetector(
-        onTap: () { HapticFeedback.lightImpact(); fn(!val); },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: val ? _P.accentSoft : _P.field,
-            borderRadius: BorderRadius.only(
-              topLeft:     const Radius.circular(12),
-              topRight:    const Radius.circular(12),
-              bottomLeft:  Radius.circular(val && hasChildren ? 0 : 12),
-              bottomRight: Radius.circular(val && hasChildren ? 0 : 12),
-            ),
-            border: Border.all(color: val ? _P.accent.withValues(alpha: 0.35) : _P.divider),
-          ),
-          child: Row(children: [
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, color: val ? _P.accent : _P.ink)),
-              if (sub != null) ...[
-                const SizedBox(height: 2),
-                Text(sub, style: const TextStyle(fontSize: 11.5, color: _P.inkFaint)),
-              ],
-            ])),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 44, height: 25,
-              padding: const EdgeInsets.all(2.5),
-              decoration: BoxDecoration(
-                color: val ? _P.accent : _P.toggleOff,
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: AnimatedAlign(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeInOut,
-                alignment: val ? Alignment.centerRight : Alignment.centerLeft,
-                child: Container(
-                  width: 20, height: 20,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 1))],
-                  ),
-                ),
-              ),
-            ),
-          ]),
-        ),
-      ),
-      // Sous-champs
-      if (hasChildren)
-        AnimatedCrossFade(
-          duration: const Duration(milliseconds: 220),
-          crossFadeState: val ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-          firstChild: Container(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
-            decoration: BoxDecoration(
-              color: _P.accentSoft.withValues(alpha: 0.45),
-              borderRadius: const BorderRadius.only(
-                bottomLeft:  Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-              border: Border(
-                left:   BorderSide(color: _P.accent.withValues(alpha: 0.2)),
-                right:  BorderSide(color: _P.accent.withValues(alpha: 0.2)),
-                bottom: BorderSide(color: _P.accent.withValues(alpha: 0.2)),
-              ),
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: childrenBuilder()),
-          ),
-          secondChild: const SizedBox.shrink(),
-        ),
-      const SizedBox(height: 10),
-    ]);
-  }
 
   // ── Date picker ─────────────────────────────────────────────────────────
   Future<void> _pickDate(DateTime? current, void Function(DateTime) onPicked) async {
@@ -650,19 +832,13 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
         _field('Jours travaillés', _joursTravCtrl, hint: '26', type: TextInputType.number),
         _field('Heures travaillées', _heuresTravCtrl, hint: '208', type: TextInputType.number),
       ),
-      _toggle(
-        'Absence(s) ce mois', _absence, (v) => setState(() => _absence = v),
-        sub: 'Maladie, congé non payé, absence injustifiée…',
-        childrenBuilder: () => [
-          _row2(
-            _field('Jours d\'absence', _joursAbsCtrl, hint: '3', type: TextInputType.number),
-            _drop('Type d\'absence', _typeAbsence,
-                ['Maladie','Absence non justifiée','Congé','Autre'],
-                    (v) => setState(() => _typeAbsence = v!)),
-          ),
-          if (_typeAbsence == 'Autre')
-            _field('Préciser le motif', _autreAbsCtrl, hint: 'Motif…'),
-        ],
+      _AbsenceToggleSection(
+        initialAbsence: _absence,
+        initialTypeAbsence: _typeAbsence,
+        joursAbsCtrl: _joursAbsCtrl,
+        autreAbsCtrl: _autreAbsCtrl,
+        onAbsenceChanged: (v) => _absence = v,
+        onTypeAbsenceChanged: (v) => _typeAbsence = v,
       ),
     ],
   );
@@ -670,8 +846,10 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   Widget _sectionHeuresSupp() => _card(
     icon: Icons.bolt_outlined, title: 'Heures supplémentaires',
     children: [
-      _toggle(
-        'Heures supplémentaires effectuées', _hSupp, (v) => setState(() => _hSupp = v),
+      _ToggleSection(
+        label: 'Heures supplémentaires effectuées',
+        initialValue: _hSupp,
+        onChanged: (v) => _hSupp = v,
         sub: 'Majoration légale de 25%',
         childrenBuilder: () => [
           _field('Nombre d\'heures supplémentaires', _hSuppCtrl, hint: '10', type: TextInputType.number),
@@ -683,8 +861,10 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   Widget _sectionPrimes() => _card(
     icon: Icons.card_giftcard_outlined, title: 'Primes & Avantages',
     children: [
-      _toggle(
-        'Primes accordées ce mois', _primes, (v) => setState(() => _primes = v),
+      _ToggleSection(
+        label: 'Primes accordées ce mois',
+        initialValue: _primes,
+        onChanged: (v) => _primes = v,
         childrenBuilder: () => [
           _row2(
             _field('Prime transport',    _pTransportCtrl, hint: '20 000', type: TextInputType.number),
@@ -697,17 +877,13 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
           _field('Autres primes', _pAutresCtrl, hint: '0', type: TextInputType.number),
         ],
       ),
-      _toggle(
-        'Avantages en nature', _avantages, (v) => setState(() => _avantages = v),
-        sub: 'Logement, nourriture, transport fourni…',
-        childrenBuilder: () => [
-          _drop('Type d\'avantage', _typeAvantage,
-              ['Logement','Nourriture','Transport','Autres'],
-                  (v) => setState(() => _typeAvantage = v!)),
-          if (_typeAvantage == 'Autres')
-            _field('Préciser', _autreAvantCtrl, hint: 'Détail…'),
-          _field('Valeur estimée (FCFA)', _valeurAvantCtrl, hint: '30 000', type: TextInputType.number),
-        ],
+      _AvantagesToggleSection(
+        initialAvantages: _avantages,
+        initialTypeAvantage: _typeAvantage,
+        autreAvantCtrl: _autreAvantCtrl,
+        valeurAvantCtrl: _valeurAvantCtrl,
+        onAvantagesChanged: (v) => _avantages = v,
+        onTypeAvantageChanged: (v) => _typeAvantage = v,
       ),
     ],
   );
@@ -715,8 +891,10 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   Widget _sectionConges() => _card(
     icon: Icons.beach_access_outlined, title: 'Congés payés',
     children: [
-      _toggle(
-        'Congés pris ce mois', _conges, (v) => setState(() => _conges = v),
+      _ToggleSection(
+        label: 'Congés pris ce mois',
+        initialValue: _conges,
+        onChanged: (v) => _conges = v,
         childrenBuilder: () => [
           _row2(
             _field('Nombre de jours',     _joursCongesCtrl,   hint: '5', type: TextInputType.number),
@@ -730,14 +908,18 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   Widget _sectionRetenues() => _card(
     icon: Icons.remove_circle_outline, title: 'Avances & Retenues',
     children: [
-      _toggle(
-        'Avance sur salaire', _avance, (v) => setState(() => _avance = v),
+      _ToggleSection(
+        label: 'Avance sur salaire',
+        initialValue: _avance,
+        onChanged: (v) => _avance = v,
         childrenBuilder: () => [
           _field('Montant de l\'avance (FCFA)', _avanceCtrl, hint: '100 000', type: TextInputType.number),
         ],
       ),
-      _toggle(
-        'Autres retenues', _retenues, (v) => setState(() => _retenues = v),
+      _ToggleSection(
+        label: 'Autres retenues',
+        initialValue: _retenues,
+        onChanged: (v) => _retenues = v,
         childrenBuilder: () => [
           _field('Montant retenue (FCFA)', _retenueCtrl, hint: '25 000', type: TextInputType.number),
           _field('Motif de la retenue',    _motifCtrl,   hint: 'Prêt, matériel, avarie…'),
@@ -762,12 +944,22 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
           )),
         ]),
       ),
-      _toggle('Soumis à l\'IPRES', _soumisIpres, (v) => setState(() => _soumisIpres = v),
-          sub: 'Institution de Prévoyance Retraite du Sénégal'),
-      _toggle('Soumis à la CSS', _soumisCss, (v) => setState(() => _soumisCss = v),
-          sub: 'Caisse de Sécurité Sociale'),
-      _toggle(
-        'Assurance complémentaire', _aAssurance, (v) => setState(() => _aAssurance = v),
+      _ToggleSection(
+        label: 'Soumis à l\'IPRES',
+        initialValue: _soumisIpres,
+        onChanged: (v) => _soumisIpres = v,
+        sub: 'Institution de Prévoyance Retraite du Sénégal',
+      ),
+      _ToggleSection(
+        label: 'Soumis à la CSS',
+        initialValue: _soumisCss,
+        onChanged: (v) => _soumisCss = v,
+        sub: 'Caisse de Sécurité Sociale',
+      ),
+      _ToggleSection(
+        label: 'Assurance complémentaire',
+        initialValue: _aAssurance,
+        onChanged: (v) => _aAssurance = v,
         childrenBuilder: () => [
           _field('Montant assurance (FCFA)', _assuranceCtrl, hint: '5 000', type: TextInputType.number),
         ],
@@ -778,8 +970,12 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   Widget _sectionImpots() => _card(
     icon: Icons.assignment_outlined, title: 'Impôts & Situation familiale',
     children: [
-      _toggle('Soumis à l\'IR', _soumisIr, (v) => setState(() => _soumisIr = v),
-          sub: 'Impôt sur le Revenu'),
+      _ToggleSection(
+        label: 'Soumis à l\'IR',
+        initialValue: _soumisIr,
+        onChanged: (v) => _soumisIr = v,
+        sub: 'Impôt sur le Revenu',
+      ),
       const SizedBox(height: 4),
       _drop('Situation familiale', _situation, ['Célibataire','Marié'], (v) => setState(() => _situation = v!)),
       _field('Nombre d\'enfants à charge', _enfantsCtrl, hint: '0', type: TextInputType.number),

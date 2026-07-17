@@ -1,4 +1,4 @@
-﻿import 'dart:typed_data';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -62,8 +62,7 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
     if (montant == null) return '—';
     try {
       final num val = num.parse(montant.toString());
-      return NumberFormat('#,###', 'fr_FR').format(val).replaceAll(',', ' ') +
-          ' FCFA';
+      return '${NumberFormat('#,###', 'fr_FR').format(val).replaceAll(',', ' ')} FCFA';
     } catch (_) {
       return '$montant FCFA';
     }

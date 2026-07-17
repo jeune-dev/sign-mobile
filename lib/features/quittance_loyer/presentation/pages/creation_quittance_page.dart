@@ -38,6 +38,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
   String   _mois          = 'Janvier';
   String   _modePaiement  = 'Virement bancaire';
   bool     _paiementComplet = true;
+  bool     _taxeOrdureMenagere = false;
   DateTime? _datePaiement;
   Client?   _selectedClient;
   File?     _signatureImage;
@@ -50,10 +51,18 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
   ];
 
+  static const _tauxTaxeOrdureMenagere = 0.036;
+
+  double get _montantTaxeOrdure {
+    if (!_taxeOrdureMenagere) return 0;
+    final loyer = double.tryParse(_montantLoyerCtrl.text) ?? 0;
+    return loyer * _tauxTaxeOrdureMenagere;
+  }
+
   double get _montantTotal {
     final loyer   = double.tryParse(_montantLoyerCtrl.text)   ?? 0;
     final charges = double.tryParse(_montantChargesCtrl.text) ?? 0;
-    return loyer + charges;
+    return loyer + charges + _montantTaxeOrdure;
   }
 
   @override
@@ -170,6 +179,8 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
         'annee':             int.tryParse(_anneeCtrl.text) ?? DateTime.now().year,
         'montant_loyer':     double.tryParse(_montantLoyerCtrl.text)   ?? 0,
         'montant_charges':   double.tryParse(_montantChargesCtrl.text) ?? 0,
+        'taxe_ordure_menagere': _taxeOrdureMenagere,
+        'montant_taxe_ordure': _montantTaxeOrdure,
         'montant_total':     _montantTotal,
         'date_paiement':     _datePaiement!.toIso8601String().substring(0, 10),
         'mode_paiement':     _modePaiement,
@@ -220,6 +231,58 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
       Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
     ]),
   );
+
+  /// Sélecteur Oui/Non — deux boutons pill bien visibles pour un choix
+  /// binaire explicite (ex: activer une taxe optionnelle).
+  Widget _ouiNonToggle(String label, bool value, void Function(bool) onChanged) {
+    Widget pill(bool v, String text) {
+      final bool active = value == v;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => onChanged(v),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: active ? const Color(0xFF1A1A1A) : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: active ? Colors.white : const Color(0xFF6B7280),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(label,
+              style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF111827))),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          width: 130,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F4F6),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE5E7EB)),
+          ),
+          child: Row(children: [pill(true, 'Oui'), pill(false, 'Non')]),
+        ),
+      ],
+    );
+  }
 
   Widget _card({required List<Widget> children}) => Container(
     margin: const EdgeInsets.only(bottom: 12),
@@ -437,6 +500,27 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 14),
+                _ouiNonToggle(
+                  'Taxe Ordure Ménagère (3,6%)',
+                  _taxeOrdureMenagere,
+                  (v) => setState(() => _taxeOrdureMenagere = v),
+                ),
+                const SizedBox(height: 14),
+                if (_taxeOrdureMenagere)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text("Taxe d'ordure ménagère (3,6%)",
+                            style: GoogleFonts.plusJakartaSans(fontSize: 12.5, color: const Color(0xFF6B7280))),
+                        Text(
+                          '${_montantFmt.format(_montantTaxeOrdure).replaceAll(',', ' ')} FCFA',
+                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 12.5, color: const Color(0xFF111827)),
+                        ),
+                      ],
+                    ),
+                  ),
                 // Carte total
                 Container(
                   padding: const EdgeInsets.all(14),

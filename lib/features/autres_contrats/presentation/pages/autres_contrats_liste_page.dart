@@ -47,6 +47,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
 
   final Set<String> _downloading = {};
   static final _dateFmt = DateFormat('dd/MM/yyyy');
+  static final _dateHeureFmt = DateFormat('dd/MM/yyyy à HH:mm');
 
   // Identifiant de l'utilisateur connecté : on part de celui passé en argument,
   // mais il est parfois null (navigation depuis une notification, etc.).
@@ -177,6 +178,15 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
 
   String _labelVoirContrat(String type) =>
       ContratTypeX.fromString(type)?.seeLabel ?? 'Voir Contrat';
+
+  String _fmtHeure(String? d) {
+    if (d == null || d.isEmpty) return 'En attente de signature';
+    try {
+      return _dateHeureFmt.format(DateTime.parse(d).toLocal());
+    } catch (_) {
+      return d;
+    }
+  }
 
   String _fmt(String? d) {
     if (d == null || d.isEmpty) return '—';
@@ -525,6 +535,17 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                   Expanded(
                     child: _chip(Icons.description_outlined, 'Type',
                         _subtitleForType(widget.type)),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _chip(Icons.schedule_outlined, 'Heure signature',
+                        _fmtHeure(c.data?['date_signature_dest']?.toString())),
                   ),
                 ],
               ),

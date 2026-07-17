@@ -145,6 +145,8 @@ class Env {
       _get('DOCUMENT_MES_DOCUMENTS_PATH', fallback: '/v1/professionnel/document/mes-documents');
   static String get documentCreer =>
       _get('DOCUMENT_CREER_PATH', fallback: '/v1/professionnel/document/creer-document');
+  static String get documentCreerClientManuel =>
+      _get('DOCUMENT_CREER_CLIENT_MANUEL_PATH', fallback: '/v1/professionnel/document/creer-document-client-manuel');
   static String get documentOuvrir =>
       _get('DOCUMENT_OUVRIR_PATH', fallback: '/v1/professionnel/document/ouvrir-document');
   static String get documentTelecharger =>

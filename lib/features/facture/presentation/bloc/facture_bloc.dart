@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/usecases/get_factures.dart';
 import '../../domain/usecases/creer_facture.dart';
+import '../../domain/usecases/creer_facture_client_manuel.dart';
 import '../../domain/usecases/ouvrir_document.dart';
 import '../../domain/usecases/mettre_a_jour_facture.dart';
 import '../../domain/usecases/renvoyer_facture.dart';
@@ -11,6 +12,7 @@ import 'facture_state.dart';
 class FactureBloc extends Bloc<FactureEvent, FactureState> {
   final GetFactures getFactures;
   final CreerFacture creerFacture;
+  final CreerFactureClientManuel creerFactureClientManuel;
   final OuvrirDocument ouvrirDocument;
   final MettreAJourFacture mettreAJourFacture;
   final RenvoyerFacture renvoyerFacture;
@@ -21,6 +23,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
   FactureBloc({
     required this.getFactures,
     required this.creerFacture,
+    required this.creerFactureClientManuel,
     required this.ouvrirDocument,
     required this.mettreAJourFacture,
     required this.renvoyerFacture,
@@ -31,6 +34,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
       add(LoadFactures(page: event.page, limit: 10));
     });
     on<CreerFactureEvent>(_onCreerFacture);
+    on<CreerFactureClientManuelEvent>(_onCreerFactureClientManuel);
     on<OuvrirDocumentEvent>(_onOuvrirDocument);
     on<ResetFactureState>((_, emit) => emit(FactureInitial()));
     on<MettreAJourFactureEvent>(_onMettreAJourFacture);
@@ -87,6 +91,18 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
   ) async {
     emit(FactureLoading());
     final result = await creerFacture(event.data);
+    result.fold(
+      (failure) => emit(FactureError(failure.errorMessage)),
+      (_) => emit(FactureSuccess(message: 'Facture créée avec succès')),
+    );
+  }
+
+  Future<void> _onCreerFactureClientManuel(
+    CreerFactureClientManuelEvent event,
+    Emitter<FactureState> emit,
+  ) async {
+    emit(FactureLoading());
+    final result = await creerFactureClientManuel(event.data);
     result.fold(
       (failure) => emit(FactureError(failure.errorMessage)),
       (_) => emit(FactureSuccess(message: 'Facture créée avec succès')),

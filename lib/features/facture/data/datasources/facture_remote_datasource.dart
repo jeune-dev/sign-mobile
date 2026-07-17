@@ -22,6 +22,7 @@ class FacturesResult {
 abstract class FactureRemoteDataSource {
   Future<FacturesResult> getFactures({int page, int limit});
   Future<void> creerFacture(Map<String, dynamic> data);
+  Future<void> creerFactureClientManuel(Map<String, dynamic> data);
   Future<List<int>> ouvrirDocument(String documentId);
   Future<Map<String, dynamic>> mettreAJourFacture({
     required String documentId,
@@ -62,6 +63,11 @@ class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
   @override
   Future<void> creerFacture(Map<String, dynamic> data) async {
     await dio.post(Env.documentCreer, data: data);
+  }
+
+  @override
+  Future<void> creerFactureClientManuel(Map<String, dynamic> data) async {
+    await dio.post(Env.documentCreerClientManuel, data: data);
   }
 
   @override

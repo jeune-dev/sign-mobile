@@ -9,6 +9,9 @@ class QuittanceLoyer extends Equatable {
   final int? annee;
   final double? montantLoyer;
   final double? montantCharges;
+  /// Taxe d'ordure ménagère — optionnelle, 3,6% du loyer mensuel si activée.
+  final bool? taxeOrdureMenagere;
+  final double? montantTaxeOrdure;
   final double? montantTotal;
   final String? datePaiement;
   final String? modePaiement;
@@ -33,6 +36,8 @@ class QuittanceLoyer extends Equatable {
     this.annee,
     this.montantLoyer,
     this.montantCharges,
+    this.taxeOrdureMenagere,
+    this.montantTaxeOrdure,
     this.montantTotal,
     this.datePaiement,
     this.modePaiement,
