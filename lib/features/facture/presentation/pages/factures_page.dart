@@ -44,6 +44,7 @@ class _FacturesPageState extends State<FacturesPage> {
   /// mecanisme que les quittances et les fiches de paie.
   String _filtre = 'tous';
   static final _dateFmt   = DateFormat('dd/MM/yyyy');
+  static final _dateHeureFmt = DateFormat('dd/MM/yyyy à HH:mm');
   static final _montantFmt = NumberFormat('#,###', 'fr_FR');
 
   @override
@@ -57,6 +58,15 @@ class _FacturesPageState extends State<FacturesPage> {
     if (d == null || d.isEmpty) return '—';
     try {
       return _dateFmt.format(DateTime.parse(d));
+    } catch (_) {
+      return d;
+    }
+  }
+
+  String _formatDateHeure(String? d) {
+    if (d == null || d.isEmpty) return '—';
+    try {
+      return _dateHeureFmt.format(DateTime.parse(d).toLocal());
     } catch (_) {
       return d;
     }
@@ -726,6 +736,7 @@ class _FacturesPageState extends State<FacturesPage> {
     final montant = _formatMontant(doc.montant);
     final moyenPaiement = doc.moyenPaiement ?? '—';
     final lieuExecution = doc.lieuExecution ?? '—';
+    final dateGeneration = _formatDateHeure(doc.dateGeneration);
     final isDownloading = _downloading.contains(doc.id);
     final statusColor = _statusColor(doc);
     final statusText = _statusText(doc);
@@ -828,6 +839,17 @@ class _FacturesPageState extends State<FacturesPage> {
                     Expanded(
                         child: _infoChip(Icons.location_on_outlined, 'Lieu',
                             lieuExecution, const Color(0xFFFF6B6B))),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                        child: _infoChip(
+                            Icons.schedule_outlined,
+                            'Heure génération',
+                            dateGeneration,
+                            const Color(0xFF4ECDC4))),
                   ],
                 ),
               ],

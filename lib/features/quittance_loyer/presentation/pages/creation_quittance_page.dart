@@ -45,6 +45,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
   String   _mois          = 'Janvier';
   String   _modePaiement  = 'Virement bancaire';
   bool     _paiementComplet = true;
+  bool     _taxeOrdureMenagere = false;
   DateTime? _datePaiement;
   Client?   _selectedClient;
   /// Informations qui figureront sur le document : preremplies depuis le
@@ -68,10 +69,18 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
   ];
 
+  static const _tauxTaxeOrdureMenagere = 0.036;
+
+  double get _montantTaxeOrdure {
+    if (!_taxeOrdureMenagere) return 0;
+    final loyer = double.tryParse(_montantLoyerCtrl.text) ?? 0;
+    return loyer * _tauxTaxeOrdureMenagere;
+  }
+
   double get _montantTotal {
     final loyer   = double.tryParse(_montantLoyerCtrl.text)   ?? 0;
     final charges = double.tryParse(_montantChargesCtrl.text) ?? 0;
-    return loyer + charges;
+    return loyer + charges + _montantTaxeOrdure;
   }
 
   @override
@@ -192,6 +201,8 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
         'annee':             int.tryParse(_anneeCtrl.text) ?? DateTime.now().year,
         'montant_loyer':     double.tryParse(_montantLoyerCtrl.text)   ?? 0,
         'montant_charges':   double.tryParse(_montantChargesCtrl.text) ?? 0,
+        'taxe_ordure_menagere': _taxeOrdureMenagere,
+        'montant_taxe_ordure': _montantTaxeOrdure,
         'montant_total':     _montantTotal,
         'date_paiement':     _datePaiement!.toIso8601String().substring(0, 10),
         'mode_paiement':     _modePaiement,
@@ -235,6 +246,58 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
       Text(title, style: AppTypo.jakarta(fontSize: 15, fontWeight: FontWeight.w700, color: AppColor.kTexte)),
     ]),
   );
+
+  /// Sélecteur Oui/Non — deux boutons pill bien visibles pour un choix
+  /// binaire explicite (ex: activer une taxe optionnelle).
+  Widget _ouiNonToggle(String label, bool value, void Function(bool) onChanged) {
+    Widget pill(bool v, String text) {
+      final bool active = value == v;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => onChanged(v),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            padding: const EdgeInsets.symmetric(vertical: 9),
+            decoration: BoxDecoration(
+              color: active ? AppColor.kTexte : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+              style: AppTypo.jakarta(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                color: active ? Colors.white : AppColor.kTexteMoyen,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text(label,
+              style: AppTypo.jakarta(
+                  fontWeight: FontWeight.w600, fontSize: 13, color: AppColor.kTexte)),
+        ),
+        const SizedBox(width: 12),
+        Container(
+          width: 130,
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: AppColor.kNeutreClair,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColor.kBordure),
+          ),
+          child: Row(children: [pill(true, 'Oui'), pill(false, 'Non')]),
+        ),
+      ],
+    );
+  }
 
   Widget _card({required List<Widget> children}) => Container(
     margin: const EdgeInsets.only(bottom: 12),
@@ -467,6 +530,27 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
                     onChanged: (_) => setState(() {}),
                   ),
                   const SizedBox(height: 14),
+                  _ouiNonToggle(
+                    'Taxe Ordure Ménagère (3,6%)',
+                    _taxeOrdureMenagere,
+                    (v) => setState(() => _taxeOrdureMenagere = v),
+                  ),
+                  const SizedBox(height: 14),
+                  if (_taxeOrdureMenagere)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("Taxe d'ordure ménagère (3,6%)",
+                              style: AppTypo.jakarta(fontSize: 12.5, color: AppColor.kTexteMoyen)),
+                          Text(
+                            '${_montantFmt.format(_montantTaxeOrdure).replaceAll(',', ' ')} FCFA',
+                            style: AppTypo.jakarta(fontWeight: FontWeight.w600, fontSize: 12.5, color: AppColor.kTexte),
+                          ),
+                        ],
+                      ),
+                    ),
                   // Carte total
                   Container(
                     padding: const EdgeInsets.all(14),

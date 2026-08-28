@@ -16,6 +16,7 @@ class FactureModel extends Facture {
     super.statut,
     super.direction,
     super.professionnel,
+    super.dateGeneration,
   });
 
   factory FactureModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +37,7 @@ class FactureModel extends Facture {
       professionnel: json['professionnel'] != null
           ? Map<String, dynamic>.from(json['professionnel'])
           : null,
+      dateGeneration: (json['date_generation'] ?? json['createdAt'])?.toString(),
     );
   }
 

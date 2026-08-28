@@ -23,6 +23,7 @@ class FacturesResult {
 abstract class FactureRemoteDataSource {
   Future<FacturesResult> getFactures({int page, int limit});
   Future<DocumentCree> creerFacture(Map<String, dynamic> data);
+  Future<void> creerFactureClientManuel(Map<String, dynamic> data);
   Future<List<int>> ouvrirDocument(String documentId);
   Future<Map<String, dynamic>> mettreAJourFacture({
     required String documentId,
@@ -66,6 +67,11 @@ class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
     // La reponse porte la facture creee : on en retient l'identifiant et le
     // numero pour l'ecran de confirmation (§ 9).
     return DocumentCree.depuisReponse(reponse.data);
+  }
+
+  @override
+  Future<void> creerFactureClientManuel(Map<String, dynamic> data) async {
+    await dio.post(Env.documentCreerClientManuel, data: data);
   }
 
   @override

@@ -28,6 +28,8 @@ class Facture extends Equatable {
   final List<dynamic>? items;
   final Map<String, dynamic>? client;
   final String? statut; // 'en_attente' | 'partiel' | 'payee'
+  /// Horodatage automatique serveur — jamais choisi depuis le mobile.
+  final String? dateGeneration;
 
   /// 'envoye' si je suis l'émetteur, 'recu' si la facture m'est adressée.
   ///
@@ -54,6 +56,7 @@ class Facture extends Equatable {
     this.statut,
     this.direction,
     this.professionnel,
+    this.dateGeneration,
   });
 
   bool get estRecue => direction == 'recu';

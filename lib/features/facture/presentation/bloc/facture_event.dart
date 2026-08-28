@@ -18,6 +18,13 @@ class CreerFactureEvent extends FactureEvent {
   CreerFactureEvent(this.data);
 }
 
+/// Facture pour un client NON inscrit — infos client saisies manuellement
+/// (voir `data['client']`) au lieu d'un `clientId`.
+class CreerFactureClientManuelEvent extends FactureEvent {
+  final Map<String, dynamic> data;
+  CreerFactureClientManuelEvent(this.data);
+}
+
 class OuvrirDocumentEvent extends FactureEvent {
   final String documentId;
   final String titre;

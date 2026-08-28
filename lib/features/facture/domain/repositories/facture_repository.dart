@@ -22,6 +22,7 @@ class FacturesPageResult {
 abstract class FactureRepository {
   Future<Either<Failure, FacturesPageResult>> getFactures({int page = 1, int limit = 10});
   Future<Either<Failure, DocumentCree>> creerFacture(Map<String, dynamic> data);
+  Future<Either<Failure, void>> creerFactureClientManuel(Map<String, dynamic> data);
   Future<Either<Failure, List<int>>> ouvrirDocument(String documentId);
   Future<Either<Failure, Map<String, dynamic>>> mettreAJourFacture({
     required String documentId,

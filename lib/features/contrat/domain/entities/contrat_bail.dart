@@ -12,6 +12,12 @@ class ContratBail extends Equatable {
   final String? dateDebutBail;
   final List<dynamic>? locataires;
   final Map<String, dynamic>? proprietaire;
+  /// Horodatage automatique serveur de la signature (création du contrat
+  /// par le bailleur) — jamais choisi depuis le mobile.
+  final String? signatureDate;
+  /// Taxe d'ordure ménagère — optionnelle, 3,6% du loyer mensuel si activée.
+  final bool? taxeOrdureMenagere;
+  final double? montantTaxeOrdure;
 
   /// 'envoye' si je suis a l'origine du document, 'recu' s'il m'est adresse.
   ///
@@ -33,6 +39,9 @@ class ContratBail extends Equatable {
     this.locataires,
     this.proprietaire,
     this.direction,
+    this.signatureDate,
+    this.taxeOrdureMenagere,
+    this.montantTaxeOrdure,
   });
 
   bool get estRecu => direction == 'recu';
