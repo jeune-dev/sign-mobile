@@ -10,6 +10,23 @@ class User extends Equatable {
   final String telephone;
   final String carte_identite_national_num;
   final String role;
+
+  // ── Champs du nouveau parcours ─────────────────────────────────────────
+  /// Ville de résidence, demandée dès l'inscription rapide (§ 2).
+  final String? ville;
+  /// Type de la pièce dont [carte_identite_national_num] est le numéro :
+  /// 'carte_identite' ou 'passeport'.
+  final String? typeDocumentIdentite;
+  /// NIN / numéro personnel — demandé seulement quand un document l'exige.
+  final String? nin;
+  /// L'utilisateur a suivi le parcours « compte complet » (§ 11) : ses
+  /// informations sont alors préremplies partout (§ 16).
+  final bool profilComplet;
+  /// Propriété du numéro confirmée. Vaut true dès l'inscription tant que
+  /// l'OTP n'est pas branché.
+  final bool telephoneVerifie;
+  /// Propriété de l'adresse e-mail confirmée.
+  final bool emailVerifie;
   final String? photoProfil;
   final String? logo;
   final String? rc;
@@ -32,6 +49,12 @@ class User extends Equatable {
     required this.telephone,
     required this.carte_identite_national_num,
     required this.role,
+    this.ville,
+    this.typeDocumentIdentite,
+    this.nin,
+    this.profilComplet = false,
+    this.telephoneVerifie = false,
+    this.emailVerifie = false,
     this.photoProfil,
     this.logo,
     this.rc,
@@ -53,6 +76,12 @@ class User extends Equatable {
     'telephone': telephone,
     'carte_identite_national_num': carte_identite_national_num,
     'role': role,
+    'ville': ville,
+    'type_document_identite': typeDocumentIdentite,
+    'nin': nin,
+    'profil_complet': profilComplet,
+    'telephone_verifie': telephoneVerifie,
+    'email_verifie': emailVerifie,
     'photoProfil': photoProfil,
     'logo': logo,
     'rc': rc,
@@ -75,6 +104,12 @@ class User extends Equatable {
     telephone,
     carte_identite_national_num,
     role,
+    ville,
+    typeDocumentIdentite,
+    nin,
+    profilComplet,
+    telephoneVerifie,
+    emailVerifie,
     photoProfil,
     logo,
     rc,

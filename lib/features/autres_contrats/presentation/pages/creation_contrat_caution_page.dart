@@ -12,6 +12,11 @@ import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/autres_contrats/domain/usecases/telecharger_autre_contrat.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 
 class CreationContratCautionPage extends StatefulWidget {
   const CreationContratCautionPage({super.key});
@@ -21,17 +26,29 @@ class CreationContratCautionPage extends StatefulWidget {
 }
 
 class _CreationContratCautionPageState extends State<CreationContratCautionPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que
+    // l'utilisateur remplit les premieres etapes.
+    _emetteur.charger();
+  }
+
   int _step = 0;
   static const int _totalSteps = 2;
   static const _steps = ['Client', 'Caution'];
 
-  static const _accent = Color(0xFF1A1A1A);
+  static const _accent = AppColor.kTexte;
   static const _icon   = Icons.verified_user_outlined;
   static const _titre  = 'Contrat de caution';
 
   final _formKey = GlobalKey<FormState>();
 
   Client? _client;
+
+  /// Informations qui figureront sur le document : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   final _montantCtrl = TextEditingController();
   final _dureeCtrl   = TextEditingController();
@@ -42,6 +59,7 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _montantCtrl.dispose(); _dureeCtrl.dispose(); _villeCtrl.dispose();
     super.dispose();
   }
@@ -81,6 +99,9 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
       'signature_generateur': sigBase64,
+      // Ce qui sera imprime sur le contrat. Le serveur fige ces valeurs :
+      // une regeneration a la signature produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
     }));
   }
 
@@ -99,7 +120,22 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
             showToast(ctx, 'Contrat créé', 'Le contrat de caution a été créé avec succès.', ToastificationType.success);
-            Navigator.pop(ctx);
+            // Le document est montre a l'utilisateur avant tout retour
+            // a la liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              ctx,
+              libelle: 'contrat de caution',
+              feminin: false,
+              document: state.documentCree,
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerAutreContrat>()(
+                    ContratType.caution.apiValue, id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is AutresContratsError) _showError(state.message);
         },
@@ -183,103 +219,113 @@ class _CreationContratCautionPageState extends State<CreationContratCautionPage>
 
   Widget _step1() => Form(
     key: _formKey,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Détails de la caution',
-          icon: Icons.shield_outlined,
-          accentColor: _accent,
-          subtitle: 'Paramètres de votre engagement',
-          children: [
-            CDropdown<String>(
-              label: 'Type de caution',
-              value: _typeCaution,
-              accentColor: _accent,
-              icon: Icons.category_outlined,
-              items: [
-                DropdownMenuItem(
-                  value: 'simple',
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                    const Text('Simple', style: TextStyle(fontWeight: FontWeight.w600)),
-                  ]),
-                ),
-                DropdownMenuItem(
-                  value: 'solidaire',
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                    const Text('Solidaire', style: TextStyle(fontWeight: FontWeight.w600)),
-                  ]),
-                ),
-              ],
-              onChanged: (v) => setState(() => _typeCaution = v!),
-            ),
-            kGap,
-            // Type explanation
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: _accent.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Ce qui figurera sur le document : prerempli depuis le profil,
+          // modifiable, et fige avec le document cote serveur.
+          SectionEmetteur(controleur: _emetteur, titre: 'Vos informations'),
+          const SizedBox(height: 20),
+          CSection(
+            title: 'Détails de la caution',
+            icon: Icons.shield_outlined,
+            accentColor: _accent,
+            subtitle: 'Paramètres de votre engagement',
+            children: [
+              CDropdown<String>(
+                label: 'Type de caution',
+                value: _typeCaution,
+                accentColor: _accent,
+                icon: Icons.category_outlined,
+                items: [
+                  DropdownMenuItem(
+                    value: 'simple',
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                      const Text('Simple', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                  DropdownMenuItem(
+                    value: 'solidaire',
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                      const Text('Solidaire', style: TextStyle(fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                ],
+                onChanged: (v) => setState(() => _typeCaution = v!),
               ),
-              child: Row(children: [
-                Icon(Icons.info_outline, size: 16, color: _accent),
-                const SizedBox(width: 8),
-                Expanded(child: Text(
-                  _typeCaution == 'simple'
-                      ? 'Caution simple : le créancier doit d\'abord poursuivre le débiteur principal.'
-                      : 'Caution solidaire : le créancier peut vous poursuivre directement, sans passer par le débiteur.',
-                  style: TextStyle(fontSize: 11, color: _accent, height: 1.4),
-                )),
-              ]),
-            ),
-            kGap,
-            CField(
-              controller: _montantCtrl,
-              label: 'Montant garanti (FCFA)',
-              accentColor: _accent,
-              icon: Icons.monetization_on_outlined,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              hint: '0',
-            ),
-            kGap,
-            CDurationField(controller: _dureeCtrl, label: 'Durée de la caution', accentColor: _accent, icon: Icons.timer_outlined,
-                autoriserIndetermine: true),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Récapitulatif',
-          icon: Icons.summarize_outlined,
-          accentColor: _accent,
-          children: [
-            if (_client != null) CSummaryRow(label: 'Client', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
-            CSummaryRow(label: 'Type', value: _typeCaution[0].toUpperCase() + _typeCaution.substring(1), icon: Icons.shield_outlined, accentColor: _accent),
-            if (_montantCtrl.text.isNotEmpty) CSummaryRow(label: 'Montant garanti', value: '${_montantCtrl.text} FCFA', icon: Icons.monetization_on_outlined, accentColor: _accent),
-            if (_dureeCtrl.text.isNotEmpty) CSummaryRow(label: 'Durée', value: _dureeCtrl.text, icon: Icons.timer_outlined, accentColor: _accent),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Lieu de signature',
-          icon: Icons.place_outlined,
-          accentColor: _accent,
-          children: [
-            CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar…'),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Signature',
-          icon: Icons.draw_outlined,
-          accentColor: _accent,
-          subtitle: 'Signez pour valider la création du contrat',
-          children: [
-            CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
-          ],
-        ),
-      ],
+              kGap,
+              // Type explanation
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _accent.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(children: [
+                  Icon(Icons.info_outline, size: 16, color: _accent),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(
+                    _typeCaution == 'simple'
+                        ? 'Caution simple : le créancier doit d\'abord poursuivre le débiteur principal.'
+                        : 'Caution solidaire : le créancier peut vous poursuivre directement, sans passer par le débiteur.',
+                    style: TextStyle(fontSize: 11, color: _accent, height: 1.4),
+                  )),
+                ]),
+              ),
+              kGap,
+              CField(
+                controller: _montantCtrl,
+                label: 'Montant garanti (FCFA)',
+                accentColor: _accent,
+                icon: Icons.monetization_on_outlined,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                hint: '0',
+              ),
+              kGap,
+              CDurationField(controller: _dureeCtrl, label: 'Durée de la caution', accentColor: _accent, icon: Icons.timer_outlined,
+                  autoriserIndetermine: true),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Récapitulatif',
+            icon: Icons.summarize_outlined,
+            accentColor: _accent,
+            children: [
+              if (_client != null) CSummaryRow(label: 'Client', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
+              CSummaryRow(label: 'Type', value: _typeCaution[0].toUpperCase() + _typeCaution.substring(1), icon: Icons.shield_outlined, accentColor: _accent),
+              if (_montantCtrl.text.isNotEmpty) CSummaryRow(label: 'Montant garanti', value: '${_montantCtrl.text} FCFA', icon: Icons.monetization_on_outlined, accentColor: _accent),
+              if (_dureeCtrl.text.isNotEmpty) CSummaryRow(label: 'Durée', value: _dureeCtrl.text, icon: Icons.timer_outlined, accentColor: _accent),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Lieu de signature',
+            icon: Icons.place_outlined,
+            accentColor: _accent,
+            children: [
+              CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar…'),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Signature',
+            icon: Icons.draw_outlined,
+            accentColor: _accent,
+            subtitle: 'Signez pour valider la création du contrat',
+            children: [
+              CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
+            ],
+          ),
+              ],
+      ),
     ),
   );
 

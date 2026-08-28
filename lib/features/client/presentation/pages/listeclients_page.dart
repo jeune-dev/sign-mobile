@@ -8,6 +8,7 @@ import 'package:sign_application/features/client/domain/entities/client.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_event.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_state.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class ClientsPage extends StatefulWidget {
   final User? user;
@@ -121,7 +122,7 @@ class _ClientsPageState extends State<ClientsPage> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1a1a1a), Color(0xFF2d2d2d)],
+          colors: [AppColor.kTexte, Color(0xFF2d2d2d)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),

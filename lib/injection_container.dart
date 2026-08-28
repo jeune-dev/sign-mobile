@@ -8,6 +8,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/config/env.dart';
+import 'core/services/premier_lancement_service.dart';
 import 'core/services/token_service.dart';
 import 'core/services/auth_event_bus.dart';
 import 'core/services/app_version_service.dart';
@@ -21,6 +22,10 @@ import 'features/account/domain/usecases/get_me.dart';
 import 'features/account/domain/usecases/modifier_info_personnelles.dart';
 import 'features/account/domain/usecases/change_password.dart';
 import 'features/account/presentation/bloc/account_bloc.dart';
+
+// Parcours progressif (nouveau parcours utilisateur)
+import 'features/parcours/data/datasources/parcours_remote_datasource.dart';
+import 'features/parcours/data/dernieres_informations_saisies.dart';
 
 // Auth
 import 'features/auth/data/datasources/auth_remote_datasource.dart';
@@ -129,6 +134,7 @@ import 'features/particulier/domain/usecases/get_dashboard_stats.dart'
 import 'features/particulier/domain/usecases/get_factures_client.dart';
 import 'features/particulier/domain/usecases/get_contrats_client.dart';
 import 'features/particulier/presentation/bloc/particulier_bloc.dart';
+import 'package:sign_application/features/notifications/data/notifications_remote_datasource.dart';
 
 // ─── Helpers Dio ─────────────────────────────────────────────────────────────
 
@@ -365,6 +371,29 @@ Future<void> init() async {
         changePassword: sl(),
         deleteAccount: sl(),
       ));
+
+  //================================================
+  // NOUVEAU PARCOURS UTILISATEUR
+  //================================================
+  //
+  // - PremierLancementService : page de bienvenue vue ? proposition de compte
+  //   complet déjà refusée ? (drapeaux locaux, SharedPreferences)
+  // - ParcoursRemoteDataSource : exigences par document, enregistrement des
+  //   informations réclamées, contrôle avant génération, recherche de l'autre
+  //   partie, justificatifs.
+
+  sl.registerLazySingleton(() => PremierLancementService());
+  sl.registerLazySingleton(() => ParcoursRemoteDataSource(dio: sl()));
+  // Retient la derniere saisie d'un formulaire, pour pouvoir proposer de
+  // l'enregistrer une fois le document genere.
+  sl.registerLazySingleton(() => DernieresInformationsSaisies());
+
+  //================================================
+  // FEATURE — NOTIFICATIONS (cloche)
+  //================================================
+  // Compteur et liste des evenements adresses a l'utilisateur : documents
+  // recus, decisions de l'administration sur son compte.
+  sl.registerLazySingleton(() => NotificationsRemoteDataSource(dio: sl()));
 
   //================================================
   // FEATURE — AUTH

@@ -1,5 +1,5 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class ConditionUtilisation extends StatelessWidget {
   const ConditionUtilisation({super.key});
@@ -14,7 +14,7 @@ class ConditionUtilisation extends StatelessWidget {
         foregroundColor: Colors.black,
         title: Text(
           'Conditions d’utilisation',
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontWeight: FontWeight.w700,
             fontSize: 18,
           ),
@@ -113,7 +113,7 @@ class ConditionUtilisation extends StatelessWidget {
               Center(
                 child: Text(
                   'Dernière mise à jour : 2026',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     fontSize: 12,
                     color: Colors.grey,
                   ),
@@ -131,7 +131,7 @@ class ConditionUtilisation extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: Text(
         text,
-        style: GoogleFonts.plusJakartaSans(
+        style: AppTypo.jakarta(
           fontSize: 20,
           fontWeight: FontWeight.w800,
         ),
@@ -144,7 +144,7 @@ class ConditionUtilisation extends StatelessWidget {
       padding: const EdgeInsets.only(top: 20, bottom: 8),
       child: Text(
         text,
-        style: GoogleFonts.plusJakartaSans(
+        style: AppTypo.jakarta(
           fontSize: 16,
           fontWeight: FontWeight.w700,
         ),
@@ -158,7 +158,7 @@ class ConditionUtilisation extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.justify,
-        style: GoogleFonts.plusJakartaSans(
+        style: AppTypo.jakarta(
           fontSize: 14,
           height: 1.6,
           color: Colors.black54,
@@ -177,7 +177,7 @@ class ConditionUtilisation extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: GoogleFonts.plusJakartaSans(
+              style: AppTypo.jakarta(
                 fontSize: 14,
                 height: 1.5,
                 color: Colors.black54,

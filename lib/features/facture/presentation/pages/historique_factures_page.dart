@@ -10,6 +10,7 @@ import 'package:sign_application/features/facture/presentation/bloc/facture_bloc
 import 'package:sign_application/features/facture/presentation/bloc/facture_event.dart';
 import 'package:sign_application/features/facture/presentation/bloc/facture_state.dart';
 import 'package:sign_application/injection_container.dart' as di;
+import 'package:sign_application/core/theme/app_color.dart';
 
 class HistoriqueFacturesPage extends StatefulWidget {
   const HistoriqueFacturesPage({super.key});
@@ -157,7 +158,7 @@ class _HistoriqueFacturesPageState extends State<HistoriqueFacturesPage> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: const Color(0xFF1a1a1a),
+      backgroundColor: AppColor.kTexte,
       elevation: 0,
       leading: GestureDetector(
         onTap: () => Navigator.pop(context),

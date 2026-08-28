@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:toastification/toastification.dart';
 import '../../../../core/widgets/toastNotif.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class ResetPasswordPage extends StatefulWidget {
   final String email;
@@ -45,15 +46,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   InputDecoration _dec(String hint, IconData icon, {Widget? suffix}) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.plusJakartaSans(fontSize: 15, color: const Color(0xFF9CA3AF)),
-      prefixIcon: Icon(icon, color: const Color(0xFF6B7280), size: 20),
+      hintStyle: AppTypo.jakarta(fontSize: 15, color: AppColor.kTexteFaible),
+      prefixIcon: Icon(icon, color: AppColor.kTexteMoyen, size: 20),
       suffixIcon: suffix,
       filled: true,
-      fillColor: const Color(0xFFF8F8FA),
+      fillColor: AppColor.kChamp,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColor.kTexte, width: 1.5)),
       errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
       focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
     );
@@ -61,14 +62,14 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   Widget _label(String text) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
-    child: Text(text, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF111827))),
+    child: Text(text, style: AppTypo.jakarta(fontSize: 13, fontWeight: FontWeight.w600, color: AppColor.kTexte)),
   );
 
   Widget _eyeBtn(bool obscure, VoidCallback onTap) => GestureDetector(
     onTap: onTap,
     child: Icon(
       obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-      color: const Color(0xFF9CA3AF), size: 20,
+      color: AppColor.kTexteFaible, size: 20,
     ),
   );
 
@@ -123,15 +124,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   // ── Titre ──────────────────────────────────────────────────
                   Text(
                     'Nouveau mot de passe',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppTypo.jakarta(
                       fontSize: 26, fontWeight: FontWeight.w800,
-                      color: const Color(0xFF111827), letterSpacing: -0.5,
+                      color: AppColor.kTexte, letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Saisissez le code reçu par email à ${widget.email} et choisissez un nouveau mot de passe.',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 15, color: const Color(0xFF6B7280), height: 1.5),
+                    style: AppTypo.jakarta(fontSize: 15, color: AppColor.kTexteMoyen, height: 1.5),
                   ),
                   const SizedBox(height: 36),
 
@@ -141,7 +142,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     controller: _otpController,
                     textCapitalization: TextCapitalization.characters,
                     textInputAction: TextInputAction.next,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 2, color: const Color(0xFF111827)),
+                    style: AppTypo.jakarta(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 2, color: AppColor.kTexte),
                     decoration: _dec('Ex: AB12CD34', Icons.vpn_key_outlined),
                     validator: (v) => (v == null || v.trim().isEmpty) ? 'Veuillez entrer le code reçu par email' : null,
                   ),
@@ -153,7 +154,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     controller: _newPasswordController,
                     obscureText: _obscureNew,
                     textInputAction: TextInputAction.next,
-                    style: GoogleFonts.plusJakartaSans(fontSize: 15, color: const Color(0xFF111827)),
+                    style: AppTypo.jakarta(fontSize: 15, color: AppColor.kTexte),
                     decoration: _dec('Minimum 8 caractères', Icons.lock_outline_rounded,
                       suffix: _eyeBtn(_obscureNew, () => setState(() => _obscureNew = !_obscureNew))),
                     validator: (v) {
@@ -171,7 +172,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     obscureText: _obscureConfirm,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
-                    style: GoogleFonts.plusJakartaSans(fontSize: 15, color: const Color(0xFF111827)),
+                    style: AppTypo.jakarta(fontSize: 15, color: AppColor.kTexte),
                     decoration: _dec('Répétez le nouveau mot de passe', Icons.lock_outline_rounded,
                       suffix: _eyeBtn(_obscureConfirm, () => setState(() => _obscureConfirm = !_obscureConfirm))),
                     validator: (v) {
@@ -203,7 +204,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text('Réinitialiser le mot de passe', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                                    Text('Réinitialiser le mot de passe', style: AppTypo.jakarta(fontSize: 16, fontWeight: FontWeight.w700)),
                                     const SizedBox(width: 8),
                                     const Icon(Icons.check_circle_outline_rounded, size: 18),
                                   ],

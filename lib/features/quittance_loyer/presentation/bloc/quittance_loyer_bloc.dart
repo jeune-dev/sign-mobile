@@ -70,7 +70,8 @@ class QuittanceLoyerBloc extends Bloc<QuittanceLoyerEvent, QuittanceLoyerState> 
     final result = await creerQuittance(event.data);
     result.fold(
       (failure) => emit(QuittanceLoyerError(failure.errorMessage)),
-      (_) => emit(QuittanceLoyerSuccess(message: 'Quittance créée avec succès')),
+      (cree) => emit(QuittanceLoyerSuccess(
+          message: 'Quittance créée avec succès', documentCree: cree)),
     );
   }
 

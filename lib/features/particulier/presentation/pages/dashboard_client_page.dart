@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../features/auth/domain/entities/user.dart';
 import '../bloc/particulier_bloc.dart';
 import '../bloc/particulier_event.dart';
 import '../bloc/particulier_state.dart';
 import '../../domain/entities/particulier_facture.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class DashboardClientPage extends StatefulWidget {
   final User? user;
@@ -61,9 +62,9 @@ class _DashboardClientPageState extends State<DashboardClientPage> {
               child: Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 32),
             ),
             const SizedBox(height: 16),
-            Text('Impossible de charger', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16, color: const Color(0xFF111827))),
+            Text('Impossible de charger', style: AppTypo.jakarta(fontWeight: FontWeight.w700, fontSize: 16, color: AppColor.kTexte)),
             const SizedBox(height: 6),
-            Text(message, style: GoogleFonts.plusJakartaSans(color: const Color(0xFF6B7280), fontSize: 13), textAlign: TextAlign.center),
+            Text(message, style: AppTypo.jakarta(color: AppColor.kTexteMoyen, fontSize: 13), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -97,7 +98,7 @@ class _DashboardClientPageState extends State<DashboardClientPage> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF1a1a1a), Color(0xFF3a3a3a)],
+                colors: [AppColor.kTexte, Color(0xFF3a3a3a)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -121,12 +122,12 @@ class _DashboardClientPageState extends State<DashboardClientPage> {
                     children: [
                       Text(
                         'Bonjour, ${widget.user?.prenom ?? 'Client'}',
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3),
+                        style: AppTypo.jakarta(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800, letterSpacing: -0.3),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         'Voici un aperçu de vos documents',
-                        style: GoogleFonts.plusJakartaSans(color: Colors.white54, fontSize: 12),
+                        style: AppTypo.jakarta(color: Colors.white54, fontSize: 12),
                       ),
                     ],
                   ),
@@ -168,16 +169,16 @@ class _DashboardClientPageState extends State<DashboardClientPage> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 36),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F8FA),
+                color: AppColor.kChamp,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: AppColor.kBordure),
               ),
               child: Center(
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.inbox_outlined, size: 36, color: Colors.grey.shade400),
                   const SizedBox(height: 10),
                   Text('Aucune facture reçue pour l\'instant',
-                    style: GoogleFonts.plusJakartaSans(color: const Color(0xFF9CA3AF), fontSize: 14)),
+                    style: AppTypo.jakarta(color: AppColor.kTexteFaible, fontSize: 14)),
                 ]),
               ),
             )
@@ -195,7 +196,7 @@ class _DashboardClientPageState extends State<DashboardClientPage> {
         decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(2)),
       ),
       const SizedBox(width: 10),
-      Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w800, color: const Color(0xFF111827), letterSpacing: -0.2)),
+      Text(title, style: AppTypo.jakarta(fontSize: 15, fontWeight: FontWeight.w800, color: AppColor.kTexte, letterSpacing: -0.2)),
     ]);
   }
 
@@ -205,7 +206,7 @@ class _DashboardClientPageState extends State<DashboardClientPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColor.kBordure),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -217,10 +218,10 @@ class _DashboardClientPageState extends State<DashboardClientPage> {
         const SizedBox(height: 8),
         FittedBox(
           fit: BoxFit.scaleDown,
-          child: Text(value, style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.w900, color: const Color(0xFF111827), letterSpacing: -0.5)),
+          child: Text(value, style: AppTypo.jakarta(fontSize: 22, fontWeight: FontWeight.w900, color: AppColor.kTexte, letterSpacing: -0.5)),
         ),
         const SizedBox(height: 2),
-        Text(label, style: GoogleFonts.plusJakartaSans(fontSize: 10, color: const Color(0xFF6B7280), fontWeight: FontWeight.w500), textAlign: TextAlign.center),
+        Text(label, style: AppTypo.jakarta(fontSize: 10, color: AppColor.kTexteMoyen, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
       ]),
     );
   }
@@ -244,7 +245,7 @@ class _FactureRecente extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColor.kBordure),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Row(children: [
@@ -261,13 +262,13 @@ class _FactureRecente extends StatelessWidget {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
               facture.numeroFacture,
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 14, color: const Color(0xFF111827)),
+              style: AppTypo.jakarta(fontWeight: FontWeight.w700, fontSize: 14, color: AppColor.kTexte),
             ),
             if (facture.professionnelEntreprise != null || facture.professionnelNom != null) ...[
               const SizedBox(height: 2),
               Text(
                 facture.professionnelEntreprise ?? facture.professionnelNom ?? '',
-                style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF6B7280)),
+                style: AppTypo.jakarta(fontSize: 12, color: AppColor.kTexteMoyen),
               ),
             ],
           ]),
@@ -275,7 +276,7 @@ class _FactureRecente extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           montant,
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13, color: const Color(0xFF111827)),
+          style: AppTypo.jakarta(fontWeight: FontWeight.w800, fontSize: 13, color: AppColor.kTexte),
         ),
       ]),
     );

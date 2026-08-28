@@ -31,6 +31,16 @@ class ContratTravail extends Equatable {
   final Map<String, dynamic>? salarie;
   final String? createdAt;
 
+  /// L'employeur, quand le contrat m'a ete adresse en tant que salarie.
+  final Map<String, dynamic>? employeur;
+
+  /// 'envoye' si je suis l'employeur, 'recu' si le contrat m'est adresse.
+  ///
+  /// Renseigne par le backend : lui seul connait l'utilisateur courant. La
+  /// requete ne regardait que le cote employeur, un contrat recu en tant que
+  /// salarie n'apparaissait donc pas.
+  final String? direction;
+
   const ContratTravail({
     required this.id,
     this.numeroContrat,
@@ -61,8 +71,16 @@ class ContratTravail extends Equatable {
     this.statut,
     this.salarie,
     this.createdAt,
+    this.employeur,
+    this.direction,
   });
 
+  bool get estRecu => direction == 'recu';
+
+  /// La partie a afficher : si le contrat est recu, c'est l'employeur qui
+  /// interesse l'utilisateur, pas lui-meme.
+  Map<String, dynamic>? get contrepartie => estRecu ? employeur : salarie;
+
   @override
-  List<Object?> get props => [id, numeroContrat];
+  List<Object?> get props => [id, numeroContrat, direction];
 }

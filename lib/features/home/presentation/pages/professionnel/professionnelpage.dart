@@ -6,13 +6,16 @@ import 'package:sign_application/features/account/presentation/bloc/account_even
 import 'package:sign_application/features/account/presentation/bloc/account_state.dart';
 import 'package:sign_application/features/account/presentation/pages/profil_page.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
-import 'package:sign_application/core/widgets/logout_dialog.dart';
 import 'package:sign_application/features/dashboard/presentation/pages/accueil_professionnel_page.dart';
 import 'package:sign_application/features/client/presentation/pages/listeclients_page.dart';
 import 'package:sign_application/features/facture/presentation/pages/factures_page.dart';
 import 'package:sign_application/features/contrat/presentation/pages/contrats_page.dart';
 import 'package:sign_application/core/widgets/network_banner.dart';
 import 'package:sign_application/core/services/fcm_service.dart';
+import 'package:sign_application/features/notifications/presentation/cloche_notifications.dart';
+import 'package:flutter/services.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/widgets/barre_navigation_flottante.dart';
 
 class ProfessionnelPage extends StatefulWidget {
   final User? user;
@@ -46,7 +49,10 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      HomeProfessionnelPage(user: widget.user),
+      HomeProfessionnelPage(
+        user: widget.user,
+        onVoirContrats: () => setState(() => _currentIndex = 3),
+      ),
       ClientsPage(user: widget.user),
       FacturesPage(user: widget.user),
       ContratsPage(user: widget.user),
@@ -69,10 +75,18 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
         }
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: AppColor.kFond,
+          // En-tete clair : le bandeau noir ecrasait le haut de l'ecran et
+          // isolait l'identite du reste de la page. Fondu dans le fond, il
+          // laisse la place aux donnees.
           appBar: AppBar(
-            backgroundColor: Colors.black,
-            titleSpacing: 12,
+            backgroundColor: AppColor.kSurface,
+            surfaceTintColor: AppColor.kSurface,
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
+            toolbarHeight: 72,
+            titleSpacing: 16,
             title: Row(
               children: [
                 // ── Photo de profil à GAUCHE ──────────────────────────────
@@ -89,7 +103,7 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
                           width: 120,
                           height: 14,
                           decoration: BoxDecoration(
-                            color: Colors.white24,
+                            color: AppColor.kNeutreClair,
                             borderRadius: BorderRadius.circular(7),
                           ),
                         )
@@ -97,9 +111,10 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
                         Text(
                           fullName,
                           style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            color: AppColor.kTexte,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -109,8 +124,8 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
                         Text(
                           email,
                           style: const TextStyle(
-                            color: Colors.white60,
-                            fontSize: 11,
+                            color: AppColor.kTexteMoyen,
+                            fontSize: 12,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -122,11 +137,13 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
               ],
             ),
             actions: [
-              // ── Icône de navigation vers la page de profil ────────────
+              // Cloche puis profil, comme sur la maquette. La déconnexion
+              // occupait cette place : elle a rejoint le bas du profil.
+              const ClocheNotifications(couleur: AppColor.kTexte),
               IconButton(
                 tooltip: 'Mon profil',
-                icon: const Icon(Icons.manage_accounts_outlined,
-                    color: Colors.white, size: 26),
+                icon: const Icon(Icons.settings_outlined,
+                    color: AppColor.kTexte, size: 24),
                 onPressed: () {
                   final user = state is AccountLoaded
                       ? state.user
@@ -144,44 +161,18 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
                   );
                 },
               ),
-              // ── Déconnexion ───────────────────────────────────────────
-              IconButton(
-                icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                onPressed: () => LogoutDialog.show(context),
-                tooltip: 'Déconnexion',
-              ),
+              const SizedBox(width: 4),
             ],
           ),
           body: NetworkBanner(child: pages[_currentIndex]),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: _currentIndex,
-            selectedItemColor: Colors.black,
-            unselectedItemColor: Colors.grey,
-            backgroundColor: Colors.white,
-            type: BottomNavigationBarType.fixed,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-            onTap: (index) => setState(() => _currentIndex = index),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home),
-                label: 'Accueil',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.people_outline),
-                activeIcon: Icon(Icons.people),
-                label: 'Clients',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.receipt_outlined),
-                activeIcon: Icon(Icons.receipt),
-                label: 'Factures',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.description_outlined),
-                activeIcon: Icon(Icons.description),
-                label: 'Contrats',
-              ),
+          bottomNavigationBar: BarreNavigationFlottante(
+            indexCourant: _currentIndex,
+            onChange: (i) => setState(() => _currentIndex = i),
+            onglets: const [
+              OngletNavigation(Icons.home_outlined, Icons.home_rounded, 'Accueil'),
+              OngletNavigation(Icons.people_outline, Icons.people_rounded, 'Clients'),
+              OngletNavigation(Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Factures'),
+              OngletNavigation(Icons.description_outlined, Icons.description_rounded, 'Contrats'),
             ],
           ),
         );
@@ -193,11 +184,11 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
   Widget _buildAppBarAvatar(AccountState state, String? photoUrl) {
     if (state is AccountLoading) {
       return Container(
-        width: 36,
-        height: 36,
+        width: 44,
+        height: 44,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white24,
+          color: AppColor.kNeutreClair,
         ),
       );
     }
@@ -206,8 +197,8 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
       return ClipOval(
         child: CachedNetworkImage(
           imageUrl: photoUrl,
-          width: 36,
-          height: 36,
+          width: 44,
+          height: 44,
           fit: BoxFit.cover,
           placeholder: (_, __) => _initialesAvatar(state),
           errorWidget: (_, __, ___) => _initialesAvatar(state),
@@ -226,14 +217,14 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
       initials = _getInitials(state.user.prenom, state.user.nom);
     }
     return CircleAvatar(
-      radius: 18,
-      backgroundColor: Colors.white24,
+      radius: 22,
+      backgroundColor: AppColor.kPrimary,
       child: Text(
         initials,
         style: const TextStyle(
           color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );

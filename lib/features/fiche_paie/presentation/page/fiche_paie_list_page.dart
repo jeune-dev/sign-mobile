@@ -1,6 +1,8 @@
 ﻿import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +18,7 @@ import '../bloc/fiche_paie_bloc.dart';
 import '../bloc/fiche_paie_event.dart';
 import '../bloc/fiche_paie_state.dart';
 import 'creation_fiche_paie.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class FichePaieListPage extends StatelessWidget {
   const FichePaieListPage({super.key});
@@ -92,7 +95,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
             boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 30)],
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const CircularProgressIndicator(color: Color(0xFF1A1A1A), strokeWidth: 2.5),
+            const CircularProgressIndicator(color: AppColor.kTexte, strokeWidth: 2.5),
             const SizedBox(height: 18),
             Text(mode == 'download' ? 'Téléchargement…' : 'Ouverture…',
                 style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
@@ -138,20 +141,22 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: AppColor.kFond,
       floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppColor.kTexte,
         foregroundColor: Colors.white,
         elevation: 4,
         icon: const Icon(Icons.add_rounded),
         label: const Text('Nouvelle', style: TextStyle(fontWeight: FontWeight.w700)),
-        onPressed: () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const FichePaieFormPage()))
-              .then((_) {
-            if (context.mounted) {
-              context.read<FichePaieBloc>().add(const LoadFichesPaieEvent());
-            }
-          });
+        onPressed: () async {
+          await ParcoursDocument.ouvrir(
+            context,
+            typeDocument: TypeDocumentSigns.fichePaie,
+            page: (_) => const FichePaieFormPage(),
+          );
+          if (context.mounted) {
+            context.read<FichePaieBloc>().add(const LoadFichesPaieEvent());
+          }
         },
       ),
       body: BlocListener<FichePaieBloc, FichePaieState>(
@@ -172,7 +177,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
               child: BlocBuilder<FichePaieBloc, FichePaieState>(
                 builder: (context, state) {
                   if (state is FichePaieLoading) {
-                    return const ShimmerList(accentColor: Color(0xFF1A1A1A));
+                    return const ShimmerList(accentColor: AppColor.kTexte);
                   }
                   if (state is FichePaieError) {
                     return _buildError(context, state.message);
@@ -186,7 +191,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                         _buildFilterBar(all),
                         Expanded(
                           child: RefreshIndicator(
-                            color: const Color(0xFF1A1A1A),
+                            color: AppColor.kTexte,
                             onRefresh: () async =>
                                 context.read<FichePaieBloc>().add(const LoadFichesPaieEvent()),
                             child: fiches.isEmpty
@@ -202,7 +207,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                                           child: Padding(
                                             padding: EdgeInsets.all(16),
                                             child: CircularProgressIndicator(
-                                                color: Color(0xFF1A1A1A), strokeWidth: 2),
+                                                color: AppColor.kTexte, strokeWidth: 2),
                                           ),
                                         );
                                       }
@@ -228,7 +233,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
     final topPad = MediaQuery.of(context).padding.top;
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
+        color: AppColor.kTexte,
         borderRadius: BorderRadius.only(
           bottomLeft:  Radius.circular(28),
           bottomRight: Radius.circular(28),
@@ -309,10 +314,10 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                 Container(
                   width: 46, height: 46,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A).withValues(alpha: 0.1),
+                    color: AppColor.kTexte.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.receipt_long_outlined, color: Color(0xFF1A1A1A), size: 24),
+                  child: const Icon(Icons.receipt_long_outlined, color: AppColor.kTexte, size: 24),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -353,12 +358,12 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A).withValues(alpha: 0.1),
+                    color: AppColor.kTexte.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.3)),
+                    border: Border.all(color: AppColor.kTexte.withValues(alpha: 0.3)),
                   ),
                   child: Text(fiche.typeContrat,
-                      style: const TextStyle(color: Color(0xFF1A1A1A), fontSize: 11, fontWeight: FontWeight.w700)),
+                      style: const TextStyle(color: AppColor.kTexte, fontSize: 11, fontWeight: FontWeight.w700)),
                 ),
               ],
             ),
@@ -369,10 +374,10 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
             child: Row(
               children: [
                 Expanded(child: _infoChip(Icons.monetization_on_outlined, 'Brut',
-                    _formatMontant(fiche.salaireBrut), const Color(0xFF1A1A1A))),
+                    _formatMontant(fiche.salaireBrut), AppColor.kTexte)),
                 const SizedBox(width: 10),
                 Expanded(child: _infoChip(Icons.savings_outlined, 'Net',
-                    _formatMontant(fiche.salaireNet), const Color(0xFF1A1A1A))),
+                    _formatMontant(fiche.salaireNet), AppColor.kTexte)),
               ],
             ),
           ),
@@ -396,14 +401,14 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: filled ? const Color(0xFF1A1A1A) : Colors.white,
+          color: filled ? AppColor.kTexte : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: filled ? const Color(0xFF1A1A1A) : const Color(0xFFE5E7EB)),
+          border: Border.all(color: filled ? AppColor.kTexte : AppColor.kBordure),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, size: 16, color: filled ? Colors.white : const Color(0xFF374151)),
+          Icon(icon, size: 16, color: filled ? Colors.white : AppColor.kTexteFort),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: filled ? Colors.white : const Color(0xFF374151))),
+          Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: filled ? Colors.white : AppColor.kTexteFort)),
         ]),
       ),
     );
@@ -463,27 +468,27 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1A1A1A) : Colors.white,
+            color: selected ? AppColor.kTexte : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: selected ? const Color(0xFF1A1A1A) : const Color(0xFFE5E7EB)),
+            border: Border.all(color: selected ? AppColor.kTexte : AppColor.kBordure),
           ),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Flexible(
               child: Text(label, overflow: TextOverflow.ellipsis, style: TextStyle(
                 fontSize: 12.5, fontWeight: FontWeight.w700,
-                color: selected ? Colors.white : const Color(0xFF374151),
+                color: selected ? Colors.white : AppColor.kTexteFort,
               )),
             ),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
-                color: selected ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFF3F4F6),
+                color: selected ? Colors.white.withValues(alpha: 0.22) : AppColor.kNeutreClair,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text('$count', style: TextStyle(
                 fontSize: 11, fontWeight: FontWeight.w700,
-                color: selected ? Colors.white : const Color(0xFF6B7280),
+                color: selected ? Colors.white : AppColor.kTexteMoyen,
               )),
             ),
           ]),
@@ -499,7 +504,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
       const SizedBox(height: 12),
       Center(child: Text(
         _filtre == 'recus' ? 'Aucune fiche reçue' : 'Aucune fiche envoyée',
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColor.kTexteMoyen),
       )),
     ],
   );
@@ -508,7 +513,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
     icon: Icons.receipt_long_outlined,
     title: 'Aucune fiche de paie',
     subtitle: 'Vos fiches de paie générées apparaîtront ici',
-    accentColor: Color(0xFF1A1A1A),
+    accentColor: AppColor.kTexte,
   );
 
   Widget _buildError(BuildContext context, String message) {
@@ -518,8 +523,8 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
         children: [
           Container(
             width: 64, height: 64,
-            decoration: BoxDecoration(color: Color(0xFFF3F4F6), shape: BoxShape.circle),
-            child: Icon(Icons.error_outline, color: Color(0xFF1A1A1A), size: 32),
+            decoration: BoxDecoration(color: AppColor.kNeutreClair, shape: BoxShape.circle),
+            child: Icon(Icons.error_outline, color: AppColor.kTexte, size: 32),
           ),
           const SizedBox(height: 14),
           const Text('Erreur de chargement',
@@ -531,7 +536,7 @@ class _FichePaieListViewState extends State<_FichePaieListView> {
             onTap: () => context.read<FichePaieBloc>().add(const LoadFichesPaieEvent()),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(color: const Color(0xFF1A1A1A), borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: AppColor.kTexte, borderRadius: BorderRadius.circular(12)),
               child: const Text('Réessayer', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
             ),
           ),

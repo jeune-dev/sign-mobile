@@ -4,6 +4,7 @@ import 'package:sign_application/core/errors/failure.dart';
 import '../../domain/entities/contrat_travail.dart';
 import '../../domain/repositories/contrat_travail_repository.dart';
 import '../datasources/contrat_travail_remote_datasource.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 class ContratTravailRepositoryImpl implements ContratTravailRepository {
   final ContratTravailRemoteDataSource remoteDataSource;
@@ -34,10 +35,10 @@ class ContratTravailRepositoryImpl implements ContratTravailRepository {
   }
 
   @override
-  Future<Either<Failure, void>> creerContratTravail(Map<String, dynamic> data) async {
+  Future<Either<Failure, DocumentCree>> creerContratTravail(Map<String, dynamic> data) async {
     try {
-      await remoteDataSource.creerContratTravail(data);
-      return const Right(null);
+      final cree = await remoteDataSource.creerContratTravail(data);
+      return Right(cree);
     } on DioException catch (e) {
       return Left(ServerFailure(errorMessage: _handleDioError(e)));
     } catch (e) {

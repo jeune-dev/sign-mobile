@@ -1,11 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:sign_application/core/config/env.dart';
 import '../models/autre_contrat_model.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class AutreContratRemoteDataSource {
   Future<List<AutreContratModel>> getContrats(String type);
   Future<AutreContratModel> getContratDetail(String type, String id);
-  Future<void> creerContrat(String type, Map<String, dynamic> body);
+  Future<DocumentCree> creerContrat(String type, Map<String, dynamic> body);
   Future<void> signerContrat(String type, String id, String signature);
   Future<List<int>> telechargerContrat(String type, String id);
 }
@@ -40,8 +41,12 @@ class AutreContratRemoteDataSourceImpl implements AutreContratRemoteDataSource {
   }
 
   @override
-  Future<void> creerContrat(String type, Map<String, dynamic> body) async {
-    await dio.post('${Env.autresContratsBase(type)}/creation', data: body);
+  Future<DocumentCree> creerContrat(String type, Map<String, dynamic> body) async {
+    final reponse =
+        await dio.post('${Env.autresContratsBase(type)}/creation', data: body);
+    // Le backend renvoie le contrat cree : on en garde l'identifiant et le
+    // numero, de quoi afficher le document juste apres sa generation (§ 9).
+    return DocumentCree.depuisReponse(reponse.data);
   }
 
   @override

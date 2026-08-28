@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:media_store_plus/media_store_plus.dart';
 import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/core/theme/app_theme.dart';
@@ -34,10 +33,10 @@ void main() async {
   // Enregistrer le handler background FCM avant Firebase.initializeApp()
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-  // IMP-06 : Désactive le téléchargement runtime des polices Google Fonts.
-  // Les fichiers .ttf doivent être bundlés dans assets/fonts/ (voir pubspec.yaml).
-  // Si les fichiers .ttf sont absents, Flutter tombera sur la police système par défaut.
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // La typographie ne passe plus par google_fonts : les .ttf de assets/fonts/
+  // sont déclarés dans pubspec.yaml sous la famille PlusJakartaSans, et
+  // AppTypo s'appuie directement dessus. Aucun accès réseau, aucun repli
+  // silencieux sur la police système — voir core/theme/app_typo.dart.
 
   // IMP-02 : Firebase Crashlytics — monitoring des crashes en production.
   // Android  : google-services.json dans android/app/
@@ -127,13 +126,19 @@ class _MyAppState extends State<MyApp> {
           Locale('fr', 'FR'),
           Locale('en', 'US'),
         ],
-        // Clamp textScaler : empêche le texte d'exploser sur les téléphones
-        // dont l'utilisateur a mis "Taille du texte = Grande/Très grande"
+        // Plafond d'agrandissement du texte.
+        //
+        // Il était fixé à 1.2, ce qui revenait à ignorer presque entièrement le
+        // réglage « Taille du texte » du téléphone — donc à exclure les
+        // utilisateurs malvoyants, qui le poussent souvent bien au-delà. 1.5
+        // leur rend un agrandissement réellement utile tout en bornant les
+        // débordements sur les écrans denses. Le plafond pourra disparaître une
+        // fois les formulaires rendus tolérants (Wrap, Flexible, maxLines).
         builder: (context, child) {
           final mq = MediaQuery.of(context);
           return MediaQuery(
             data: mq.copyWith(
-              textScaler: mq.textScaler.clamp(maxScaleFactor: 1.2),
+              textScaler: mq.textScaler.clamp(maxScaleFactor: 1.5),
             ),
             child: child!,
           );

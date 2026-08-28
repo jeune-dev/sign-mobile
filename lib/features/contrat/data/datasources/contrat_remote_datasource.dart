@@ -2,10 +2,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_application/core/config/env.dart';
 import '../models/contrat_bail_model.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class ContratRemoteDataSource {
   Future<List<ContratBailModel>> getContratsImmobilier({int page, int limit});
-  Future<void> creerContratBail(Map<String, dynamic> data);
+  Future<DocumentCree> creerContratBail(Map<String, dynamic> data);
   Future<List<int>> telechargerContrat(String contratId);
 } 
 
@@ -51,8 +52,11 @@ class ContratRemoteDataSourceImpl implements ContratRemoteDataSource {
   }
 
   @override
-  Future<void> creerContratBail(Map<String, dynamic> data) async {
-    await dio.post(Env.contratBailCreer, data: data);
+  Future<DocumentCree> creerContratBail(Map<String, dynamic> data) async {
+    // La reponse porte le document cree : on en retient
+    // l'identifiant et le numero pour l'ecran de confirmation (§ 9).
+    final reponse = await dio.post(Env.contratBailCreer, data: data);
+    return DocumentCree.depuisReponse(reponse.data);
   }
 
   @override

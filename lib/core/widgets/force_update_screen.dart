@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/app_update_launcher.dart';
 import '../services/app_version_config.dart';
 import '../theme/app_color.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 /// Écran plein écran bloquant — mise à jour obligatoire. Aucune sortie
 /// possible : pas de bouton retour (PopScope canPop:false), pas de bouton
@@ -33,7 +33,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF0E0E10) : Colors.white,
+        backgroundColor: isDark ? AppColor.kTexte : Colors.white,
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -59,7 +59,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                       ? widget.config.title
                       : 'Mise à jour requise',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     fontSize: 25,
                     fontWeight: FontWeight.w800,
                     color: isDark ? Colors.white : AppColor.kGrayscaleDark100,
@@ -70,7 +70,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                   Text(
                     widget.config.subtitle,
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppTypo.jakarta(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppColor.kGrayscale40,
@@ -83,7 +83,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                       ? widget.config.message
                       : 'Une nouvelle version est nécessaire pour continuer à utiliser l\'application.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     fontSize: 14.5,
                     height: 1.55,
                     color: AppColor.kGrayscale40,
@@ -114,7 +114,7 @@ class _ForceUpdateScreenState extends State<ForceUpdateScreen> {
                           )
                         : Text(
                             widget.config.updateButton,
-                            style: GoogleFonts.plusJakartaSans(
+                            style: AppTypo.jakarta(
                               fontWeight: FontWeight.w700,
                               fontSize: 15.5,
                             ),

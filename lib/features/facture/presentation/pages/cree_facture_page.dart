@@ -12,6 +12,14 @@ import 'package:sign_application/features/client/presentation/widgets/client_ava
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/confirmation_dialog.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/facture/domain/usecases/ouvrir_document.dart';
+import 'package:sign_application/features/facture/domain/usecases/renvoyer_facture.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
+import 'package:sign_application/core/widgets/app_champ_texte.dart';
+import 'package:sign_application/core/widgets/app_entete_formulaire.dart';
 
 class CreeFacture extends StatefulWidget {
   const CreeFacture({super.key});
@@ -33,6 +41,9 @@ class _CreeFactureState extends State<CreeFacture> {
 
   List<Client> _clientsTrouves = [];
   Client? _clientSelectionne;
+  /// Informations qui figureront sur le document : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
   DateTime? _dateEcheance;
 
   List<Map<String, dynamic>> _items = [
@@ -48,11 +59,15 @@ class _CreeFactureState extends State<CreeFacture> {
   @override
   void initState() {
     super.initState();
+    // Prerempli la section « Vos informations » pendant que l'utilisateur
+    // remplit les premieres etapes.
+    _emetteur.charger();
     _lieuExecutionController.text = 'Dakar';
   }
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _rechercheController.dispose();
     _dateEcheanceController.dispose();
     _delaisExecutionController.dispose();
@@ -151,6 +166,9 @@ class _CreeFactureState extends State<CreeFacture> {
 
     final payload = {
       'clientId': _clientSelectionne!.id,
+      // Ce qui sera imprime sur le document. Le serveur fige ces
+      // valeurs : une regeneration produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
       'delais_execution': _delaisExecutionController.text,
       'date_execution': _dateEcheance?.toIso8601String(),
       'avance': double.tryParse(_avanceController.text) ?? 0,
@@ -179,7 +197,30 @@ class _CreeFactureState extends State<CreeFacture> {
       listener: (context, state) {
         if (state is FactureSuccess) {
           showToast(context, 'Facture créée', 'La facture a été créée avec succès.', ToastificationType.success);
-          Navigator.pop(context);
+          // La facture est montree a l'utilisateur avant tout retour a la
+          // liste (§ 9), puis le parcours reprend la main (§ 10).
+          afficherDocumentGenere(
+            context,
+            libelle: 'facture',
+            feminin: true,
+            document: state.documentCree,
+            telecharger: (id) async {
+              final resultat = await sl<OuvrirDocument>()(id);
+              return resultat.fold(
+                (echec) => throw Exception(echec.errorMessage),
+                (octets) => octets,
+              );
+            },
+            envoyerParEmail: () async {
+              final id = state.documentCree?.id;
+              if (id == null) return;
+              final resultat = await sl<RenvoyerFacture>()(id);
+              resultat.fold(
+                (echec) => throw Exception(echec.errorMessage),
+                (_) {},
+              );
+            },
+          );
         }
         if (state is FactureError) {
           showToast(context, 'Erreur', state.message, ToastificationType.error);
@@ -192,11 +233,11 @@ class _CreeFactureState extends State<CreeFacture> {
           }
         },
         child: Scaffold(
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            title: const Text('Nouvelle Facture', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            centerTitle: true,
-            leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.white), onPressed: () => Navigator.pop(context), tooltip: 'Retour'),
+          appBar: AppEnteteFormulaire.barre(
+            titre: 'Nouvelle facture',
+            sousTitre: 'Client, prestations et modalités de paiement',
+            icone: Icons.receipt_long_outlined,
+            onRetour: () => Navigator.pop(context),
           ),
           body: BlocBuilder<FactureBloc, FactureState>(
             builder: (context, factureState) {
@@ -212,6 +253,11 @@ class _CreeFactureState extends State<CreeFacture> {
                       const SizedBox(height: 8),
                       const Text('Remplissez les informations', style: TextStyle(color: Colors.grey, fontSize: 14)),
                       const SizedBox(height: 24),
+
+                      // Ce qui figurera sur la facture : prerempli depuis le profil,
+                      // modifiable, et fige avec le document cote serveur.
+                      SectionEmetteur(controleur: _emetteur, titre: 'Vos informations'),
+                      const SizedBox(height: 20),
 
                       // CLIENT
                       const Text('Client *', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -252,11 +298,7 @@ class _CreeFactureState extends State<CreeFacture> {
                           children: [
                             TextField(
                               controller: _rechercheController,
-                              decoration: InputDecoration(
-                                labelText: 'Rechercher un client *',
-                                prefixIcon: const Icon(Icons.search),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
+                              decoration: AppChampTexte.decoration(indication: 'Rechercher un client', prefixe: const Icon(Icons.search)),
                               onChanged: (v) => Future.delayed(
                                 const Duration(milliseconds: 500),
                                 () { if (v == _rechercheController.text) _rechercherClients(v); },
@@ -356,18 +398,7 @@ class _CreeFactureState extends State<CreeFacture> {
                                   ),
                                   const SizedBox(height: 16),
                                   TextFormField(
-                                    decoration: InputDecoration(
-                                      labelText: 'Désignation *',
-                                      hintText: isProduit ? 'Ex: Ordinateur portable' : 'Ex: Prestation de conseil',
-                                      filled: true,
-                                  fillColor: const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                    ),
+                                    decoration: AppChampTexte.decoration(indication: isProduit ? 'Ex: Ordinateur portable' : 'Ex: Prestation de conseil'),
                                     initialValue: item['designation'],
                                     onChanged: (v) => _mettreAJourItem(index, 'designation', v),
                                     validator: (v) => v == null || v.isEmpty ? 'Veuillez entrer une désignation' : null,
@@ -379,17 +410,7 @@ class _CreeFactureState extends State<CreeFacture> {
                                       if (isProduit) ...[
                                         Expanded(
                                           child: TextFormField(
-                                            decoration: InputDecoration(
-                                              labelText: 'Quantité *',
-                                              filled: true,
-                                  fillColor: const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                            ),
+                                            decoration: AppChampTexte.decoration(indication: 'Quantité'),
                                             keyboardType: TextInputType.number,
                                             initialValue: item['quantite'].toString(),
                                             onChanged: (v) {
@@ -408,17 +429,7 @@ class _CreeFactureState extends State<CreeFacture> {
                                       ],
                                       Expanded(
                                         child: TextFormField(
-                                          decoration: InputDecoration(
-                                            labelText: 'Prix unitaire (FCFA) *',
-                                            filled: true,
-                                  fillColor: const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                                          ),
+                                          decoration: AppChampTexte.decoration(indication: 'Prix unitaire (FCFA)'),
                                           keyboardType: TextInputType.number,
                                           initialValue: item['prix_unitaire'].toString(),
                                           onChanged: (v) {
@@ -506,17 +517,13 @@ class _CreeFactureState extends State<CreeFacture> {
                               TextFormField(
                                 controller: _avanceController,
                                 enabled: !_montantPayeActif,
-                                decoration: InputDecoration(
-                                  labelText: 'Avance (FCFA)',
-                                  prefixIcon: const Icon(Icons.payment),
-                                  filled: _montantPayeActif,
-                                  fillColor: _montantPayeActif ? Colors.grey[100] : const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                decoration: AppChampTexte.decoration(
+                                        indication: 'Avance (FCFA)',
+                                        prefixe: const Icon(Icons.payment))
+                                    .copyWith(
+                                  // Grisé quand « Montant payé » est renseigné :
+                                  // les deux champs s'excluent.
+                                  fillColor: _montantPayeActif ? AppColor.kNeutreClair : null,
                                 ),
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
@@ -548,17 +555,11 @@ class _CreeFactureState extends State<CreeFacture> {
                               TextFormField(
                                 controller: _montantPayeController,
                                 enabled: !_avanceActif,
-                                decoration: InputDecoration(
-                                  labelText: 'Montant payé (FCFA)',
-                                  prefixIcon: const Icon(Icons.check_circle_outline),
-                                  filled: _avanceActif,
-                                  fillColor: _avanceActif ? Colors.grey[100] : const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                decoration: AppChampTexte.decoration(
+                                        indication: 'Montant payé (FCFA)',
+                                        prefixe: const Icon(Icons.check_circle_outline))
+                                    .copyWith(
+                                  fillColor: _avanceActif ? AppColor.kNeutreClair : null,
                                 ),
                                 keyboardType: TextInputType.number,
                                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
@@ -599,19 +600,7 @@ class _CreeFactureState extends State<CreeFacture> {
                         controller: _delaisExecutionController,
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        decoration: InputDecoration(
-                          labelText: 'Ex: 2 (jours)',
-                          prefixIcon: const Icon(Icons.timer),
-                          suffixText: 'jours',
-                          filled: true,
-                                  fillColor: const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        ),
+                        decoration: AppChampTexte.decoration(indication: 'Ex: 2 (jours)', prefixe: const Icon(Icons.timer), suffixe: Text('jours')),
                         validator: (v) => v == null || v.isEmpty ? 'Veuillez spécifier les délais' : null,
                       ),
 
@@ -621,18 +610,7 @@ class _CreeFactureState extends State<CreeFacture> {
                       const SizedBox(height: 8),
                       TextFormField(
                         controller: _lieuExecutionController,
-                        decoration: InputDecoration(
-                          labelText: 'Lieu',
-                          prefixIcon: const Icon(Icons.location_on),
-                          filled: true,
-                                  fillColor: const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        ),
+                        decoration: AppChampTexte.decoration(indication: 'Lieu', prefixe: const Icon(Icons.location_on)),
                         validator: (v) => v == null || v.isEmpty ? 'Veuillez spécifier le lieu' : null,
                       ),
 
@@ -642,18 +620,7 @@ class _CreeFactureState extends State<CreeFacture> {
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedMoyenPaiement,
-                        decoration: InputDecoration(
-                          labelText: 'Sélectionnez',
-                          prefixIcon: const Icon(Icons.payment),
-                          filled: true,
-                                  fillColor: const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        ),
+                        decoration: AppChampTexte.decoration(indication: 'Sélectionnez', prefixe: const Icon(Icons.payment)),
                         items: _moyensPaiement.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
                         onChanged: (v) => setState(() => _selectedMoyenPaiement = v),
                         validator: (v) => v == null ? 'Veuillez sélectionner un moyen de paiement' : null,
@@ -666,19 +633,7 @@ class _CreeFactureState extends State<CreeFacture> {
                       TextFormField(
                         controller: _dateEcheanceController,
                         readOnly: true,
-                        decoration: InputDecoration(
-                          labelText: 'Date d\'échéance',
-                          prefixIcon: const Icon(Icons.calendar_today),
-                          suffixIcon: IconButton(icon: const Icon(Icons.date_range), onPressed: _selectDateEcheance, tooltip: 'Choisir une date'),
-                          filled: true,
-                                  fillColor: const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        ),
+                        decoration: AppChampTexte.decoration(indication: 'Date d\'échéance', prefixe: const Icon(Icons.calendar_today), suffixe: IconButton(icon: const Icon(Icons.date_range), onPressed: _selectDateEcheance, tooltip: 'Choisir une date')),
                         validator: (v) => v == null || v.isEmpty ? 'Veuillez sélectionner une date' : null,
                       ),
 
@@ -688,18 +643,7 @@ class _CreeFactureState extends State<CreeFacture> {
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         initialValue: _selectedTva,
-                        decoration: InputDecoration(
-                          labelText: 'Sélectionnez le taux',
-                          prefixIcon: const Icon(Icons.percent),
-                          filled: true,
-                                  fillColor: const Color(0xFFF8F8FA),
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-                                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.black87, width: 1.5)),
-                                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                                  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        ),
+                        decoration: AppChampTexte.decoration(indication: 'Sélectionnez le taux', prefixe: const Icon(Icons.percent)),
                         items: _tvaOptions.map((t) => DropdownMenuItem(value: t, child: Text('$t %'))).toList(),
                         onChanged: (v) => setState(() => _selectedTva = v),
                         validator: (v) => v == null ? 'Veuillez sélectionner un taux' : null,

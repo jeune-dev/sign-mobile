@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:sign_application/core/errors/failure.dart';
 import '../../domain/repositories/facture_repository.dart';
 import '../datasources/facture_remote_datasource.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 class FactureRepositoryImpl implements FactureRepository {
   final FactureRemoteDataSource remoteDataSource;
@@ -27,10 +28,10 @@ class FactureRepositoryImpl implements FactureRepository {
   }
 
   @override
-  Future<Either<Failure, void>> creerFacture(Map<String, dynamic> data) async {
+  Future<Either<Failure, DocumentCree>> creerFacture(Map<String, dynamic> data) async {
     try {
-      await remoteDataSource.creerFacture(data);
-      return const Right(null);
+      final cree = await remoteDataSource.creerFacture(data);
+      return Right(cree);
     } on DioException catch (e) {
       return Left(ServerFailure(errorMessage: _handleDioError(e)));
     } catch (e) {

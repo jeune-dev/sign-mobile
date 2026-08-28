@@ -17,10 +17,19 @@ import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
 import 'package:sign_application/injection_container.dart' as di;
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class HomeProfessionnelPage extends StatefulWidget {
   final User? user;
-  const HomeProfessionnelPage({super.key, this.user});
+
+  /// Bascule vers l'onglet Contrats de la page hote.
+  ///
+  /// Fourni par le parent plutot que declenche ici : l'accueil est un onglet
+  /// parmi d'autres, il n'a pas a empiler une page par-dessus lui-meme ni a
+  /// connaitre l'index de ses voisins.
+  final VoidCallback? onVoirContrats;
+
+  const HomeProfessionnelPage({super.key, this.user, this.onVoirContrats});
 
   @override
   State<HomeProfessionnelPage> createState() => _HomeProfessionnelPageState();
@@ -113,7 +122,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 40),
+              padding: const EdgeInsets.fromLTRB(20, 22, 20, 40),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -192,8 +201,8 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionTitle('Vue d\'ensemble'),
-            const SizedBox(height: 14),
+            // Ni salutation ni phrase d'introduction : l'ecran s'ouvre
+            // directement sur les chiffres, qui se passent de presentation.
             // ── Cartes stats (compactes) ──────────────────────────────────
             Row(
               children: [
@@ -257,7 +266,7 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1a1a1a), Color(0xFF3a3a3a)],
+          colors: [AppColor.kTexte, Color(0xFF3a3a3a)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -352,6 +361,11 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
   }
 
   // ── Mini carte contrats (compacte) ──────────────────────────────────────────
+  /// Carte compacte d'un type de contrat.
+  ///
+  /// Le chevron dit que la carte mene quelque part : elle bascule sur
+  /// l'onglet Contrats. Sans lui, rien ne laissait deviner qu'elle etait
+  /// actionnable.
   Widget _buildMiniStatCard({
     required String title,
     required String value,
@@ -359,46 +373,61 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     required Color color,
     required String subtitle,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[100]!),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 34, height: 34,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: color, size: 18),
+    return Material(
+      color: AppColor.kSurface,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        onTap: widget.onVoirContrats,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColor.kLine),
+            boxShadow: [
+              BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 3)),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(value,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: -0.8, height: 1)),
+          child: Row(
+            children: [
+              Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                const SizedBox(height: 1),
-                Text('$subtitle $title',
-                    style: TextStyle(fontSize: 10, color: Colors.grey[500], fontWeight: FontWeight.w500),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(value,
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColor.kTexte, letterSpacing: -0.8, height: 1)),
+                    ),
+                    const SizedBox(height: 3),
+                    // Deux lignes autorisees : sur une seule, « Contrats
+                    // Travail » depassait la place disponible et se
+                    // terminait par une ellipse.
+                    Text('$subtitle $title',
+                        style: const TextStyle(fontSize: 12, color: AppColor.kTexteMoyen, fontWeight: FontWeight.w600, height: 1.25),
+                        maxLines: 2),
+                  ],
+                ),
+              ),
+              if (widget.onVoirContrats != null) ...[
+                const SizedBox(width: 2),
+                const Icon(Icons.chevron_right_rounded,
+                    size: 18, color: AppColor.kTexteFaible),
               ],
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -460,20 +489,19 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
     showContractTypeModal(context, user: widget.user);
   }
 
+  /// Titre de section : texte seul.
+  ///
+  /// Le filet vertical qui le precedait ajoutait un element graphique sans
+  /// rien distinguer — il etait identique devant chaque titre.
   Widget _buildSectionTitle(String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 20,
-          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(2)),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.black87, letterSpacing: -0.3),
-        ),
-      ],
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 17,
+        fontWeight: FontWeight.w800,
+        color: AppColor.kTexte,
+        letterSpacing: -0.3,
+      ),
     );
   }
 
@@ -524,10 +552,13 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
             GestureDetector(
               onTap: () => Navigator.push(
                   context, MaterialPageRoute(builder: (_) => const HistoriqueFacturesPage())),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(12)),
-                child: const Text('Voir tout →', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Text('Voir tout →',
+                    style: TextStyle(
+                        color: AppColor.kTexte,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700)),
               ),
             ),
           ],

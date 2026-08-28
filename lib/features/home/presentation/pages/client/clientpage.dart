@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:sign_application/core/widgets/logout_dialog.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import '../../../../account/presentation/pages/profil_page.dart';
 import '../../../../particulier/presentation/bloc/particulier_bloc.dart';
@@ -10,6 +9,10 @@ import '../../../../particulier/presentation/pages/factures_client_page.dart';
 import '../../../../particulier/presentation/pages/contrats_client_page.dart';
 import 'package:sign_application/core/widgets/network_banner.dart';
 import 'package:sign_application/core/services/fcm_service.dart';
+import 'package:sign_application/features/notifications/presentation/cloche_notifications.dart';
+import 'package:sign_application/core/widgets/barre_navigation_flottante.dart';
+import 'package:flutter/services.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class ClientPage extends StatefulWidget {
   final User? user;
@@ -47,36 +50,49 @@ class _ClientPageState extends State<ClientPage> {
           ];
 
           return Scaffold(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColor.kFond,
+            // En-tete clair : le bandeau noir ecrasait le haut de l'ecran et
+            // isolait l'identite du reste de la page.
             appBar: AppBar(
-              backgroundColor: Colors.black,
+              backgroundColor: AppColor.kSurface,
+              surfaceTintColor: AppColor.kSurface,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              systemOverlayStyle: SystemUiOverlayStyle.dark,
+              toolbarHeight: 72,
+              titleSpacing: 16,
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '${widget.user?.prenom ?? ''} ${widget.user?.nom ?? ''}'.trim(),
                     style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      color: AppColor.kTexte,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if ((widget.user?.email ?? '').isNotEmpty)
                     Text(
                       widget.user!.email,
                       style: const TextStyle(
-                        color: Colors.white70,
+                        color: AppColor.kTexteMoyen,
                         fontSize: 12,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                 ],
               ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
-                  onPressed: () => LogoutDialog.show(ctx),
-                  tooltip: 'Déconnexion',
-                ),
+              actions: const [
+                // La déconnexion vivait ici, à portée de pouce d'un geste de
+                // retour : elle a rejoint le bas de la page de profil, là où
+                // on la cherche. La cloche prend sa place.
+                ClocheNotifications(couleur: AppColor.kTexte),
+                SizedBox(width: 8),
               ],
             ),
             body: NetworkBanner(
@@ -85,34 +101,14 @@ class _ClientPageState extends State<ClientPage> {
                 children: pages,
               ),
             ),
-            bottomNavigationBar: BottomNavigationBar(
-              currentIndex: _currentIndex,
-              selectedItemColor: Colors.black,
-              unselectedItemColor: Colors.grey,
-              backgroundColor: Colors.white,
-              type: BottomNavigationBarType.fixed,
-              onTap: (index) => setState(() => _currentIndex = index),
-              items: const [
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.home_outlined),
-                  activeIcon: Icon(Icons.home),
-                  label: 'Accueil',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  activeIcon: Icon(Icons.receipt_long),
-                  label: 'Factures',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.description_outlined),
-                  activeIcon: Icon(Icons.description),
-                  label: 'Contrats',
-                ),
-                BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline),
-                  activeIcon: Icon(Icons.person),
-                  label: 'Profil',
-                ),
+            bottomNavigationBar: BarreNavigationFlottante(
+              indexCourant: _currentIndex,
+              onChange: (i) => setState(() => _currentIndex = i),
+              onglets: const [
+                OngletNavigation(Icons.home_outlined, Icons.home_rounded, 'Accueil'),
+                OngletNavigation(Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Factures'),
+                OngletNavigation(Icons.description_outlined, Icons.description_rounded, 'Contrats'),
+                OngletNavigation(Icons.person_outline, Icons.person_rounded, 'Profil'),
               ],
             ),
           );

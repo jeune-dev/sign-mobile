@@ -2,21 +2,31 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sign_application/core/config/env.dart';
+import 'package:sign_application/core/services/token_service.dart';
+import 'package:sign_application/injection_container.dart';
 
 abstract class AuthRemoteDataSource {
   Future<AuthResponseModel> login(String identifiant, String motDePasse);
   Future<void> forgotPassword(String email);
+
+  /// Confirme l'adresse avec le code recu et ouvre la session.
+  Future<UserModel> verifierEmail(String email, String code);
+
+  /// Redemande un code de verification.
+  Future<void> renvoyerCodeVerification(String email);
   Future<void> resetPassword(String email, String otpRecu, String newPassword);
   Future<AuthResponseModel> register({
     required String nom,
     required String prenom,
-    required String email,
-    required String mot_de_passe,
-    required String adresse,
     required String telephone,
-    required String carte_identite_national_num,
     required String role,
+    String? ville,
+    String? email,
+    String? mot_de_passe,
+    String? adresse,
+    String? carte_identite_national_num,
     String? typeDocumentIdentite,
     XFile? documentIdentite,
     XFile? photoProfil,
@@ -82,6 +92,54 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
+  Future<UserModel> verifierEmail(String email, String code) async {
+    try {
+      final reponse = await dio.post(
+        _normalisePath(Env.authVerifierEmail),
+        data: {'email': email, 'code': code},
+      );
+
+      // Meme forme qu'une connexion : jetons + utilisateur. On ouvre donc la
+      // session ici, exactement comme le fait le depot pour le login.
+      final auth = AuthResponseModel.fromJson(reponse.data);
+      final tokenService = sl<TokenService>();
+      await tokenService.setToken(auth.token);
+      await tokenService.setRefreshToken(auth.refreshToken);
+
+      final storage = sl<FlutterSecureStorage>();
+      await storage.write(key: 'user_id', value: auth.user.id);
+      await storage.write(key: 'user_role', value: auth.user.role);
+
+      return auth.user;
+    } on DioException catch (e) {
+      throw Exception(_messageErreur(e, 'Vérification impossible'));
+    }
+  }
+
+  @override
+  Future<void> renvoyerCodeVerification(String email) async {
+    try {
+      await dio.post(
+        _normalisePath(Env.authRenvoyerCode),
+        data: {'email': email},
+      );
+    } on DioException catch (e) {
+      throw Exception(_messageErreur(e, 'Envoi du code impossible'));
+    }
+  }
+
+  /// Extrait le message le plus parlant d'une erreur Dio.
+  String _messageErreur(DioException e, String parDefaut) {
+    final donnees = e.response?.data;
+    if (donnees is Map) {
+      final details = donnees['details'];
+      if (details is List && details.isNotEmpty) return details.first.toString();
+      if (donnees['message'] != null) return donnees['message'].toString();
+    }
+    return parDefaut;
+  }
+
+  @override
   Future<void> forgotPassword(String email) async {
     try {
       await dio.post(_forgotPasswordPath, data: {'email': email});
@@ -123,12 +181,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<AuthResponseModel> register({
     required String nom,
     required String prenom,
-    required String email,
-    required String mot_de_passe,
-    required String adresse,
     required String telephone,
-    required String carte_identite_national_num,
     required String role,
+    String? ville,
+    String? email,
+    String? mot_de_passe,
+    String? adresse,
+    String? carte_identite_national_num,
     String? typeDocumentIdentite,
     XFile? documentIdentite,
     String? rc,
@@ -143,15 +202,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     void Function(int sent, int total)? onSendProgress,
   }) async {
     // VULN-H02 : Aucun print() — données sensibles jamais loggées
+    // Seuls les champs réellement renseignés sont transmis : le backend
+    // refuse une chaîne vide là où il attend un e-mail ou un mot de passe.
     final formData = FormData.fromMap({
       'nom': nom,
       'prenom': prenom,
-      'email': email,
-      'mot_de_passe': mot_de_passe,
-      'adresse': adresse,
       'telephone': telephone,
-      'carte_identite_national_num': carte_identite_national_num,
       'role': role,
+      if (ville != null && ville.isNotEmpty) 'ville': ville,
+      if (email != null && email.isNotEmpty) 'email': email,
+      if (mot_de_passe != null && mot_de_passe.isNotEmpty) 'mot_de_passe': mot_de_passe,
+      if (adresse != null && adresse.isNotEmpty) 'adresse': adresse,
+      if (carte_identite_national_num != null && carte_identite_national_num.isNotEmpty)
+        'carte_identite_national_num': carte_identite_national_num,
       if (typeDocumentIdentite != null) 'type_document_identite': typeDocumentIdentite,
       if (rc != null) 'rc': rc,
       if (ninea != null) 'ninea': ninea,

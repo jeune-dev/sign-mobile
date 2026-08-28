@@ -22,6 +22,14 @@ class Env {
         return const String.fromEnvironment('AUTH_REFRESH_PATH');
       case 'AUTH_LOGOUT_PATH':
         return const String.fromEnvironment('AUTH_LOGOUT_PATH');
+      case 'AUTH_VERIFIER_EMAIL_PATH':
+        return const String.fromEnvironment('AUTH_VERIFIER_EMAIL_PATH');
+      case 'AUTH_RENVOYER_CODE_PATH':
+        return const String.fromEnvironment('AUTH_RENVOYER_CODE_PATH');
+      case 'PROFIL_BASE_PATH':
+        return const String.fromEnvironment('PROFIL_BASE_PATH');
+      case 'AUTRE_PARTIE_BASE_PATH':
+        return const String.fromEnvironment('AUTRE_PARTIE_BASE_PATH');
       case 'ACCOUNT_ME_PATH':
         return const String.fromEnvironment('ACCOUNT_ME_PATH');
       case 'ACCOUNT_MODIFIER_INFO_PATH':
@@ -116,6 +124,51 @@ class Env {
   static String get authLogout =>
       _get('AUTH_LOGOUT_PATH', fallback: '/v1/auth/logout');
 
+  /// Confirmation de l'adresse e-mail. C'est cette route qui ouvre la
+  /// session : l'inscription ne délivre aucun jeton.
+  static String get authVerifierEmail =>
+      _get('AUTH_VERIFIER_EMAIL_PATH', fallback: '/v1/auth/verifier-email');
+  static String get authRenvoyerCode =>
+      _get('AUTH_RENVOYER_CODE_PATH', fallback: '/v1/auth/renvoyer-code');
+
+  // ─── Parcours progressif (nouveau parcours SIGNS) ────────────────────────────
+  // Base commune : les chemins sont construits à partir de PROFIL_BASE_PATH,
+  // ce qui évite de multiplier les --dart-define pour un même groupe de routes.
+  static String get profilBase =>
+      _get('PROFIL_BASE_PATH', fallback: '/v1/profil');
+
+  /// Ce qu'il manque à l'utilisateur pour créer un type de document (§ 4).
+  static String profilExigences(String typeDocument) =>
+      '$profilBase/exigences/$typeDocument';
+
+  /// Contrôle final avant génération (§ 9 / § 15).
+  static String profilVerification(String typeDocument) =>
+      '$profilBase/verification/$typeDocument';
+
+  /// Règles de saisie appliquées par le backend (plages téléphoniques, etc.).
+  static String get profilReferentiels => '$profilBase/referentiels';
+
+  /// Informations réutilisées automatiquement dans chaque document (§ 16).
+  static String get profilPrereemplissage => '$profilBase/prereemplissage';
+
+  /// Validation d'identifiants sans enregistrement (retour visuel immédiat).
+  static String get profilValiderIdentifiants => '$profilBase/identifiants/valider';
+
+  /// Enregistrement des informations demandées au fil du parcours.
+  static String get profilInformations => '$profilBase/informations';
+
+  /// Création du compte complet (§ 11).
+  static String get profilComplet => '$profilBase/complet';
+
+  /// Justificatifs d'identité et d'activité (§ 12 / § 13).
+  static String get profilJustificatifs => '$profilBase/justificatifs';
+
+  // ─── Autre partie d'un document (§ 8) ────────────────────────────────────────
+  static String get autrePartieBase =>
+      _get('AUTRE_PARTIE_BASE_PATH', fallback: '/v1/autre-partie');
+  static String get autrePartieRecherche => '$autrePartieBase/recherche';
+  static String get autrePartieInviter => '$autrePartieBase/inviter';
+
   // ─── Account ─────────────────────────────────────────────────────────────────
   static String get accountMe =>
       _get('ACCOUNT_ME_PATH', fallback: '/v1/account/me');
@@ -209,6 +262,13 @@ class Env {
       _get('PARTICULIER_FACTURES_PATH', fallback: '/v1/particulier/factures');
   static String get particulierContrats =>
       _get('PARTICULIER_CONTRATS_PATH', fallback: '/v1/particulier/contrats');
+
+  // ─── Notifications (cloche) ───────────────────────────────────────────────────
+  static String get notificationsBase =>
+      _get('NOTIFICATIONS_PATH', fallback: '/v1/notifications');
+  static String get notificationsCompteur => '$notificationsBase/compteur';
+  static String get notificationsToutLu => '$notificationsBase/tout-lu';
+  static String notificationLue(String id) => '$notificationsBase/$id/lue';
 
   // ─── Stats endpoints ──────────────────────────────────────────────────────────
   static String get contratBailStats    => '/v1/professionnel/contratBail/stats';

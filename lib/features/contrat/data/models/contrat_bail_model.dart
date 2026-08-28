@@ -13,6 +13,7 @@ class ContratBailModel extends ContratBail {
     super.dateDebutBail,
     super.locataires,
     super.proprietaire,
+    super.direction,
   });
 
   factory ContratBailModel.fromJson(Map<String, dynamic> json) {
@@ -27,6 +28,7 @@ class ContratBailModel extends ContratBail {
       bienVille:     json['bien_ville']     as String?,
       bienType:      json['bien_type']      as String?,
       statut:        json['statut']         as String?,
+      direction:     json['direction']      as String?,
       loyerMensuel:  json['loyer_mensuel'] != null
           ? double.tryParse(json['loyer_mensuel'].toString())
           : null,

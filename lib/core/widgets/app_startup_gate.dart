@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../features/parcours/data/datasources/parcours_remote_datasource.dart';
 import '../../injection_container.dart' as di;
 import '../services/app_update_launcher.dart';
 import '../services/app_version_config.dart';
@@ -29,6 +32,12 @@ class _AppStartupGateState extends State<AppStartupGate> {
   }
 
   Future<void> _check() async {
+    // Aligne le validateur local sur le référentiel du backend (plages
+    // téléphoniques, longueurs…). Volontairement non attendu : c'est un
+    // confort de saisie, jamais un prérequis au démarrage — et le serveur
+    // reste de toute façon l'autorité sur la validation.
+    unawaited(di.sl<ParcoursRemoteDataSource>().synchroniserReferentiels());
+
     final service = di.sl<AppVersionService>();
     final result = await service.checkForUpdate().timeout(
       const Duration(seconds: 5),

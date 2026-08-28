@@ -63,10 +63,22 @@ class AuthRepositoryImpl implements AuthRepository {
       return Right(authResponse.user);
     } on DioException catch (e) {
       String message = 'Une erreur est survenue';
-      if (e.response?.data is Map && e.response?.data['message'] != null) {
-        message = e.response!.data['message'];
+      final donnees = e.response?.data;
+      if (donnees is Map && donnees['message'] != null) {
+        message = donnees['message'];
       } else if (e.message != null) {
         message = e.message!;
+      }
+      // Compte antérieur à la refonte : le backend réclame son mot de passe.
+      if (donnees is Map && donnees['motDePasseRequis'] == true) {
+        return Left(MotDePasseRequisFailure(errorMessage: message));
+      }
+      // Adresse jamais confirmée : on renvoie vers la saisie du code.
+      if (donnees is Map && donnees['verificationRequise'] == true) {
+        return Left(VerificationEmailRequiseFailure(
+          errorMessage: message,
+          email: donnees['email']?.toString() ?? '',
+        ));
       }
       return Left(ServerFailure(errorMessage: message));
     } catch (e) {
@@ -78,12 +90,16 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, User>> register({
     required String nom,
     required String prenom,
-    required String email,
-    required String mot_de_passe,
-    required String adresse,
     required String telephone,
-    required String carte_identite_national_num,
     required String role,
+    // Facultatifs depuis l'inscription rapide (§ 2) : seuls nom, prénom,
+    // ville, téléphone et le type de profil sont demandés. Les anciens
+    // champs restent acceptés par le backend.
+    String? ville,
+    String? email,
+    String? mot_de_passe,
+    String? adresse,
+    String? carte_identite_national_num,
     String? typeDocumentIdentite,
     XFile? documentIdentite,
     XFile? photoProfil,
@@ -101,12 +117,13 @@ class AuthRepositoryImpl implements AuthRepository {
       final authResponse = await remoteDataSource.register(
         nom: nom,
         prenom: prenom,
+        telephone: telephone,
+        role: role,
+        ville: ville,
         email: email,
         mot_de_passe: mot_de_passe,
         adresse: adresse,
-        telephone: telephone,
         carte_identite_national_num: carte_identite_national_num,
-        role: role,
         typeDocumentIdentite: typeDocumentIdentite,
         documentIdentite: documentIdentite,
         photoProfil: photoProfil,
@@ -125,11 +142,11 @@ class AuthRepositoryImpl implements AuthRepository {
       await tokenService.setToken(authResponse.token);
       await tokenService.setRefreshToken(authResponse.refreshToken);
 
-      // Stocker le rôle pour la reprise de session
-      await sl<FlutterSecureStorage>().write(
-        key: 'user_role',
-        value: authResponse.user.role,
-      );
+      // Stocker l'id et le rôle : depuis la refonte, l'inscription ouvre
+      // directement la session, sans repasser par l'écran de connexion.
+      final storage = sl<FlutterSecureStorage>();
+      await storage.write(key: 'user_id', value: authResponse.user.id);
+      await storage.write(key: 'user_role', value: authResponse.user.role);
 
       return Right(authResponse.user);
     } on DioException catch (e) {

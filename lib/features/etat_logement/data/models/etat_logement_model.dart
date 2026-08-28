@@ -62,6 +62,7 @@ class EtatLogementModel extends EtatLogement {
     super.contratNumero,
     super.bienAdresse,
     super.bienVille,
+    super.direction,
   });
 
   factory EtatLogementModel.fromJson(Map<String, dynamic> json) {
@@ -102,6 +103,7 @@ class EtatLogementModel extends EtatLogement {
       signatureLocataire: json['signature_locataire'],
       dateSignature: json['date_signature'],
       statut: json['statut'],
+      direction: json['direction'],
       createdAt: json['createdAt'],
       contratNumero: contrat?['numero_contrat'],
       bienAdresse: contrat?['bien_adresse'],

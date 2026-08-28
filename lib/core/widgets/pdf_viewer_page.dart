@@ -1,6 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:open_file/open_file.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class PdfViewerPage extends StatefulWidget {
   final String filePath;
@@ -39,7 +40,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: AppColor.kFond,
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
@@ -94,7 +95,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
             child: Stack(
               children: [
                 // Fond gris clair derrière le PDF
-                Container(color: const Color(0xFFF2F2F7)),
+                Container(color: AppColor.kFond),
 
                 // PDF avec marges horizontales pour le rendu "page avec ombre"
                 Padding(
@@ -253,7 +254,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   // ── Loading ───────────────────────────────────────────────────────────────
   Widget _buildLoading() {
     return Container(
-      color: const Color(0xFFF2F2F7),
+      color: AppColor.kFond,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -296,7 +297,7 @@ class _PdfViewerPageState extends State<PdfViewerPage> {
   // ── Erreur ────────────────────────────────────────────────────────────────
   Widget _buildError() {
     return Container(
-      color: const Color(0xFFF2F2F7),
+      color: AppColor.kFond,
       padding: const EdgeInsets.all(32),
       child: Center(
         child: Column(

@@ -94,6 +94,13 @@ class EtatLogement extends Equatable {
   final String? bienAdresse;
   final String? bienVille;
 
+  /// 'envoye' si je suis le bailleur du bail rattache, 'recu' si je n'en suis
+  /// que locataire.
+  ///
+  /// Renseigne par le backend. Le filtre ne retenait que les baux dont je
+  /// suis bailleur : un etat des lieux recu n'apparaissait pas.
+  final String? direction;
+
   const EtatLogement({
     required this.id,
     this.numeroEtatDesLieux,
@@ -117,10 +124,13 @@ class EtatLogement extends Equatable {
     this.contratNumero,
     this.bienAdresse,
     this.bienVille,
+    this.direction,
   });
+
+  bool get estRecu => direction == 'recu';
 
   bool get estSigne => statut == 'signe' || statut == 'termine';
 
   @override
-  List<Object?> get props => [id, numeroEtatDesLieux, statut];
+  List<Object?> get props => [id, numeroEtatDesLieux, statut, direction];
 }

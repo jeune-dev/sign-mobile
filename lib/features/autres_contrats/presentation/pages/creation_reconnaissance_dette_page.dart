@@ -13,6 +13,11 @@ import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/autres_contrats/domain/usecases/telecharger_autre_contrat.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 
 class CreationReconnaissanceDettePage extends StatefulWidget {
   const CreationReconnaissanceDettePage({super.key});
@@ -22,11 +27,19 @@ class CreationReconnaissanceDettePage extends StatefulWidget {
 }
 
 class _State extends State<CreationReconnaissanceDettePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que
+    // l'utilisateur remplit les premieres etapes.
+    _emetteur.charger();
+  }
+
   int _step = 0;
   static const int _totalSteps = 3;
   static const _steps = ['Débiteur', 'Dette', 'Remboursement'];
 
-  static const _accent = Color(0xFF1A1A1A);
+  static const _accent = AppColor.kTexte;
   static const _icon   = Icons.receipt_long_outlined;
   static const _titre  = 'Reconnaissance de dette';
 
@@ -34,6 +47,10 @@ class _State extends State<CreationReconnaissanceDettePage> {
   final _formKey2 = GlobalKey<FormState>();
 
   Client? _client;
+
+  /// Informations qui figureront sur le document : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   final _montantCtrl     = TextEditingController();
   final _motifCtrl       = TextEditingController();
@@ -49,6 +66,7 @@ class _State extends State<CreationReconnaissanceDettePage> {
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _montantCtrl.dispose(); _motifCtrl.dispose(); _nbEchCtrl.dispose();
     _montantEchCtrl.dispose(); _freqCtrl.dispose(); _villeCtrl.dispose();
     super.dispose();
@@ -94,6 +112,9 @@ class _State extends State<CreationReconnaissanceDettePage> {
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
       'signature_generateur': sigBase64,
+      // Ce qui sera imprime sur le contrat. Le serveur fige ces valeurs :
+      // une regeneration a la signature produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
     }));
   }
 
@@ -119,7 +140,22 @@ class _State extends State<CreationReconnaissanceDettePage> {
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
             showToast(ctx, 'Contrat créé', 'La reconnaissance de dette a été créée avec succès.', ToastificationType.success);
-            Navigator.pop(ctx);
+            // Le document est montre a l'utilisateur avant tout retour
+            // a la liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              ctx,
+              libelle: 'reconnaissance de dette',
+              feminin: true,
+              document: state.documentCree,
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerAutreContrat>()(
+                    ContratType.reconnaissanceDette.apiValue, id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is AutresContratsError) _showError(state.message);
         },
@@ -224,90 +260,96 @@ class _State extends State<CreationReconnaissanceDettePage> {
 
   Widget _step1() => Form(
     key: _formKey1,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Montant de la dette',
-          icon: Icons.monetization_on_outlined,
-          accentColor: _accent,
-          subtitle: 'Somme exacte reconnue par le débiteur',
-          children: [
-            // Montant + devise sur la même ligne
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: CField(
-                    controller: _montantCtrl,
-                    label: 'Montant',
-                    accentColor: _accent,
-                    icon: Icons.payments_outlined,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    hint: '0',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  width: 110,
-                  child: CDropdown<String>(
-                    label: 'Devise',
-                    value: _devise,
-                    accentColor: _accent,
-                    items: const [
-                      DropdownMenuItem(value: 'FCFA', child: Text('FCFA')),
-                      DropdownMenuItem(value: 'EUR',  child: Text('EUR')),
-                      DropdownMenuItem(value: 'USD',  child: Text('USD')),
-                      DropdownMenuItem(value: 'GBP',  child: Text('GBP')),
-                    ],
-                    onChanged: (v) => setState(() => _devise = v!),
-                  ),
-                ),
-              ],
-            ),
-            // Preview du montant formaté
-            if (_montantCtrl.text.isNotEmpty)
-              Builder(builder: (_) {
-                _montantCtrl.addListener(() => setState(() {}));
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: _accent.withValues(alpha: 0.07),
-                      borderRadius: BorderRadius.circular(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CSection(
+            title: 'Montant de la dette',
+            icon: Icons.monetization_on_outlined,
+            accentColor: _accent,
+            subtitle: 'Somme exacte reconnue par le débiteur',
+            children: [
+              // Montant + devise sur la même ligne
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: CField(
+                      controller: _montantCtrl,
+                      label: 'Montant',
+                      accentColor: _accent,
+                      icon: Icons.payments_outlined,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      hint: '0',
                     ),
-                    child: Row(children: [
-                      Icon(Icons.check_circle_outline, size: 15, color: _accent),
-                      const SizedBox(width: 8),
-                      Text(
-                        _formatMontant(_montantCtrl.text, _devise),
-                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _accent),
-                      ),
-                    ]),
                   ),
-                );
-              }),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Motif de la dette',
-          icon: Icons.notes_outlined,
-          accentColor: _accent,
-          subtitle: 'Expliquez l\'origine de la dette',
-          children: [
-            CField(
-              controller: _motifCtrl,
-              label: 'Motif ou cause de la dette',
-              accentColor: _accent,
-              maxLines: 4,
-              hint: 'Ex: prêt personnel accordé le …, avance sur salaire, remboursement de frais…',
-            ),
-          ],
-        ),
-      ],
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 110,
+                    child: CDropdown<String>(
+                      label: 'Devise',
+                      value: _devise,
+                      accentColor: _accent,
+                      items: const [
+                        DropdownMenuItem(value: 'FCFA', child: Text('FCFA')),
+                        DropdownMenuItem(value: 'EUR',  child: Text('EUR')),
+                        DropdownMenuItem(value: 'USD',  child: Text('USD')),
+                        DropdownMenuItem(value: 'GBP',  child: Text('GBP')),
+                      ],
+                      onChanged: (v) => setState(() => _devise = v!),
+                    ),
+                  ),
+                ],
+              ),
+              // Preview du montant formaté
+              if (_montantCtrl.text.isNotEmpty)
+                Builder(builder: (_) {
+                  _montantCtrl.addListener(() => setState(() {}));
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _accent.withValues(alpha: 0.07),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(children: [
+                        Icon(Icons.check_circle_outline, size: 15, color: _accent),
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatMontant(_montantCtrl.text, _devise),
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _accent),
+                        ),
+                      ]),
+                    ),
+                  );
+                }),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Motif de la dette',
+            icon: Icons.notes_outlined,
+            accentColor: _accent,
+            subtitle: 'Expliquez l\'origine de la dette',
+            children: [
+              CField(
+                controller: _motifCtrl,
+                label: 'Motif ou cause de la dette',
+                accentColor: _accent,
+                maxLines: 4,
+                hint: 'Ex: prêt personnel accordé le …, avance sur salaire, remboursement de frais…',
+              ),
+            ],
+          ),
+              ],
+      ),
     ),
   );
 
@@ -315,154 +357,164 @@ class _State extends State<CreationReconnaissanceDettePage> {
 
   Widget _step2() => Form(
     key: _formKey2,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Date limite de remboursement',
-          icon: Icons.event_available_outlined,
-          accentColor: _accent,
-          subtitle: 'Échéance finale pour solder la dette',
-          children: [
-            CDateField(
-              label: 'Date limite de remboursement',
-              value: _dateLimite,
-              accentColor: _accent,
-              onTap: () async {
-                final d = await cPickDate(context, firstDate: DateTime.now());
-                if (d != null) setState(() => _dateLimite = d);
-              },
-            ),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Modalités de remboursement',
-          icon: Icons.calendar_month_outlined,
-          accentColor: _accent,
-          subtitle: 'Optionnel — si remboursement par tranches',
-          children: [
-            CToggle(
-              title: 'Remboursement échelonné',
-              subtitle: 'Paiement en plusieurs tranches',
-              value: _echelonne,
-              accentColor: _accent,
-              onChanged: (v) => setState(() => _echelonne = v),
-            ),
-            if (_echelonne) ...[
-              kGapLg,
-              // Grille d'échéances
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(child: CField(
-                  controller: _nbEchCtrl,
-                  label: 'Nombre d\'échéances',
-                  accentColor: _accent,
-                  icon: Icons.format_list_numbered_outlined,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  required: false,
-                  hint: '12',
-                )),
-                const SizedBox(width: 10),
-                Expanded(child: CField(
-                  controller: _montantEchCtrl,
-                  label: 'Montant / échéance',
-                  accentColor: _accent,
-                  icon: Icons.monetization_on_outlined,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  required: false,
-                  hint: '0',
-                )),
-              ]),
-              kGap,
-              CField(
-                controller: _freqCtrl,
-                label: 'Fréquence des paiements',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Ce qui figurera sur le document : prerempli depuis le profil,
+          // modifiable, et fige avec le document cote serveur.
+          SectionEmetteur(controleur: _emetteur, titre: 'Vos informations'),
+          const SizedBox(height: 20),
+          CSection(
+            title: 'Date limite de remboursement',
+            icon: Icons.event_available_outlined,
+            accentColor: _accent,
+            subtitle: 'Échéance finale pour solder la dette',
+            children: [
+              CDateField(
+                label: 'Date limite de remboursement',
+                value: _dateLimite,
                 accentColor: _accent,
-                icon: Icons.repeat_rounded,
-                required: false,
-                hint: 'Ex: mensuel, hebdomadaire, trimestriel…',
+                onTap: () async {
+                  final d = await cPickDate(context, firstDate: DateTime.now());
+                  if (d != null) setState(() => _dateLimite = d);
+                },
               ),
-              // Preview plan de remboursement
-              if (_nbEchCtrl.text.isNotEmpty && _montantEchCtrl.text.isNotEmpty) ...[
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Modalités de remboursement',
+            icon: Icons.calendar_month_outlined,
+            accentColor: _accent,
+            subtitle: 'Optionnel — si remboursement par tranches',
+            children: [
+              CToggle(
+                title: 'Remboursement échelonné',
+                subtitle: 'Paiement en plusieurs tranches',
+                value: _echelonne,
+                accentColor: _accent,
+                onChanged: (v) => setState(() => _echelonne = v),
+              ),
+              if (_echelonne) ...[
+                kGapLg,
+                // Grille d'échéances
+                Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Expanded(child: CField(
+                    controller: _nbEchCtrl,
+                    label: 'Nombre d\'échéances',
+                    accentColor: _accent,
+                    icon: Icons.format_list_numbered_outlined,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    required: false,
+                    hint: '12',
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: CField(
+                    controller: _montantEchCtrl,
+                    label: 'Montant / échéance',
+                    accentColor: _accent,
+                    icon: Icons.monetization_on_outlined,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    required: false,
+                    hint: '0',
+                  )),
+                ]),
                 kGap,
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [_accent.withValues(alpha: 0.08), _accent.withValues(alpha: 0.03)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _accent.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(children: [
-                    Icon(Icons.calculate_outlined, color: _accent, size: 18),
-                    const SizedBox(width: 10),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Plan estimé', style: TextStyle(fontSize: 11, color: _accent, fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_nbEchCtrl.text} échéances × ${_formatMontant(_montantEchCtrl.text, _devise)} = ${_formatMontant(
-                          ((double.tryParse(_nbEchCtrl.text) ?? 0) * (double.tryParse(_montantEchCtrl.text) ?? 0)).toStringAsFixed(0), _devise,
-                        )}',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kValueColor),
-                      ),
-                    ])),
-                  ]),
+                CField(
+                  controller: _freqCtrl,
+                  label: 'Fréquence des paiements',
+                  accentColor: _accent,
+                  icon: Icons.repeat_rounded,
+                  required: false,
+                  hint: 'Ex: mensuel, hebdomadaire, trimestriel…',
                 ),
+                // Preview plan de remboursement
+                if (_nbEchCtrl.text.isNotEmpty && _montantEchCtrl.text.isNotEmpty) ...[
+                  kGap,
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [_accent.withValues(alpha: 0.08), _accent.withValues(alpha: 0.03)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _accent.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(children: [
+                      Icon(Icons.calculate_outlined, color: _accent, size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('Plan estimé', style: TextStyle(fontSize: 11, color: _accent, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${_nbEchCtrl.text} échéances × ${_formatMontant(_montantEchCtrl.text, _devise)} = ${_formatMontant(
+                            ((double.tryParse(_nbEchCtrl.text) ?? 0) * (double.tryParse(_montantEchCtrl.text) ?? 0)).toStringAsFixed(0), _devise,
+                          )}',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kValueColor),
+                        ),
+                      ])),
+                    ]),
+                  ),
+                ],
               ],
             ],
-          ],
-        ),
-        kGapLg,
-        // Récapitulatif
-        CSection(
-          title: 'Récapitulatif',
-          icon: Icons.summarize_outlined,
-          accentColor: _accent,
-          children: [
-            if (_client != null)
-              CSummaryRow(label: 'Débiteur', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
-            if (_montantCtrl.text.isNotEmpty)
-              CSummaryRow(label: 'Montant', value: _formatMontant(_montantCtrl.text, _devise), icon: Icons.payments_outlined, accentColor: _accent),
-            if (_dateLimite != null)
-              CSummaryRow(
-                label: 'Échéance finale',
-                value: DateFormat('dd MMMM yyyy', 'fr_FR').format(_dateLimite!),
-                icon: Icons.event_outlined,
+          ),
+          kGapLg,
+          // Récapitulatif
+          CSection(
+            title: 'Récapitulatif',
+            icon: Icons.summarize_outlined,
+            accentColor: _accent,
+            children: [
+              if (_client != null)
+                CSummaryRow(label: 'Débiteur', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
+              if (_montantCtrl.text.isNotEmpty)
+                CSummaryRow(label: 'Montant', value: _formatMontant(_montantCtrl.text, _devise), icon: Icons.payments_outlined, accentColor: _accent),
+              if (_dateLimite != null)
+                CSummaryRow(
+                  label: 'Échéance finale',
+                  value: DateFormat('dd MMMM yyyy', 'fr_FR').format(_dateLimite!),
+                  icon: Icons.event_outlined,
+                  accentColor: _accent,
+                ),
+              CSummaryRow(label: 'Échelonné', value: _echelonne ? 'Oui' : 'Non', icon: Icons.calendar_month_outlined, accentColor: _accent),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Lieu de signature',
+            icon: Icons.place_outlined,
+            accentColor: _accent,
+            children: [
+              CField(
+                controller: _villeCtrl,
+                label: 'Ville de signature',
                 accentColor: _accent,
+                required: false,
+                icon: Icons.location_city_outlined,
+                hint: 'Ex: Dakar, Abidjan…',
               ),
-            CSummaryRow(label: 'Échelonné', value: _echelonne ? 'Oui' : 'Non', icon: Icons.calendar_month_outlined, accentColor: _accent),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Lieu de signature',
-          icon: Icons.place_outlined,
-          accentColor: _accent,
-          children: [
-            CField(
-              controller: _villeCtrl,
-              label: 'Ville de signature',
-              accentColor: _accent,
-              required: false,
-              icon: Icons.location_city_outlined,
-              hint: 'Ex: Dakar, Abidjan…',
-            ),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Signature',
-          icon: Icons.draw_outlined,
-          accentColor: _accent,
-          subtitle: 'Signez pour valider la création du contrat',
-          children: [
-            CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
-          ],
-        ),
-      ],
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Signature',
+            icon: Icons.draw_outlined,
+            accentColor: _accent,
+            subtitle: 'Signez pour valider la création du contrat',
+            children: [
+              CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
+            ],
+          ),
+              ],
+      ),
     ),
   );
 

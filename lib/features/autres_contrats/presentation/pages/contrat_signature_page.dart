@@ -14,6 +14,7 @@ import '../../domain/entities/autre_contrat.dart';
 import '../bloc/autres_contrats_bloc.dart';
 import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class ContratSignaturePage extends StatefulWidget {
   final AutreContrat contrat;
@@ -124,7 +125,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
         }
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF2F2F7),
+        backgroundColor: AppColor.kFond,
         body: Column(
           children: [
             // ── AppBar ────────────────────────────────────────────────────
@@ -194,7 +195,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
   Widget _buildPdfSection() {
     if (_pdfLoading) {
       return Container(
-        color: const Color(0xFFF2F2F7),
+        color: AppColor.kFond,
         child: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(
@@ -211,7 +212,7 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
     }
     if (_pdfError != null || _pdfPath == null) {
       return Container(
-        color: const Color(0xFFF2F2F7),
+        color: AppColor.kFond,
         child: Center(
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.error_outline, color: Colors.red[400], size: 40),

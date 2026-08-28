@@ -1,7 +1,7 @@
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class PrimaryTextFormField extends StatelessWidget {
   const PrimaryTextFormField(
@@ -47,7 +47,7 @@ class PrimaryTextFormField extends StatelessWidget {
         controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
-        style: GoogleFonts.plusJakartaSans(
+        style: AppTypo.jakarta(
           color: AppColor.kGrayscaleDark100,
           fontSize: 14,
           fontWeight: FontWeight.w500,
@@ -60,7 +60,7 @@ class PrimaryTextFormField extends StatelessWidget {
           filled: true,
           fillColor: Colors.transparent, // Le Container gère la couleur
           hintText: hintText,
-          hintStyle: GoogleFonts.plusJakartaSans(
+          hintStyle: AppTypo.jakarta(
             color: AppColor.kGrayscale40,
             fontWeight: FontWeight.w500,
             fontSize: 14,

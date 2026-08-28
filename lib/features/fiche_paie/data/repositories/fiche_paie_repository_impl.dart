@@ -19,7 +19,10 @@ class FichePaieRepositoryImpl implements FichePaieRepository {
   }
 
   @override
-  Future<Either<Failure, FichePaie>> creerFichePaie(FichePaie fiche) async {
+  Future<Either<Failure, FichePaie>> creerFichePaie(
+    FichePaie fiche, {
+    Map<String, dynamic>? emetteur,
+  }) async {
     try {
       final model = FichePaieModel(
         numeroFiche: fiche.numeroFiche,
@@ -69,7 +72,7 @@ class FichePaieRepositoryImpl implements FichePaieRepository {
         modePaiement: fiche.modePaiement,
         datePaiement: fiche.datePaiement,
       );
-      final result = await remoteDataSource.creerFichePaie(model);
+      final result = await remoteDataSource.creerFichePaie(model, emetteur: emetteur);
       return Right(result);
     } on DioException catch (e) {
       return Left(ServerFailure(errorMessage: _mapDioError(e)));

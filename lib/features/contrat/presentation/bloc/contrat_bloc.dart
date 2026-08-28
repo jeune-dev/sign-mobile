@@ -70,7 +70,8 @@ class ContratBloc extends Bloc<ContratEvent, ContratState> {
     final result = await creerContratBail(event.data);
     result.fold(
       (failure) => emit(ContratError(failure.errorMessage)),
-      (_) => emit(ContratSuccess(message: 'Contrat créé avec succès')),
+      (cree) => emit(ContratSuccess(
+          message: 'Contrat créé avec succès', documentCree: cree)),
     );
   }
 

@@ -2,6 +2,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:sign_application/core/config/contrat_type.dart';
 import 'package:sign_application/core/config/env.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
@@ -25,6 +27,7 @@ import 'package:sign_application/features/contrat_travail/presentation/pages/cre
 import 'package:sign_application/injection_container.dart' as di;
 import 'package:sign_application/features/particulier/presentation/pages/contrats_a_signer_page.dart';
 import 'package:sign_application/features/particulier/presentation/bloc/particulier_bloc.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class _Stats {
   final int total;
@@ -137,9 +140,16 @@ class _ContratsPageState extends State<ContratsPage> {
         else if (type.id == ContratType.reconnaissanceDette.apiValue){ page = const CreationReconnaissanceDettePage(); }
     }
     if (page != null) {
-      await Navigator.push(context, MaterialPageRoute(
-        builder: (_) => BlocProvider.value(value: context.read<AutresContratsBloc>(), child: page!),
-      ));
+      // Passage par le parcours : informations manquantes demandées avant
+      // d'ouvrir le formulaire (§ 4), proposition de compte complet après la
+      // création du document (§ 10).
+      final contenu = page;
+      final bloc = context.read<AutresContratsBloc>();
+      await ParcoursDocument.ouvrir(
+        context,
+        typeDocument: TypeDocumentSigns.depuisIdContrat(type.id),
+        page: (_) => BlocProvider.value(value: bloc, child: contenu),
+      );
       if (mounted) _loadAllStats();
     }
   }
@@ -309,7 +319,7 @@ class _ContratsPageState extends State<ContratsPage> {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF1a1a1a), Color(0xFF3a3a3a)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: const LinearGradient(colors: [AppColor.kTexte, Color(0xFF3a3a3a)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(22),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.18), blurRadius: 16, offset: const Offset(0, 6))],
             ),

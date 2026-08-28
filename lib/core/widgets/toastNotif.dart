@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:toastification/toastification.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 void showToast(
   BuildContext context,
@@ -149,7 +150,7 @@ class _ToastCard extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF111827),
+                                color: AppColor.kTexte,
                                 height: 1.2,
                               ),
                             ),
@@ -159,7 +160,7 @@ class _ToastCard extends StatelessWidget {
                                 description,
                                 style: const TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF6B7280),
+                                  color: AppColor.kTexteMoyen,
                                   height: 1.4,
                                 ),
                               ),

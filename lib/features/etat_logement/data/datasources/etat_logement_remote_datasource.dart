@@ -1,11 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:sign_application/core/config/env.dart';
 import '../models/etat_logement_model.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class EtatLogementRemoteDataSource {
   Future<List<EtatLogementModel>> getEtatsLogement();
   Future<EtatLogementModel> getEtatLogementDetail(String etatId);
-  Future<void> creerEtatLogement(String contratId, Map<String, dynamic> data);
+  Future<DocumentCree> creerEtatLogement(String contratId, Map<String, dynamic> data);
   Future<void> signerEtatLogement(String etatId, String signature);
   Future<List<int>> telechargerEtatLogement(String etatId);
 }
@@ -32,11 +33,14 @@ class EtatLogementRemoteDataSourceImpl implements EtatLogementRemoteDataSource {
   }
 
   @override
-  Future<void> creerEtatLogement(
+  Future<DocumentCree> creerEtatLogement(
     String contratId,
     Map<String, dynamic> data,
   ) async {
-    await dio.post('${Env.etatLogementBase}/$contratId', data: data);
+    // La reponse porte le document cree : on en retient
+    // l'identifiant et le numero pour l'ecran de confirmation (§ 9).
+    final reponse = await dio.post('${Env.etatLogementBase}/$contratId', data: data);
+    return DocumentCree.depuisReponse(reponse.data);
   }
 
   @override

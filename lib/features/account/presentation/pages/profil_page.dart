@@ -10,6 +10,8 @@ import 'package:sign_application/features/account/presentation/bloc/account_stat
 import 'package:sign_application/features/account/presentation/pages/modifier_profil_page.dart';
 import 'package:sign_application/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sign_application/features/auth/presentation/bloc/auth_event.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/widgets/logout_dialog.dart';
 
 class ProfilPage extends StatefulWidget {
   final AccountUser? user;
@@ -125,7 +127,7 @@ class _ProfilPageState extends State<ProfilPage> {
                 Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFF1a1a1a), Color(0xFF3a3a3a)],
+                      colors: [AppColor.kTexte, Color(0xFF3a3a3a)],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                     ),
@@ -169,6 +171,12 @@ class _ProfilPageState extends State<ProfilPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // ── Compte SIGNS : compléter le profil et déposer les
+                //    justificatifs (§ 11 et § 12 du nouveau parcours) ────────
+                _buildBlocCompteSigns(user),
+
+                const SizedBox(height: 20),
+
                 // ── Informations personnelles ──────────────────────────────
                 _buildSection(
                   title: 'Informations personnelles',
@@ -178,12 +186,14 @@ class _ProfilPageState extends State<ProfilPage> {
                     _buildInfoRow(Icons.badge_outlined, 'Nom', user.nom),
                     _buildInfoRow(Icons.email_outlined, 'Email', user.email),
                     _buildInfoRow(Icons.phone_outlined, 'Téléphone', user.telephone),
+                    _buildInfoRow(Icons.location_city_outlined, 'Ville', user.ville),
                     _buildInfoRow(Icons.location_on_outlined, 'Adresse', user.adresse),
                     _buildInfoRow(
                       Icons.credit_card_outlined,
-                      'N° CIN',
+                      'N° pièce d’identité',
                       user.carteIdentiteNationalNum,
                     ),
+                    _buildInfoRow(Icons.pin_outlined, 'NIN', user.nin),
                   ],
                 ),
 
@@ -296,12 +306,60 @@ class _ProfilPageState extends State<ProfilPage> {
                 // ── Supprimer le compte (exigence Google Play) ─────────────
                 _buildDeleteAccountButton(),
 
+                const SizedBox(height: 12),
+
+                // ── Déconnexion ───────────────────────────────────────────
+                // Elle occupait la barre haute de l'accueil, à portée de
+                // pouce d'un geste de retour. Sa place est ici, en bas du
+                // profil : c'est là qu'on la cherche, et le trajet jusqu'à
+                // elle rend la déconnexion accidentelle improbable.
+                _buildLogoutButton(),
+
                 const SizedBox(height: 40),
               ],
             ),
           ),
         ),
       ],
+    );
+  }
+
+  /// Déconnexion, en bas du profil.
+  ///
+  /// Présentée comme les autres actions de bas de page, sans emphase : elle
+  /// n'est ni dangereuse ni recommandée, et passe de toute façon par une
+  /// confirmation.
+  Widget _buildLogoutButton() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: TextButton.icon(
+        onPressed: () => LogoutDialog.show(context),
+        icon: const Icon(Icons.logout_rounded, color: Colors.black87),
+        label: const Text(
+          'Se déconnecter',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
+          alignment: Alignment.centerLeft,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+      ),
     );
   }
 
@@ -519,6 +577,91 @@ class _ProfilPageState extends State<ProfilPage> {
           ),
         ),
       ]),
+    );
+  }
+
+  // ── Compte SIGNS (nouveau parcours) ───────────────────────────────────────
+  //
+  // Deux accès, affichés selon l'état du compte :
+  //   - « Finaliser mon compte » tant que le profil n'est pas complet (§ 11) ;
+  //   - « Mes justificatifs », toujours disponible (§ 12), y compris pour
+  //     déposer une pièce ou demander sa suppression.
+  Widget _buildBlocCompteSigns(AccountUser user) {
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      elevation: 1.5,
+      shadowColor: Colors.black.withValues(alpha: 0.12),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Column(
+          children: [
+            if (!user.profilComplet)
+              _buildActionCompte(
+                icone: Icons.assignment_turned_in_outlined,
+                titre: 'Finaliser mon compte',
+                sousTitre:
+                    'Enregistrez vos informations une fois pour toutes : elles seront '
+                    'préremplies dans tous vos prochains documents.',
+                onTap: () =>
+                    Navigator.of(context).pushNamed(AppRouter.compteCompletRoute),
+              ),
+            _buildActionCompte(
+              icone: Icons.verified_user_outlined,
+              titre: 'Mes justificatifs',
+              sousTitre:
+                  'Déposez votre pièce d’identité et vos documents professionnels, '
+                  'ou demandez leur suppression.',
+              onTap: () =>
+                  Navigator.of(context).pushNamed(AppRouter.justificatifsRoute),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionCompte({
+    required IconData icone,
+    required String titre,
+    required String sousTitre,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+      leading: Container(
+        width: 34,
+        height: 34,
+        decoration: BoxDecoration(
+          color: Colors.black,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icone, color: Colors.white, size: 18),
+      ),
+      title: Text(
+        titre,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w800,
+          color: Colors.black87,
+          letterSpacing: -0.2,
+        ),
+      ),
+      subtitle: Padding(
+        padding: const EdgeInsets.only(top: 3),
+        child: Text(
+          sousTitre,
+          style: TextStyle(
+            fontSize: 12.5,
+            height: 1.4,
+            color: Colors.grey.shade600,
+          ),
+        ),
+      ),
+      trailing: Icon(Icons.chevron_right_rounded,
+          color: Colors.grey.shade400, size: 22),
     );
   }
 

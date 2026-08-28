@@ -23,3 +23,22 @@ class ServerFailure extends Failure {
 class CacheFailure extends Failure {
   const CacheFailure({required super.errorMessage});
 }
+
+/// Le compte visé date d'avant la refonte du parcours : il possède un mot de
+/// passe, et le backend l'exige pour ouvrir la session. L'écran de connexion
+/// s'en sert pour afficher le champ « mot de passe » au lieu d'un message
+/// d'échec — les comptes créés depuis la refonte n'en ont pas.
+class MotDePasseRequisFailure extends Failure {
+  const MotDePasseRequisFailure({required super.errorMessage});
+}
+
+/// L'adresse e-mail du compte n'a pas encore été confirmée. L'écran de
+/// connexion renvoie alors vers la saisie du code plutôt que d'afficher un
+/// échec, que l'utilisateur ne saurait pas quoi corriger.
+class VerificationEmailRequiseFailure extends Failure {
+  final String email;
+  const VerificationEmailRequiseFailure({
+    required super.errorMessage,
+    required this.email,
+  });
+}

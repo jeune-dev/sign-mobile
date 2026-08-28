@@ -1,11 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:sign_application/core/config/env.dart';
 import '../models/quittance_loyer_model.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class QuittanceLoyerRemoteDataSource {
   Future<List<QuittanceLoyerModel>> getQuittances({int page, int limit});
   Future<QuittanceLoyerModel> getQuittanceDetail(String quittanceId);
-  Future<void> creerQuittance(Map<String, dynamic> data);
+  Future<DocumentCree> creerQuittance(Map<String, dynamic> data);
   Future<List<int>> telechargerQuittance(String quittanceId);
 }
 
@@ -34,8 +35,11 @@ class QuittanceLoyerRemoteDataSourceImpl implements QuittanceLoyerRemoteDataSour
   }
 
   @override
-  Future<void> creerQuittance(Map<String, dynamic> data) async {
-    await dio.post(Env.quittanceCreer, data: data);
+  Future<DocumentCree> creerQuittance(Map<String, dynamic> data) async {
+    // La reponse porte le document cree : on en retient
+    // l'identifiant et le numero pour l'ecran de confirmation (§ 9).
+    final reponse = await dio.post(Env.quittanceCreer, data: data);
+    return DocumentCree.depuisReponse(reponse.data);
   }
 
   @override

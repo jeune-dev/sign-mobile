@@ -11,6 +11,11 @@ import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/autres_contrats/domain/usecases/telecharger_autre_contrat.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 
 class CreationProcurationPage extends StatefulWidget {
   const CreationProcurationPage({super.key});
@@ -20,17 +25,29 @@ class CreationProcurationPage extends StatefulWidget {
 }
 
 class _State extends State<CreationProcurationPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que
+    // l'utilisateur remplit les premieres etapes.
+    _emetteur.charger();
+  }
+
   int _step = 0;
   static const int _totalSteps = 3;
   static const _steps = ['Mandataire', 'Mandat', 'Finalisation'];
 
-  static const _accent = Color(0xFF1A1A1A);
+  static const _accent = AppColor.kTexte;
   static const _icon   = Icons.gavel_outlined;
   static const _titre  = 'Procuration';
 
   final _formKey1 = GlobalKey<FormState>();
 
   Client? _client;
+
+  /// Informations qui figureront sur le document : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   final _objetCtrl    = TextEditingController();
   final _pouvoirsCtrl = TextEditingController();
@@ -43,6 +60,7 @@ class _State extends State<CreationProcurationPage> {
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _objetCtrl.dispose(); _pouvoirsCtrl.dispose(); _dureeCtrl.dispose();
     _limitesCtrl.dispose(); _villeCtrl.dispose();
     super.dispose();
@@ -85,6 +103,9 @@ class _State extends State<CreationProcurationPage> {
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
       'signature_generateur': sigBase64,
+      // Ce qui sera imprime sur le contrat. Le serveur fige ces valeurs :
+      // une regeneration a la signature produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
     }));
   }
 
@@ -104,7 +125,22 @@ class _State extends State<CreationProcurationPage> {
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
             showToast(ctx, 'Contrat créé', 'La procuration a été créée avec succès.', ToastificationType.success);
-            Navigator.pop(ctx);
+            // Le document est montre a l'utilisateur avant tout retour
+            // a la liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              ctx,
+              libelle: 'procuration',
+              feminin: true,
+              document: state.documentCree,
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerAutreContrat>()(
+                    ContratType.procuration.apiValue, id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is AutresContratsError) _showError(state.message);
         },
@@ -193,66 +229,76 @@ class _State extends State<CreationProcurationPage> {
 
   Widget _step1() => Form(
     key: _formKey1,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Objet du mandat',
-          icon: Icons.assignment_outlined,
-          accentColor: _accent,
-          children: [
-            CField(controller: _objetCtrl, label: 'Objet de la procuration', accentColor: _accent, maxLines: 3,
-                hint: 'Ex: gérer mon compte bancaire, signer des documents, représenter mon entreprise…'),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Type et étendue',
-          icon: Icons.tune_rounded,
-          accentColor: _accent,
-          subtitle: 'Définissez la portée des pouvoirs accordés',
-          children: [
-            // Type selector (chips)
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('Type de procuration  *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kLabelColor)),
-              const SizedBox(height: 8),
-              Row(children: [
-                _typeChip('générale',  'Générale',  Icons.open_in_full_rounded),
-                const SizedBox(width: 10),
-                _typeChip('limitée',  'Limitée',  Icons.tune_rounded),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CSection(
+            title: 'Objet du mandat',
+            icon: Icons.assignment_outlined,
+            accentColor: _accent,
+            children: [
+              CField(controller: _objetCtrl, label: 'Objet de la procuration', accentColor: _accent, maxLines: 3,
+                  hint: 'Ex: gérer mon compte bancaire, signer des documents, représenter mon entreprise…'),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Type et étendue',
+            icon: Icons.tune_rounded,
+            accentColor: _accent,
+            subtitle: 'Définissez la portée des pouvoirs accordés',
+            children: [
+              // Type selector (chips)
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Text('Type de procuration  *', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kLabelColor)),
+                const SizedBox(height: 8),
+                Row(children: [
+                  _typeChip('générale',  'Générale',  Icons.open_in_full_rounded),
+                  const SizedBox(width: 10),
+                  _typeChip('limitée',  'Limitée',  Icons.tune_rounded),
+                ]),
+                const SizedBox(height: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _accent.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    _typeProcuration == 'générale'
+                        ? 'Procuration générale : le mandataire peut agir sur l\'ensemble de vos affaires.'
+                        : 'Procuration limitée : restreinte à des actes spécifiques que vous précisez.',
+                    style: TextStyle(fontSize: 11, color: _accent, height: 1.4),
+                  ),
+                ),
               ]),
-              const SizedBox(height: 8),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _accent.withValues(alpha: 0.06),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  _typeProcuration == 'générale'
-                      ? 'Procuration générale : le mandataire peut agir sur l\'ensemble de vos affaires.'
-                      : 'Procuration limitée : restreinte à des actes spécifiques que vous précisez.',
-                  style: TextStyle(fontSize: 11, color: _accent, height: 1.4),
-                ),
-              ),
-            ]),
-            kGap,
-            CField(controller: _pouvoirsCtrl, label: 'Pouvoirs accordés', accentColor: _accent, maxLines: 4,
-                icon: Icons.admin_panel_settings_outlined,
-                hint: 'Listez précisément les actes autorisés : signer, encaisser, vendre, représenter…'),
-            kGap,
-            CDurationField(controller: _dureeCtrl, label: 'Durée du mandat', accentColor: _accent,
-                icon: Icons.timer_outlined, autoriserIndetermine: true),
-          ],
-        ),
-      ],
+              kGap,
+              CField(controller: _pouvoirsCtrl, label: 'Pouvoirs accordés', accentColor: _accent, maxLines: 4,
+                  icon: Icons.admin_panel_settings_outlined,
+                  hint: 'Listez précisément les actes autorisés : signer, encaisser, vendre, représenter…'),
+              kGap,
+              CDurationField(controller: _dureeCtrl, label: 'Durée du mandat', accentColor: _accent,
+                  icon: Icons.timer_outlined, autoriserIndetermine: true),
+            ],
+          ),
+              ],
+      ),
     ),
   );
 
   Widget _step2() => ListView(
     padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
     children: [
+      // Ce qui figurera sur le document : prerempli depuis le profil,
+      // modifiable, et fige avec le document cote serveur.
+      SectionEmetteur(controleur: _emetteur, titre: 'Vos informations'),
+      const SizedBox(height: 20),
       if (_typeProcuration == 'limitée') ...[
         CSection(
           title: 'Limites précises',

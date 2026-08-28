@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/app_version_config.dart';
 import '../theme/app_color.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 /// Popup premium de mise à jour facultative — pas un AlertDialog standard,
 /// design custom avec illustration, coins très arrondis et ombre douce.
@@ -28,7 +28,7 @@ class UpdateDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.fromLTRB(28, 32, 28, 20),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+          color: isDark ? AppColor.kTexte : Colors.white,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
@@ -58,7 +58,7 @@ class UpdateDialog extends StatelessWidget {
             Text(
               config.title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
+              style: AppTypo.jakarta(
                 fontSize: 19,
                 fontWeight: FontWeight.w800,
                 color: isDark ? Colors.white : AppColor.kGrayscaleDark100,
@@ -68,7 +68,7 @@ class UpdateDialog extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 config.subtitle,
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: AppColor.kGrayscale40,
@@ -80,7 +80,7 @@ class UpdateDialog extends StatelessWidget {
               Text(
                 config.message,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontSize: 14,
                   height: 1.55,
                   color: AppColor.kGrayscale40,
@@ -103,7 +103,7 @@ class UpdateDialog extends StatelessWidget {
                 ),
                 child: Text(
                   config.updateButton,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),
@@ -118,7 +118,7 @@ class UpdateDialog extends StatelessWidget {
               ),
               child: Text(
                 config.laterButton,
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   color: AppColor.kGrayscale40,
                   fontWeight: FontWeight.w600,
                   fontSize: 13.5,

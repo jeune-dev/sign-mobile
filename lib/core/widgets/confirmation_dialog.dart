@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 Future<bool> showConfirmationDialog(
   BuildContext context, {
@@ -67,7 +68,7 @@ class _ConfirmationDialog extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF111827),
+                color: AppColor.kTexte,
               ),
             ),
             const SizedBox(height: 8),
@@ -76,7 +77,7 @@ class _ConfirmationDialog extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
-                color: Color(0xFF6B7280),
+                color: AppColor.kTexteMoyen,
                 height: 1.5,
               ),
             ),
@@ -88,7 +89,7 @@ class _ConfirmationDialog extends StatelessWidget {
                     onPressed: () => Navigator.of(context).pop(false),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 13),
-                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                      side: const BorderSide(color: AppColor.kBordure),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
@@ -98,7 +99,7 @@ class _ConfirmationDialog extends StatelessWidget {
                         cancelLabel,
                         maxLines: 1,
                         style: const TextStyle(
-                            color: Color(0xFF374151), fontWeight: FontWeight.w600),
+                            color: AppColor.kTexteFort, fontWeight: FontWeight.w600),
                       ),
                     ),
                   ),

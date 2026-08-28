@@ -13,9 +13,14 @@ import 'package:sign_application/features/etat_logement/domain/entities/etat_log
 import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_bloc.dart';
 import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_event.dart';
 import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_state.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/etat_logement/domain/usecases/telecharger_etat_logement.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 
 /// Couleur d'accent dédiée à l'état des lieux.
-const Color _kAccent = Color(0xFF1A1A1A);
+const Color _kAccent = AppColor.kTexte;
 
 /// Valeurs possibles pour l'état d'un élément d'une pièce.
 const List<String> _kEtatValues = ['Neuf', 'Bon', 'Moyen', 'Mauvais'];
@@ -77,6 +82,18 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
   DateTime? _date;
   TimeOfDay? _heure;
   final _observationsCtrl = TextEditingController();
+
+  /// Informations qui figureront sur l'etat des lieux : preremplies
+  /// depuis le profil, modifiables, et figees avec le document.
+  final _emetteur = ControleurEmetteur();
+
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que l'utilisateur
+    // remplit les premieres etapes.
+    _emetteur.charger();
+  }
   int _salons = 0, _chambres = 0, _cuisines = 0, _sallesBain = 0, _wc = 0, _balcons = 0;
   final _autresPiecesCtrl = TextEditingController();
 
@@ -93,6 +110,7 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _observationsCtrl.dispose();
     _autresPiecesCtrl.dispose();
     for (final p in _pieces) {
@@ -191,6 +209,9 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
 
     final data = <String, dynamic>{
       'date_etat_des_lieux': DateFormat('yyyy-MM-dd').format(_date!),
+      // Ce qui sera imprime sur le document. Le serveur fige ces valeurs :
+      // une regeneration produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
       'heure_visite':
           '${_heure!.hour.toString().padLeft(2, '0')}:${_heure!.minute.toString().padLeft(2, '0')}',
       'observations_generales': _observationsCtrl.text.trim(),
@@ -217,7 +238,20 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
     return BlocListener<EtatLogementBloc, EtatLogementState>(
       listener: (ctx, state) {
         if (state is EtatLogementSuccess) {
-          Navigator.pop(ctx, true);
+          // L'etat des lieux est montre a l'utilisateur avant tout retour a
+          // la liste (§ 9), puis le parcours reprend la main (§ 10).
+          afficherDocumentGenere(
+            ctx,
+            libelle: 'état des lieux',
+            document: state.documentCree,
+            telecharger: (id) async {
+              final resultat = await sl<TelechargerEtatLogement>()(id);
+              return resultat.fold(
+                (echec) => throw Exception(echec.errorMessage),
+                (octets) => octets,
+              );
+            },
+          );
         } else if (state is EtatLogementError) {
           showToast(ctx, 'Erreur', state.message, ToastificationType.error);
         }
@@ -544,7 +578,7 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
                           fontSize: 13, fontWeight: FontWeight.w800, color: kValueColor)),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFF1A1A1A), size: 20),
+                  icon: const Icon(Icons.delete_outline_rounded, color: AppColor.kTexte, size: 20),
                   onPressed: () => setState(() {
                     _pieces.removeAt(index).dispose();
                   }),
@@ -625,6 +659,11 @@ class _CreationEtatLogementPageState extends State<CreationEtatLogementPage> {
   Widget _buildSignature() {
     return Column(
       children: [
+        // Ce qui figurera sur le document : prerempli depuis le profil,
+        // modifiable, et fige avec le document cote serveur.
+        SectionEmetteur(
+            controleur: _emetteur, titre: 'Vos informations (bailleur)'),
+        const SizedBox(height: 20),
         // Bannière signature
         Container(
           width: double.infinity,

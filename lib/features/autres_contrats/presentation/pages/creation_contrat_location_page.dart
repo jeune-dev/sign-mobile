@@ -12,6 +12,11 @@ import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/autres_contrats/domain/usecases/telecharger_autre_contrat.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 
 class CreationContratLocationPage extends StatefulWidget {
   const CreationContratLocationPage({super.key});
@@ -21,11 +26,19 @@ class CreationContratLocationPage extends StatefulWidget {
 }
 
 class _State extends State<CreationContratLocationPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que
+    // l'utilisateur remplit les premieres etapes.
+    _emetteur.charger();
+  }
+
   int _step = 0;
   static const int _totalSteps = 3;
   static const _steps = ['Locataire', 'Bien', 'Conditions'];
 
-  static const _accent = Color(0xFF1A1A1A);
+  static const _accent = AppColor.kTexte;
   static const _icon   = Icons.directions_car_outlined;
   static const _titre  = 'Contrat de location';
 
@@ -33,6 +46,10 @@ class _State extends State<CreationContratLocationPage> {
   final _formKey2 = GlobalKey<FormState>();
 
   Client? _client;
+
+  /// Informations qui figureront sur le document : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   final _descCtrl         = TextEditingController();
   final _etatCtrl         = TextEditingController();
@@ -48,6 +65,7 @@ class _State extends State<CreationContratLocationPage> {
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _descCtrl.dispose(); _etatCtrl.dispose(); _valeurCtrl.dispose();
     _dureeCtrl.dispose(); _montantCtrl.dispose(); _montantCautionCtrl.dispose();
     _villeCtrl.dispose();
@@ -95,6 +113,9 @@ class _State extends State<CreationContratLocationPage> {
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
       'signature_generateur': sigBase64,
+      // Ce qui sera imprime sur le contrat. Le serveur fige ces valeurs :
+      // une regeneration a la signature produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
     }));
   }
 
@@ -114,7 +135,22 @@ class _State extends State<CreationContratLocationPage> {
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
             showToast(ctx, 'Contrat créé', 'Le contrat de location a été créé avec succès.', ToastificationType.success);
-            Navigator.pop(ctx);
+            // Le document est montre a l'utilisateur avant tout retour
+            // a la liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              ctx,
+              libelle: 'contrat de location',
+              feminin: false,
+              document: state.documentCree,
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerAutreContrat>()(
+                    ContratType.location.apiValue, id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is AutresContratsError) _showError(state.message);
         },
@@ -184,136 +220,152 @@ class _State extends State<CreationContratLocationPage> {
 
   Widget _step1() => Form(
     key: _formKey1,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Identification du bien',
-          icon: Icons.inventory_2_outlined,
-          accentColor: _accent,
-          subtitle: 'Caractéristiques du bien loué',
-          children: [
-            CDropdown<String>(
-              label: 'Type de bien',
-              value: _typeBien,
-              accentColor: _accent,
-              icon: Icons.category_outlined,
-              items: const [
-                DropdownMenuItem(value: 'véhicule',     child: Text('Véhicule')),
-                DropdownMenuItem(value: 'matériel',     child: Text('Matériel')),
-                DropdownMenuItem(value: 'équipement',   child: Text('Équipement')),
-                DropdownMenuItem(value: 'électronique', child: Text('Électronique')),
-                DropdownMenuItem(value: 'autre',        child: Text('Autre')),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CSection(
+            title: 'Identification du bien',
+            icon: Icons.inventory_2_outlined,
+            accentColor: _accent,
+            subtitle: 'Caractéristiques du bien loué',
+            children: [
+              CDropdown<String>(
+                label: 'Type de bien',
+                value: _typeBien,
+                accentColor: _accent,
+                icon: Icons.category_outlined,
+                items: const [
+                  DropdownMenuItem(value: 'véhicule',     child: Text('Véhicule')),
+                  DropdownMenuItem(value: 'matériel',     child: Text('Matériel')),
+                  DropdownMenuItem(value: 'équipement',   child: Text('Équipement')),
+                  DropdownMenuItem(value: 'électronique', child: Text('Électronique')),
+                  DropdownMenuItem(value: 'autre',        child: Text('Autre')),
+                ],
+                onChanged: (v) => setState(() => _typeBien = v!),
+              ),
+              kGap,
+              CField(controller: _descCtrl, label: 'Description du bien', accentColor: _accent, maxLines: 3,
+                  hint: 'Marque, modèle, numéro de série, caractéristiques…'),
+              kGap,
+              CField(controller: _etatCtrl, label: 'État du bien', accentColor: _accent, icon: Icons.info_outline,
+                  hint: 'Neuf, bon état, usage normal…'),
+              kGap,
+              CField(
+                controller: _valeurCtrl,
+                label: 'Valeur estimée (FCFA)',
+                accentColor: _accent,
+                icon: Icons.monetization_on_outlined,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                hint: '0',
+              ),
+            ],
+          ),
               ],
-              onChanged: (v) => setState(() => _typeBien = v!),
-            ),
-            kGap,
-            CField(controller: _descCtrl, label: 'Description du bien', accentColor: _accent, maxLines: 3,
-                hint: 'Marque, modèle, numéro de série, caractéristiques…'),
-            kGap,
-            CField(controller: _etatCtrl, label: 'État du bien', accentColor: _accent, icon: Icons.info_outline,
-                hint: 'Neuf, bon état, usage normal…'),
-            kGap,
-            CField(
-              controller: _valeurCtrl,
-              label: 'Valeur estimée (FCFA)',
-              accentColor: _accent,
-              icon: Icons.monetization_on_outlined,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              hint: '0',
-            ),
-          ],
-        ),
-      ],
+      ),
     ),
   );
 
   Widget _step2() => Form(
     key: _formKey2,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Conditions de location',
-          icon: Icons.receipt_long_outlined,
-          accentColor: _accent,
-          children: [
-            CDurationField(controller: _dureeCtrl, label: 'Durée de location', accentColor: _accent, icon: Icons.timer_outlined),
-            kGap,
-            CField(
-              controller: _montantCtrl,
-              label: 'Montant de location (FCFA)',
-              accentColor: _accent,
-              icon: Icons.payments_outlined,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              hint: '0',
-            ),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Caution',
-          icon: Icons.shield_outlined,
-          accentColor: _accent,
-          subtitle: 'Garantie en cas de dommage ou manquement',
-          children: [
-            CToggle(
-              title: 'Caution requise',
-              subtitle: 'Montant récupérable à la restitution du bien',
-              value: _caution,
-              accentColor: _accent,
-              onChanged: (v) => setState(() => _caution = v),
-            ),
-            if (_caution) ...[
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Ce qui figurera sur le document : prerempli depuis le profil,
+          // modifiable, et fige avec le document cote serveur.
+          SectionEmetteur(controleur: _emetteur, titre: 'Vos informations'),
+          const SizedBox(height: 20),
+          CSection(
+            title: 'Conditions de location',
+            icon: Icons.receipt_long_outlined,
+            accentColor: _accent,
+            children: [
+              CDurationField(controller: _dureeCtrl, label: 'Durée de location', accentColor: _accent, icon: Icons.timer_outlined),
               kGap,
               CField(
-                controller: _montantCautionCtrl,
-                label: 'Montant de la caution (FCFA)',
+                controller: _montantCtrl,
+                label: 'Montant de location (FCFA)',
                 accentColor: _accent,
-                icon: Icons.shield_outlined,
+                icon: Icons.payments_outlined,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                required: false,
                 hint: '0',
               ),
             ],
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Récapitulatif',
-          icon: Icons.summarize_outlined,
-          accentColor: _accent,
-          children: [
-            if (_client != null) CSummaryRow(label: 'Locataire', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
-            CSummaryRow(label: 'Type de bien', value: _typeBien, icon: Icons.inventory_2_outlined, accentColor: _accent),
-            if (_dureeCtrl.text.isNotEmpty) CSummaryRow(label: 'Durée', value: _dureeCtrl.text, icon: Icons.timer_outlined, accentColor: _accent),
-            if (_montantCtrl.text.isNotEmpty) CSummaryRow(label: 'Loyer', value: '${_montantCtrl.text} FCFA', icon: Icons.payments_outlined, accentColor: _accent),
-            CSummaryRow(label: 'Caution', value: _caution ? 'Oui' : 'Non', icon: Icons.shield_outlined, accentColor: _accent),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Lieu de signature',
-          icon: Icons.place_outlined,
-          accentColor: _accent,
-          children: [
-            CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar…'),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Signature',
-          icon: Icons.draw_outlined,
-          accentColor: _accent,
-          subtitle: 'Signez pour valider la création du contrat',
-          children: [
-            CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
-          ],
-        ),
-      ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Caution',
+            icon: Icons.shield_outlined,
+            accentColor: _accent,
+            subtitle: 'Garantie en cas de dommage ou manquement',
+            children: [
+              CToggle(
+                title: 'Caution requise',
+                subtitle: 'Montant récupérable à la restitution du bien',
+                value: _caution,
+                accentColor: _accent,
+                onChanged: (v) => setState(() => _caution = v),
+              ),
+              if (_caution) ...[
+                kGap,
+                CField(
+                  controller: _montantCautionCtrl,
+                  label: 'Montant de la caution (FCFA)',
+                  accentColor: _accent,
+                  icon: Icons.shield_outlined,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  required: false,
+                  hint: '0',
+                ),
+              ],
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Récapitulatif',
+            icon: Icons.summarize_outlined,
+            accentColor: _accent,
+            children: [
+              if (_client != null) CSummaryRow(label: 'Locataire', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
+              CSummaryRow(label: 'Type de bien', value: _typeBien, icon: Icons.inventory_2_outlined, accentColor: _accent),
+              if (_dureeCtrl.text.isNotEmpty) CSummaryRow(label: 'Durée', value: _dureeCtrl.text, icon: Icons.timer_outlined, accentColor: _accent),
+              if (_montantCtrl.text.isNotEmpty) CSummaryRow(label: 'Loyer', value: '${_montantCtrl.text} FCFA', icon: Icons.payments_outlined, accentColor: _accent),
+              CSummaryRow(label: 'Caution', value: _caution ? 'Oui' : 'Non', icon: Icons.shield_outlined, accentColor: _accent),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Lieu de signature',
+            icon: Icons.place_outlined,
+            accentColor: _accent,
+            children: [
+              CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar…'),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Signature',
+            icon: Icons.draw_outlined,
+            accentColor: _accent,
+            subtitle: 'Signez pour valider la création du contrat',
+            children: [
+              CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
+            ],
+          ),
+              ],
+      ),
     ),
   );
 }

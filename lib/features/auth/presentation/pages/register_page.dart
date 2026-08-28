@@ -1,8 +1,20 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// ⚠️ ÉCRAN REMPLACÉ — ne plus router vers cette page.
+//
+// L'inscription passe désormais par `inscription_rapide_page.dart` : nom,
+// prénom, ville et numéro de téléphone suffisent, et aucune pièce d'identité
+// n'est demandée à ce stade (refonte du parcours, § 2 du cahier des charges).
+//
+// Ce fichier est conservé le temps que la refonte soit validée en production
+// — il documente l'ancien formulaire complet (photo de profil, logo,
+// signature, document d'identité) et permet un retour arrière immédiat en
+// remettant `registerRoute` dessus dans app_router.dart.
+// À supprimer une fois le nouveau parcours confirmé.
+// ─────────────────────────────────────────────────────────────────────────────
 import 'package:sign_application/core/routes/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:toastification/toastification.dart';
 import 'dart:io';
@@ -17,6 +29,7 @@ import '../../../../core/widgets/toastNotif.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -83,15 +96,31 @@ class _RegisterPageState extends State<RegisterPage> {
   bool get _isPasswordValid =>
       _hasUpperCase && _hasLowerCase && _hasDigit && _hasSpecialChar && _hasMinLength;
 
+  // image_picker copie l'image choisie dans le dossier cache de l'app et
+  // renvoie ce chemin volatil : Android peut le purger avant l'envoi du
+  // formulaire, ce qui provoque un PathNotFoundException au moment du
+  // MultipartFile.fromFile. On recopie donc immédiatement chaque image dans
+  // le répertoire documents (persistant) et on garde cette copie stable.
+  Future<File> _persistPickedImage(String cachePath) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final ext = cachePath.contains('.') ? cachePath.split('.').last : 'jpg';
+    final target = File(
+      '${docsDir.path}/reg_${DateTime.now().microsecondsSinceEpoch}.$ext',
+    );
+    return File(cachePath).copy(target.path);
+  }
+
   Future<void> _pickImage({required bool isProfile}) async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
+      final persisted = await _persistPickedImage(pickedFile.path);
+      if (!mounted) return;
       setState(() {
         if (isProfile) {
-          _profileImage = File(pickedFile.path);
+          _profileImage = persisted;
         } else {
-          _logoImage = File(pickedFile.path);
+          _logoImage = persisted;
         }
       });
     }
@@ -100,8 +129,10 @@ class _RegisterPageState extends State<RegisterPage> {
   Future<void> _pickDocumentIdentiteImage() async {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (pickedFile != null && mounted) {
-      setState(() => _documentIdentiteImage = File(pickedFile.path));
+    if (pickedFile != null) {
+      final persisted = await _persistPickedImage(pickedFile.path);
+      if (!mounted) return;
+      setState(() => _documentIdentiteImage = persisted);
     }
   }
 
@@ -120,13 +151,13 @@ class _RegisterPageState extends State<RegisterPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           'Signez ici',
-          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          style: AppTypo.jakarta(fontWeight: FontWeight.w700),
         ),
         content: Container(
           width: MediaQuery.of(dialogContext).size.width * 0.8,
           height: 200,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8F8FA),
+            color: AppColor.kChamp,
             borderRadius: BorderRadius.circular(14),
           ),
           child: ClipRRect(
@@ -143,7 +174,7 @@ class _RegisterPageState extends State<RegisterPage> {
             onPressed: () => controller.clear(),
             child: Text(
               'Effacer',
-              style: GoogleFonts.plusJakartaSans(color: AppColor.kGrayscale40),
+              style: AppTypo.jakarta(color: AppColor.kGrayscale40),
             ),
           ),
           ElevatedButton(
@@ -156,10 +187,12 @@ class _RegisterPageState extends State<RegisterPage> {
               // SEC-01 : Vérifier mounted après chaque await
               if (!dialogContext.mounted) return;
               if (data != null) {
-                final tempDir = await getTemporaryDirectory();
+                // Répertoire documents (persistant) plutôt que le cache, pour
+                // éviter que le fichier soit purgé avant l'envoi du formulaire.
+                final docsDir = await getApplicationDocumentsDirectory();
                 if (!dialogContext.mounted) return;
                 final file = File(
-                  '${tempDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png',
+                  '${docsDir.path}/signature_${DateTime.now().millisecondsSinceEpoch}.png',
                 );
                 await file.writeAsBytes(data);
                 if (mounted) setState(() => _signatureImage = file);
@@ -175,7 +208,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             child: Text(
               'Valider',
-              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+              style: AppTypo.jakarta(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -441,7 +474,7 @@ class _RegisterPageState extends State<RegisterPage> {
             final fs = sw < 360 ? 22.0 : (sw < 400 ? 25.0 : 28.0);
             return Text(
               _currentStep == 0 ? 'Commençons !' : 'Informations complémentaires',
-              style: GoogleFonts.plusJakartaSans(
+              style: AppTypo.jakarta(
                 fontSize: fs,
                 fontWeight: FontWeight.w800,
                 color: AppColor.kGrayscaleDark100,
@@ -455,7 +488,7 @@ class _RegisterPageState extends State<RegisterPage> {
           _currentStep == 0
               ? 'Remplissez vos informations personnelles'
               : 'Complétez votre profil pour commencer à signer',
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 14,
             fontWeight: FontWeight.w400,
             color: AppColor.kGrayscale40,
@@ -504,7 +537,7 @@ class _RegisterPageState extends State<RegisterPage> {
           child: Center(
             child: Text(
               '$stepNumber',
-              style: GoogleFonts.plusJakartaSans(
+              style: AppTypo.jakarta(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
@@ -515,7 +548,7 @@ class _RegisterPageState extends State<RegisterPage> {
         const SizedBox(height: 6),
         Text(
           label,
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 11,
             fontWeight: FontWeight.w600,
             color: isActive ? AppColor.kPrimary : AppColor.kGrayscale40,
@@ -768,7 +801,7 @@ class _RegisterPageState extends State<RegisterPage> {
               children: [
                 Text(
                   isEnt ? 'Compte Professionnel' : 'Compte Indépendant',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                     color: isEnt
@@ -781,7 +814,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   isEnt
                       ? 'RC et NINEA requis — pour les entreprises enregistrées'
                       : 'Sans RC ni NINEA — pour les freelances et travailleurs indépendants',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     fontSize: 11,
                     color: Colors.black54,
                     height: 1.4,
@@ -804,7 +837,7 @@ class _RegisterPageState extends State<RegisterPage> {
         Flexible(
           child: Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: AppTypo.jakarta(
               color: AppColor.kGrayscaleDark100,
               fontWeight: FontWeight.w600,
               fontSize: 13,
@@ -815,7 +848,7 @@ class _RegisterPageState extends State<RegisterPage> {
         if (isRequired)
           Text(
             ' *',
-            style: GoogleFonts.plusJakartaSans(
+            style: AppTypo.jakarta(
               color: Colors.red,
               fontWeight: FontWeight.w600,
               fontSize: 13,
@@ -828,7 +861,7 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: GoogleFonts.plusJakartaSans(
+      style: AppTypo.jakarta(
         fontSize: 15,
         fontWeight: FontWeight.w700,
         color: AppColor.kGrayscaleDark100,
@@ -842,13 +875,13 @@ class _RegisterPageState extends State<RegisterPage> {
   }) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.plusJakartaSans(
+      hintStyle: AppTypo.jakarta(
         fontSize: 14,
         color: AppColor.kGrayscale40,
       ),
       prefixIcon: Icon(icon, color: AppColor.kPrimary, size: 20),
       filled: true,
-      fillColor: const Color(0xFFF8F8FA),
+      fillColor: AppColor.kChamp,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -870,7 +903,7 @@ class _RegisterPageState extends State<RegisterPage> {
         borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
-      errorStyle: GoogleFonts.plusJakartaSans(
+      errorStyle: AppTypo.jakarta(
         fontSize: 11,
         color: Colors.redAccent,
         fontWeight: FontWeight.w500,
@@ -895,7 +928,7 @@ class _RegisterPageState extends State<RegisterPage> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
@@ -936,7 +969,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     curve: Curves.easeOut,
                     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
                     decoration: BoxDecoration(
-                      color: isSelected ? AppColor.kPrimary : const Color(0xFFF8F8FA),
+                      color: isSelected ? AppColor.kPrimary : AppColor.kChamp,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
                         color: isSelected ? AppColor.kPrimary : AppColor.kLine,
@@ -968,7 +1001,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         Text(
                           opt['label'] as String,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.plusJakartaSans(
+                          style: AppTypo.jakarta(
                             fontSize: 10.5,
                             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                             color: isSelected ? Colors.white : AppColor.kGrayscaleDark100,
@@ -1022,7 +1055,7 @@ class _RegisterPageState extends State<RegisterPage> {
           inputFormatters: isNumericOnly
               ? [FilteringTextInputFormatter.digitsOnly]
               : [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
@@ -1057,7 +1090,7 @@ class _RegisterPageState extends State<RegisterPage> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: const Color(0xFFF8F8FA),
+              color: AppColor.kChamp,
               border: Border.all(
                 color: _documentIdentiteImage != null ? AppColor.kPrimary : AppColor.kLine,
                 width: _documentIdentiteImage != null ? 2 : 1,
@@ -1075,7 +1108,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       const SizedBox(height: 8),
                       Text(
                         'Ajouter une photo du document',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: AppTypo.jakarta(
                           color: AppColor.kPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
@@ -1083,7 +1116,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       Text(
                         'Obligatoire — cliquez pour sélectionner',
-                        style: GoogleFonts.plusJakartaSans(
+                        style: AppTypo.jakarta(
                           color: AppColor.kGrayscale40,
                           fontSize: 11,
                         ),
@@ -1111,24 +1144,24 @@ class _RegisterPageState extends State<RegisterPage> {
         IntlPhoneField(
           controller: controller,
           initialCountryCode: 'SN',
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
           ),
-          dropdownTextStyle: GoogleFonts.plusJakartaSans(
+          dropdownTextStyle: AppTypo.jakarta(
             fontSize: 14,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
           ),
           decoration: InputDecoration(
             hintText: 'Votre numéro',
-            hintStyle: GoogleFonts.plusJakartaSans(
+            hintStyle: AppTypo.jakarta(
               fontSize: 14,
               color: AppColor.kGrayscale40,
             ),
             filled: true,
-            fillColor: const Color(0xFFF8F8FA),
+            fillColor: AppColor.kChamp,
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -1151,7 +1184,7 @@ class _RegisterPageState extends State<RegisterPage> {
               borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
             ),
             counterText: '',
-            errorStyle: GoogleFonts.plusJakartaSans(
+            errorStyle: AppTypo.jakarta(
               fontSize: 11,
               color: Colors.redAccent,
               fontWeight: FontWeight.w500,
@@ -1191,14 +1224,14 @@ class _RegisterPageState extends State<RegisterPage> {
             controller: _passwordController,
             obscureText: _obscurePassword,
             onChanged: _checkPasswordStrength,
-            style: GoogleFonts.plusJakartaSans(
+            style: AppTypo.jakarta(
               fontSize: 15,
               fontWeight: FontWeight.w500,
               color: AppColor.kGrayscaleDark100,
             ),
             decoration: InputDecoration(
               hintText: 'Créez un mot de passe sécurisé',
-              hintStyle: GoogleFonts.plusJakartaSans(
+              hintStyle: AppTypo.jakarta(
                 fontSize: 14,
                 color: AppColor.kGrayscale40,
               ),
@@ -1215,7 +1248,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ),
               filled: true,
-              fillColor: const Color(0xFFF8F8FA),
+              fillColor: AppColor.kChamp,
               contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               border: OutlineInputBorder(
@@ -1238,7 +1271,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 borderRadius: BorderRadius.circular(14),
                 borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
               ),
-              errorStyle: GoogleFonts.plusJakartaSans(
+              errorStyle: AppTypo.jakarta(
                 fontSize: 11,
                 color: Colors.redAccent,
                 fontWeight: FontWeight.w500,
@@ -1266,7 +1299,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F8FA),
+        color: AppColor.kChamp,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -1274,7 +1307,7 @@ class _RegisterPageState extends State<RegisterPage> {
         children: [
           Text(
             'Critères du mot de passe :',
-            style: GoogleFonts.plusJakartaSans(
+            style: AppTypo.jakarta(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: AppColor.kGrayscaleDark100,
@@ -1304,7 +1337,7 @@ class _RegisterPageState extends State<RegisterPage> {
           const SizedBox(width: 6),
           Text(
             text,
-            style: GoogleFonts.plusJakartaSans(
+            style: AppTypo.jakarta(
               fontSize: 11,
               fontWeight: FontWeight.w500,
               color: isMet ? const Color(0xFF22C55E) : Colors.redAccent,
@@ -1326,20 +1359,20 @@ class _RegisterPageState extends State<RegisterPage> {
           initialValue: _selectedRole,
           isExpanded: true,
           icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColor.kPrimary),
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
           ),
           decoration: InputDecoration(
             hintText: 'Sélectionnez votre rôle',
-            hintStyle: GoogleFonts.plusJakartaSans(
+            hintStyle: AppTypo.jakarta(
               fontSize: 14,
               color: AppColor.kGrayscale40,
             ),
             prefixIcon: Icon(Icons.work_outline, color: AppColor.kPrimary, size: 20),
             filled: true,
-            fillColor: const Color(0xFFF8F8FA),
+            fillColor: AppColor.kChamp,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -1361,7 +1394,7 @@ class _RegisterPageState extends State<RegisterPage> {
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
             ),
-            errorStyle: GoogleFonts.plusJakartaSans(
+            errorStyle: AppTypo.jakarta(
               fontSize: 11,
               color: Colors.redAccent,
               fontWeight: FontWeight.w500,
@@ -1372,7 +1405,7 @@ class _RegisterPageState extends State<RegisterPage> {
               value: role,
               child: Text(
                 role,
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontSize: 15,
                   color: AppColor.kGrayscaleDark100,
                 ),
@@ -1406,7 +1439,7 @@ class _RegisterPageState extends State<RegisterPage> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: const Color(0xFFF8F8FA),
+              color: AppColor.kChamp,
               border: _profileImage != null
                   ? Border.all(color: AppColor.kPrimary, width: 2)
                   : null,
@@ -1424,7 +1457,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 const SizedBox(height: 8),
                 Text(
                   'Ajouter une photo',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     color: AppColor.kPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -1432,7 +1465,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
                 Text(
                   'Optionnel — cliquez pour sélectionner',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     color: AppColor.kGrayscale40,
                     fontSize: 11,
                   ),
@@ -1458,7 +1491,7 @@ class _RegisterPageState extends State<RegisterPage> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: const Color(0xFFF8F8FA),
+              color: AppColor.kChamp,
               border: _logoImage != null
                   ? Border.all(color: AppColor.kPrimary, width: 2)
                   : null,
@@ -1477,7 +1510,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text(
                   'Ajouter un logo',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     color: AppColor.kPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -1486,7 +1519,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text(
                   'Optionnel',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     color: AppColor.kGrayscale40,
                     fontSize: 11,
                   ),
@@ -1512,7 +1545,7 @@ class _RegisterPageState extends State<RegisterPage> {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: const Color(0xFFF8F8FA),
+              color: AppColor.kChamp,
               border: _signatureImage != null
                   ? Border.all(color: AppColor.kPrimary, width: 2)
                   : null,
@@ -1530,7 +1563,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text(
                   'Signez ici',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     color: AppColor.kPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
@@ -1539,7 +1572,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 Text(
                   'Optionnel — touchez pour signer',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     color: AppColor.kGrayscale40,
                     fontSize: 11,
                   ),
@@ -1565,7 +1598,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
                 label: Text(
                   'Retour',
-                  style: GoogleFonts.plusJakartaSans(
+                  style: AppTypo.jakarta(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1626,7 +1659,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       children: [
                         Text(
                           _currentStep == 0 ? 'Suivant' : "S'inscrire",
-                          style: GoogleFonts.plusJakartaSans(
+                          style: AppTypo.jakarta(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
@@ -1663,7 +1696,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const TextSpan(text: 'En vous inscrivant, vous acceptez nos '),
               TextSpan(
                 text: "Conditions d'utilisation",
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontWeight: FontWeight.w700,
                   color: AppColor.kPrimary,
                 ),
@@ -1674,7 +1707,7 @@ class _RegisterPageState extends State<RegisterPage> {
               const TextSpan(text: ' et notre '),
               TextSpan(
                 text: 'Politique de confidentialité',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontWeight: FontWeight.w700,
                   color: AppColor.kPrimary,
                 ),
@@ -1685,7 +1718,7 @@ class _RegisterPageState extends State<RegisterPage> {
             ],
           ),
           textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 12,
             fontWeight: FontWeight.w400,
             color: AppColor.kGrayscale40,

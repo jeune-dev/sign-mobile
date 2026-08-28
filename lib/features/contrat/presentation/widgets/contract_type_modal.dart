@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:sign_application/core/config/contrat_type.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import 'package:sign_application/features/autres_contrats/presentation/bloc/autres_contrats_bloc.dart';
@@ -71,14 +73,15 @@ Future<void> navigateToContractCreation(
   }
 
   if (page != null && context.mounted) {
-    await Navigator.push(
+    // Le parcours (§ 4 puis § 10) encadre l'ouverture du formulaire :
+    // informations manquantes réclamées avant, proposition de compte complet
+    // après la création du document.
+    final contenu = page;
+    final bloc = context.read<AutresContratsBloc>();
+    await ParcoursDocument.ouvrir(
       context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<AutresContratsBloc>(),
-          child: page!,
-        ),
-      ),
+      typeDocument: TypeDocumentSigns.depuisIdContrat(type.id),
+      page: (_) => BlocProvider.value(value: bloc, child: contenu),
     );
   }
 }

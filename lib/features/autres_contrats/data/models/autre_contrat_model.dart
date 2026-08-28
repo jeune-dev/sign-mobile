@@ -10,6 +10,7 @@ class AutreContratModel extends AutreContrat {
     super.autrePartie,
     super.data,
     super.createdAt,
+    super.direction,
   });
 
   factory AutreContratModel.fromJson(Map<String, dynamic> json, String type) {
@@ -22,6 +23,7 @@ class AutreContratModel extends AutreContrat {
       numeroContrat: json['numero_contrat'] as String?,
       type:          type,
       statut:        json['statut'] as String?,
+      direction:     json['direction'] as String?,
       generateur:    _toMap(json['generateur']),
       // backend alias peut être 'autrePartie' ou 'autre_partie'
       autrePartie:   _toMap(json['autrePartie']) ?? _toMap(json['autre_partie']),

@@ -2,6 +2,8 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -19,6 +21,8 @@ import '../bloc/contrat_travail_event.dart';
 import '../bloc/contrat_travail_state.dart';
 import '../../domain/entities/contrat_travail.dart';
 import 'creation_contrat_travail_page.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/widgets/barre_filtre_direction.dart';
 
 // Stats snapshot carried separately so stats updates don't rebuild the list.
 class _StatsSnapshot {
@@ -37,6 +41,12 @@ class ContratsTravailListePage extends StatefulWidget {
 }
 
 class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
+  /// Filtre courant : 'tous', 'envoyes' ou 'recus'.
+  ///
+  /// Un contrat recu en tant que salarie n'apparaissait pas du tout : la
+  /// requete ne regardait que le cote employeur.
+  String _filtre = 'tous';
+
   _StatsSnapshot _stats = const _StatsSnapshot();
   bool _statsLoading = true;
   List<ContratTravail> _contrats = [];
@@ -149,7 +159,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: AppColor.kFond,
       body: BlocListener<ContratTravailBloc, ContratTravailState>(
         listener: (context, state) {
           if (state is ContratTravailLoading) {
@@ -197,9 +207,23 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
             final hasMore = _hasMore;
             final isRefreshing = _isRefreshing;
 
+            // Le filtre porte sur l'affichage seul : les compteurs de la
+            // barre doivent refleter l'ensemble, pas la selection.
+            final affiches = _filtre == 'tous'
+                ? contrats
+                : contrats.where((c) =>
+                    _filtre == 'recus' ? c.estRecu : !c.estRecu).toList();
+
             return Column(
               children: [
                 _buildTopBar(),
+                BarreFiltreDirection(
+                  valeur: _filtre,
+                  onChange: (v) => setState(() => _filtre = v),
+                  total: contrats.length,
+                  envoyes: contrats.where((c) => !c.estRecu).length,
+                  recus: contrats.where((c) => c.estRecu).length,
+                ),
                 Expanded(
                   child: isLoading
                       ? const ShimmerList()
@@ -208,18 +232,18 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                           : RefreshIndicator(
                               color: Colors.black87,
                               onRefresh: () async => _refreshAll(),
-                              child: contrats.isEmpty
+                              child: affiches.isEmpty
                                   ? _buildEmpty()
                                   : ListView.separated(
                                       controller: _scrollController,
                                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                                      itemCount: contrats.length + 1,
+                                      itemCount: affiches.length + 1,
                                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                                       itemBuilder: (context, index) {
-                                        if (index == contrats.length) {
+                                        if (index == affiches.length) {
                                           return _buildPaginationFooter(hasMore, isRefreshing);
                                         }
-                                        return _buildCard(contrats[index]);
+                                        return _buildCard(affiches[index]);
                                       },
                                     ),
                             ),
@@ -232,10 +256,14 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const CreationContratTravailPage()),
-        ).then((_) { if (mounted) _refreshAll(); }),
+        onPressed: () async {
+          await ParcoursDocument.ouvrir(
+            context,
+            typeDocument: TypeDocumentSigns.contratTravail,
+            page: (_) => const CreationContratTravailPage(),
+          );
+          if (mounted) _refreshAll();
+        },
         icon: const Icon(Icons.add_rounded),
         label: const Text('Nouveau', style: TextStyle(fontWeight: FontWeight.w700)),
       ),

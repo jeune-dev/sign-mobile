@@ -28,7 +28,7 @@ class FichePaieBloc extends Bloc<FichePaieEvent, FichePaieState> {
     Emitter<FichePaieState> emit,
   ) async {
     emit(FichePaieLoading());
-    final result = await creerFichePaie(event.fiche);
+    final result = await creerFichePaie(event.fiche, emetteur: event.emetteur);
     result.fold(
       (failure) => emit(FichePaieError(failure.errorMessage)),
       (fiche)   => emit(FichePaieSuccess(fiche)),

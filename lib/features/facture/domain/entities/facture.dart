@@ -29,6 +29,16 @@ class Facture extends Equatable {
   final Map<String, dynamic>? client;
   final String? statut; // 'en_attente' | 'partiel' | 'payee'
 
+  /// 'envoye' si je suis l'émetteur, 'recu' si la facture m'est adressée.
+  ///
+  /// Renseigné par le backend : lui seul connaît l'utilisateur courant. Une
+  /// facture reçue n'apparaissait pas du tout dans l'application, la requête
+  /// ne regardant que les documents émis.
+  final String? direction;
+
+  /// L'émetteur, quand la facture m'a été adressée.
+  final Map<String, dynamic>? professionnel;
+
   const Facture({
     required this.id,
     this.numeroFacture,
@@ -42,8 +52,16 @@ class Facture extends Equatable {
     this.items,
     this.client,
     this.statut,
+    this.direction,
+    this.professionnel,
   });
 
+  bool get estRecue => direction == 'recu';
+
+  /// La partie à afficher dans la liste : si la facture est reçue, c'est
+  /// l'émetteur qui intéresse l'utilisateur, pas lui-même.
+  Map<String, dynamic>? get contrepartie => estRecue ? professionnel : client;
+
   @override
-  List<Object?> get props => [id, numeroFacture, statut];
+  List<Object?> get props => [id, numeroFacture, statut, direction];
 }

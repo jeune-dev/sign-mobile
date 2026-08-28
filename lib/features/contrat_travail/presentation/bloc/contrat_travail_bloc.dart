@@ -82,7 +82,8 @@ class ContratTravailBloc extends Bloc<ContratTravailEvent, ContratTravailState> 
     final result = await creerContratTravail(event.data);
     result.fold(
       (failure) => emit(ContratTravailError(failure.errorMessage)),
-      (_) => emit(ContratTravailSuccess(message: 'Contrat de travail créé avec succès')),
+      (cree) => emit(ContratTravailSuccess(
+          message: 'Contrat de travail créé avec succès', documentCree: cree)),
     );
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:toastification/toastification.dart';
 import 'package:flutter/gestures.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
@@ -12,6 +11,7 @@ import '../../../../core/theme/app_color.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -26,8 +26,13 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
 
   String? _phoneNumber;
-  bool _isEmail = true;
+
+  // Le téléphone est devenu l'identifiant principal du compte : c'est donc
+  // l'onglet ouvert par défaut.
+  bool _isEmail = false;
   bool _obscurePassword = true;
+
+
 
   // SEC-05 : Throttle anti-brute-force — max 1 tentative toutes les 3 secondes
   int _loginAttempts = 0;
@@ -96,7 +101,8 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
-      listenWhen: (previous, current) => previous is AuthLoading,
+      listenWhen: (previous, current) =>
+          previous is AuthLoading || current is AuthVerificationEmailRequise,
       listener: (context, state) {
         if (state is AuthSuccess) {
           // SEC-05 : Réinitialiser le compteur de tentatives après succès
@@ -122,6 +128,22 @@ class _LoginPageState extends State<LoginPage> {
             'Connexion réussie',
             'Vous êtes maintenant connecté.',
             ToastificationType.success,
+          );
+        } else if (state is AuthVerificationEmailRequise) {
+          // Compte créé mais adresse jamais confirmée : on l'emmène saisir
+          // son code plutôt que de lui opposer un échec qu'il ne saurait pas
+          // corriger.
+          Navigator.of(context).pushNamed(
+            AppRouter.verificationEmailRoute,
+            arguments: state.email.isNotEmpty
+                ? state.email
+                : _emailController.text.trim(),
+          );
+          showToast(
+            context,
+            'Vérification requise',
+            state.message,
+            ToastificationType.info,
           );
         } else if (state is AuthFailure) {
           showToast(
@@ -209,7 +231,7 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               TextSpan(
                 text: 'Se ',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   color: AppColor.kGrayscaleDark100,
@@ -218,7 +240,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               TextSpan(
                 text: 'Connecter',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   color: AppColor.kPrimary,
@@ -229,8 +251,8 @@ class _LoginPageState extends State<LoginPage> {
         ),
         const SizedBox(height: 10),
         Text(
-          'Connectez-vous pour générer vos factures et signer des contrats en toute sécurité',
-          style: GoogleFonts.plusJakartaSans(
+          'Entrez le numéro de téléphone associé à votre compte et votre mot de passe.',
+          style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w400,
             color: AppColor.kGrayscale40,
@@ -342,7 +364,7 @@ class _LoginPageState extends State<LoginPage> {
           alignment: Alignment.center,
           child: Text(
             label,
-            style: GoogleFonts.plusJakartaSans(
+            style: AppTypo.jakarta(
               fontSize: 14,
               fontWeight: FontWeight.w600,
               color: selected ? Colors.white : AppColor.kGrayscale40,
@@ -373,14 +395,14 @@ class _LoginPageState extends State<LoginPage> {
         TextFormField(
           controller: _emailController,
           keyboardType: TextInputType.emailAddress,
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
           ),
           decoration: InputDecoration(
             hintText: 'exemple@email.com',
-            hintStyle: GoogleFonts.plusJakartaSans(
+            hintStyle: AppTypo.jakarta(
               fontSize: 15,
               color: AppColor.kGrayscale40,
             ),
@@ -390,7 +412,7 @@ class _LoginPageState extends State<LoginPage> {
               size: 20,
             ),
             filled: true,
-            fillColor: const Color(0xFFF8F8FA),
+            fillColor: AppColor.kChamp,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
@@ -437,24 +459,24 @@ class _LoginPageState extends State<LoginPage> {
         const SizedBox(height: 8),
         IntlPhoneField(
           initialCountryCode: 'SN',
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
           ),
-          dropdownTextStyle: GoogleFonts.plusJakartaSans(
+          dropdownTextStyle: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
           ),
           decoration: InputDecoration(
             hintText: 'Votre numéro',
-            hintStyle: GoogleFonts.plusJakartaSans(
+            hintStyle: AppTypo.jakarta(
               fontSize: 15,
               color: AppColor.kGrayscale40,
             ),
             filled: true,
-            fillColor: const Color(0xFFF8F8FA),
+            fillColor: AppColor.kChamp,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
               vertical: 16,
@@ -516,14 +538,14 @@ class _LoginPageState extends State<LoginPage> {
         TextFormField(
           controller: _passwordController,
           obscureText: _obscurePassword,
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
             color: AppColor.kGrayscaleDark100,
           ),
           decoration: InputDecoration(
             hintText: 'Votre mot de passe',
-            hintStyle: GoogleFonts.plusJakartaSans(
+            hintStyle: AppTypo.jakarta(
               fontSize: 15,
               color: AppColor.kGrayscale40,
             ),
@@ -544,7 +566,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             filled: true,
-            fillColor: const Color(0xFFF8F8FA),
+            fillColor: AppColor.kChamp,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
@@ -583,7 +605,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _fieldLabel(String text) {
     return Text(
       text,
-      style: GoogleFonts.plusJakartaSans(
+      style: AppTypo.jakarta(
         fontSize: 13,
         fontWeight: FontWeight.w600,
         color: AppColor.kGrayscaleDark100,
@@ -599,7 +621,7 @@ class _LoginPageState extends State<LoginPage> {
         onTap: () => Navigator.of(context).pushNamed('/forgot-password'),
         child: Text(
           'Mot de passe oublié ?',
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppColor.kPrimary,
@@ -654,7 +676,7 @@ class _LoginPageState extends State<LoginPage> {
                 children: [
                   Text(
                     'Se connecter',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppTypo.jakarta(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
@@ -683,7 +705,7 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           Text(
             'Nouveau chez nous ? ',
-            style: GoogleFonts.plusJakartaSans(
+            style: AppTypo.jakarta(
               fontSize: 14,
               fontWeight: FontWeight.w400,
               color: AppColor.kGrayscale40,
@@ -693,7 +715,7 @@ class _LoginPageState extends State<LoginPage> {
             onTap: () => Navigator.of(context).pushNamed('/register'),
             child: Text(
               'Créer un compte',
-              style: GoogleFonts.plusJakartaSans(
+              style: AppTypo.jakarta(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppColor.kPrimary,
@@ -715,7 +737,7 @@ class _LoginPageState extends State<LoginPage> {
               const TextSpan(text: 'En vous connectant, vous acceptez nos '),
               TextSpan(
                 text: 'Conditions d\'utilisation',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontWeight: FontWeight.w700,
                   color: AppColor.kPrimary,
                 ),
@@ -726,7 +748,7 @@ class _LoginPageState extends State<LoginPage> {
               const TextSpan(text: ' et notre '),
               TextSpan(
                 text: 'Politique de confidentialité',
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontWeight: FontWeight.w700,
                   color: AppColor.kPrimary,
                 ),
@@ -737,7 +759,7 @@ class _LoginPageState extends State<LoginPage> {
             ],
           ),
           textAlign: TextAlign.center,
-          style: GoogleFonts.plusJakartaSans(
+          style: AppTypo.jakarta(
             fontSize: 12,
             fontWeight: FontWeight.w400,
             color: AppColor.kGrayscale40,

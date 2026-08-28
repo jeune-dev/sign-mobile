@@ -1,4 +1,5 @@
 import 'package:sign_application/features/facture/domain/entities/facture.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class FactureState {}
 
@@ -24,7 +25,12 @@ class FacturesLoaded extends FactureState {
 
 class FactureSuccess extends FactureState {
   final String message;
-  FactureSuccess({this.message = 'Opération réussie'});
+
+  /// Facture tout juste creee, quand l'operation en a produit une.
+  /// Null pour une mise a jour ou un renvoi.
+  final DocumentCree? documentCree;
+
+  FactureSuccess({this.message = 'Opération réussie', this.documentCree});
 }
 
 class DocumentBytes extends FactureState {

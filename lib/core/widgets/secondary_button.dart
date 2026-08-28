@@ -1,6 +1,6 @@
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class SecondaryButton extends StatefulWidget {
   final VoidCallback onTap;
@@ -104,7 +104,7 @@ class _SecondaryButtonState extends State<SecondaryButton>
               ],
               Text(
                 widget.text,
-                style: GoogleFonts.plusJakartaSans(
+                style: AppTypo.jakarta(
                   fontSize: widget.fontSize ?? 14,
                   fontWeight: FontWeight.w600,
                   color: widget.textColor,

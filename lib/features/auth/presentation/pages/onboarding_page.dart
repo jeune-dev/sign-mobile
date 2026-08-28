@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sign_application/core/config/user_role.dart';
 import 'package:sign_application/core/routes/app_router.dart';
+import 'package:sign_application/core/services/premier_lancement_service.dart';
 import 'package:sign_application/core/services/token_service.dart';
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/injection_container.dart';
@@ -48,7 +49,7 @@ class _OnboardingPage1State extends State<OnboardingPage1>
     );
 
     // Timer pour passer à la page suivante
-    _timer = Timer(const Duration(seconds: 4), () {
+    _timer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
@@ -66,6 +67,9 @@ class _OnboardingPage1State extends State<OnboardingPage1>
   }
 
   // VULN-M05/M06 : reprend la session si token valide, sinon login.
+  // Depuis la refonte du parcours, une troisième destination existe : la page
+  // de bienvenue (§ 1), affichée à la toute première ouverture d'un appareil
+  // sur lequel personne ne s'est encore connecté.
   Future<void> _resolveDestination() async {
     try {
       final tokenService = sl<TokenService>();
@@ -75,9 +79,14 @@ class _OnboardingPage1State extends State<OnboardingPage1>
         _nextRoute = UserRoleX.fromString(role).isClient
             ? AppRouter.clientRoute
             : AppRouter.professionnelRoute;
-      } else {
-        _nextRoute = AppRouter.loginRoute;
+        return;
       }
+
+      final premiereOuverture =
+          await sl<PremierLancementService>().doitAfficherBienvenue();
+      _nextRoute = premiereOuverture
+          ? AppRouter.bienvenueRoute
+          : AppRouter.loginRoute;
     } catch (_) {
       _nextRoute = AppRouter.loginRoute;
     }
@@ -187,7 +196,7 @@ class _OnboardingPage2State extends State<OnboardingPage2>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _timer = Timer(const Duration(seconds: 4), () {
+    _timer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
         // Redirige vers la destination finale calculée au démarrage :
         // accueil client/pro si déjà connecté, sinon login.

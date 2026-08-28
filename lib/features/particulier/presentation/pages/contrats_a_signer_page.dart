@@ -12,6 +12,7 @@ import '../bloc/particulier_bloc.dart';
 import '../bloc/particulier_event.dart';
 import '../bloc/particulier_state.dart';
 import '../../domain/entities/particulier_contrat.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 // ── Filtres par type ───────────────────────────────────────────────────────────
 class _TypeFilter {
@@ -189,7 +190,7 @@ class _ContratsASignerPageState extends State<ContratsASignerPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0A0A0A), Color(0xFF2A2A2A)],
+          colors: [AppColor.kTexte, Color(0xFF2A2A2A)],
         ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
       ),

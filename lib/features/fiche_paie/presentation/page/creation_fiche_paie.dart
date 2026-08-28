@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_application/features/auth/domain/entities/user.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
@@ -16,25 +15,34 @@ import 'package:sign_application/features/fiche_paie/presentation/bloc/fiche_pai
 import 'package:sign_application/features/fiche_paie/domain/entities/fiche_paie.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/models/document_cree.dart';
+import 'package:sign_application/features/fiche_paie/domain/usecases/cree_fiche_paie.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
+import 'package:sign_application/core/widgets/app_champ_texte.dart';
+import 'package:sign_application/core/widgets/app_entete_formulaire.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Palette
 // ─────────────────────────────────────────────────────────────────────────────
 class _P {
-  static const bg          = Color(0xFFF2F2F7);
+  static const bg          = AppColor.kFond;
   static const surface     = Color(0xFFFFFFFF);
-  static const ink         = Color(0xFF111827);
-  static const inkLight    = Color(0xFF6B7280);
-  static const inkFaint    = Color(0xFF9CA3AF);
+  static const ink         = AppColor.kTexte;
+  static const inkLight    = AppColor.kTexteMoyen;
+  static const inkFaint    = AppColor.kTexteFaible;
   static const accent      = Color(0xFF000000);
-  static const accentSoft  = Color(0xFFF3F4F6);
-  static const success     = Color(0xFF111827);
-  static const danger      = Color(0xFF6B7280);
-  static const divider     = Color(0xFFE5E7EB);
-  static const toggleOff   = Color(0xFFE5E7EB);
-  static const gold        = Color(0xFF6B7280);
-  static const amberBg     = Color(0xFFF3F4F6);
-  static const field       = Color(0xFFF8F8FA);
+  static const accentSoft  = AppColor.kNeutreClair;
+  static const success     = AppColor.kTexte;
+  static const danger      = AppColor.kTexteMoyen;
+  static const divider     = AppColor.kBordure;
+  static const toggleOff   = AppColor.kBordure;
+  static const gold        = AppColor.kTexteMoyen;
+  static const amberBg     = AppColor.kNeutreClair;
+  static const field       = AppColor.kChamp;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -68,6 +76,10 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   // ── Recherche employé (basée sur la base clients via ClientBloc)
   final _searchCtrl = TextEditingController();
   Client? _selected;
+
+  /// Informations qui figureront sur la fiche : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   // ── Identification salarié
   final _ipresCtrl    = TextEditingController();
@@ -151,6 +163,9 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
   @override
   void initState() {
     super.initState();
+    // Prerempli la section « Vos informations » pendant que l'utilisateur
+    // remplit le formulaire.
+    _emetteur.charger();
     _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
@@ -158,6 +173,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _fadeCtrl.dispose();
     for (final c in [
       _searchCtrl, _ipresCtrl, _cssNumCtrl, _posteCtrl,
@@ -237,7 +253,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
       modePaiement: _paiement,
       datePaiement: (_datePaiement ?? DateTime.now()).toIso8601String(),
     );
-    context.read<FichePaieBloc>().add(CreerFichePaieEvent(fiche));
+    context.read<FichePaieBloc>().add(CreerFichePaieEvent(fiche, emetteur: _emetteur.valeursPourEnvoi()));
   }
 
   void _showErr(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);
@@ -250,7 +266,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     final p = emp.prenom;
     final n = emp.nom;
     final letters = '${p.isNotEmpty ? p[0] : ''}${n.isNotEmpty ? n[0] : ''}'.toUpperCase();
-    final palette = [_P.accent, _P.gold, _P.success, const Color(0xFF1A1A1A)];
+    final palette = [_P.accent, _P.gold, _P.success, AppColor.kTexte];
     final col = letters.isNotEmpty ? palette[letters.codeUnitAt(0) % palette.length] : _P.accent;
     return CircleAvatar(
       radius: r,
@@ -280,7 +296,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
               child: Icon(icon, color: Colors.white, size: 16),
             ),
             const SizedBox(width: 10),
-            Text(title, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF111827))),
+            Text(title, style: AppTypo.jakarta(fontSize: 15, fontWeight: FontWeight.w700, color: AppColor.kTexte)),
           ]),
         ),
         ...children,
@@ -292,25 +308,14 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     padding: const EdgeInsets.only(bottom: 7),
     child: RichText(text: TextSpan(
       text: text,
-      style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF111827)),
-      children: req ? [const TextSpan(text: ' *', style: TextStyle(color: Color(0xFF1A1A1A)))] : [],
+      style: AppTypo.jakarta(fontSize: 13, fontWeight: FontWeight.w600, color: AppColor.kTexte),
+      children: req ? [const TextSpan(text: ' *', style: TextStyle(color: AppColor.kTexte))] : [],
     )),
   );
 
-  InputDecoration _deco({String? hint, Widget? prefix, Widget? suffix}) => InputDecoration(
-    hintText: hint,
-    hintStyle: const TextStyle(color: _P.inkFaint, fontSize: 13.5),
-    prefixIcon: prefix,
-    suffixIcon: suffix,
-    filled: true,
-    fillColor: _P.field,
-    border:             OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.divider)),
-    enabledBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.divider)),
-    focusedBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.accent, width: 1.5)),
-    errorBorder:        OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.danger)),
-    focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: _P.danger, width: 1.5)),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-  );
+  /// Décoration déléguée au composant partagé.
+  InputDecoration _deco({String? hint, Widget? prefix, Widget? suffix}) =>
+      AppChampTexte.decoration(indication: hint, prefixe: prefix, suffixe: suffix);
 
   Widget _field(String label, TextEditingController ctrl, {
     String? hint, TextInputType? type, bool req = false, int maxLines = 1,
@@ -758,7 +763,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
           SizedBox(width: 8),
           Expanded(child: Text(
             'Par défaut, le salarié est soumis à l\'IPRES, la CSS et l\'IR. Décochez si non applicable.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF374151), height: 1.5),
+            style: TextStyle(fontSize: 12, color: AppColor.kTexteFort, height: 1.5),
           )),
         ]),
       ),
@@ -825,7 +830,22 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
         listener: (ctx, state) {
           if (state is FichePaieSuccess) {
             showToast(ctx, 'Fiche créée', 'La fiche de paie a été créée avec succès.', ToastificationType.success);
-            Navigator.pop(ctx);
+            // La fiche est montree a l'utilisateur avant tout retour a la
+            // liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              ctx,
+              libelle: 'fiche de paie',
+              feminin: true,
+              document: DocumentCree(
+                  id: state.fiche.id, reference: state.fiche.numeroFiche),
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerFichePaie>()(id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is FichePaieError) _showErr(state.message);
         },
@@ -835,23 +855,35 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
             onTap: () => FocusScope.of(context).unfocus(),
             child: Form(
               key: _formKey,
-              child: ListView(
+              // SingleChildScrollView et non ListView : un ListView ne monte que les
+              // sections visibles, et un TextFormField demonte n est plus rattache au
+              // Form — validate() laissait alors passer des champs obligatoires vides.
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-                children: [
-                  _sectionEmploye(),
-                  _sectionIdSalarie(),
-                  _sectionRemuneration(),
-                  _sectionTempsTravail(),
-                  _sectionHeuresSupp(),
-                  _sectionPrimes(),
-                  _sectionConges(),
-                  _sectionRetenues(),
-                  _sectionCotisations(),
-                  _sectionImpots(),
-                  _sectionPaiement(),
-                  const SizedBox(height: 8),
-                  _submitBtn(),
-                ],
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Ce qui figurera sur la fiche : prerempli depuis le profil,
+                    // modifiable, et fige avec le document cote serveur.
+                    SectionEmetteur(
+                        controleur: _emetteur,
+                        titre: 'Vos informations (employeur)'),
+                    const SizedBox(height: 20),
+                    _sectionEmploye(),
+                    _sectionIdSalarie(),
+                    _sectionRemuneration(),
+                    _sectionTempsTravail(),
+                    _sectionHeuresSupp(),
+                    _sectionPrimes(),
+                    _sectionConges(),
+                    _sectionRetenues(),
+                    _sectionCotisations(),
+                    _sectionImpots(),
+                    _sectionPaiement(),
+                    const SizedBox(height: 8),
+                    _submitBtn(),
+                                  ],
+                ),
               ),
             ),
           ),
@@ -860,18 +892,11 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
     );
   }
 
-  PreferredSizeWidget _appBar() => AppBar(
-    backgroundColor: const Color(0xFF1A1A1A),
-    elevation: 0,
-    scrolledUnderElevation: 0,
-    foregroundColor: Colors.white,
-    centerTitle: true,
-    leading: IconButton(
-      icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.white),
-      onPressed: () => Navigator.pop(context),
-    ),
-    title: const Text('Nouvelle fiche de paie',
-        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: -0.3)),
+  PreferredSizeWidget _appBar() => AppEnteteFormulaire.barre(
+    titre: 'Fiche de paie',
+    sousTitre: 'Salarié, rémunération et cotisations',
+    icone: Icons.payments_outlined,
+    onRetour: () => Navigator.pop(context),
   );
 
   Widget _submitBtn() => BlocBuilder<FichePaieBloc, FichePaieState>(
@@ -895,7 +920,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
               child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
               : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text('Enregistrer la fiche',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15)),
+                style: AppTypo.jakarta(fontWeight: FontWeight.w700, fontSize: 15)),
             const SizedBox(width: 8),
             const Icon(Icons.save_rounded, size: 18),
           ]),

@@ -31,6 +31,8 @@ class ContratTravailModel extends ContratTravail {
     super.statut,
     super.salarie,
     super.createdAt,
+    super.employeur,
+    super.direction,
   });
 
   factory ContratTravailModel.fromJson(Map<String, dynamic> json) {
@@ -75,6 +77,10 @@ class ContratTravailModel extends ContratTravail {
       signatureEmployeur: json['signature_employeur'] as String?,
       signatureSalarie:   json['signature_salarie']   as String?,
       statut:          json['statut']          as String?,
+      direction:       json['direction']       as String?,
+      employeur:       json['employeur'] != null
+          ? Map<String, dynamic>.from(json['employeur'])
+          : null,
       // backend alias : as 'salarie' (models/index.js)
       salarie:         _toMap(json['salarie']),
       createdAt:       json['createdAt']       as String?,

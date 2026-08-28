@@ -14,6 +14,13 @@ import '../bloc/contrat_travail_event.dart';
 import '../bloc/contrat_travail_state.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/contrat_travail/domain/usecases/telecharger_contrat_travail.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
+import 'package:sign_application/core/widgets/app_champ_texte.dart';
+import 'package:sign_application/core/widgets/app_entete_formulaire.dart';
 
 class CreationContratTravailPage extends StatefulWidget {
   const CreationContratTravailPage({super.key});
@@ -38,6 +45,17 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
   DateTime? _dateDebut;
   DateTime? _dateFin;
   Client? _selectedClient;
+  /// Informations qui figureront sur le document : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
+
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que l'utilisateur
+    // remplit les premieres etapes.
+    _emetteur.charger();
+  }
   File? _signatureImage;
 
   // Planning : liste de { jour, debut, fin }
@@ -303,11 +321,11 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
             Container(
               width: 32, height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A).withValues(alpha: 0.12),
+                color: AppColor.kTexte.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(Icons.calendar_month_outlined,
-                  color: Color(0xFF1A1A1A), size: 18),
+                  color: AppColor.kTexte, size: 18),
             ),
             const SizedBox(width: 10),
             const Text('Planning hebdomadaire *',
@@ -409,16 +427,16 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
                       decoration: BoxDecoration(
-                        color: j.debut != null ? const Color(0xFF1A1A1A).withValues(alpha: 0.08) : Colors.grey[50],
+                        color: j.debut != null ? AppColor.kTexte.withValues(alpha: 0.08) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: j.debut != null
-                            ? const Color(0xFF1A1A1A).withValues(alpha: 0.4) : Colors.grey[200]!),
+                            ? AppColor.kTexte.withValues(alpha: 0.4) : Colors.grey[200]!),
                       ),
                       child: Text(
                         j.debut != null ? _fmtTime(j.debut!) : '—',
                         style: TextStyle(
                           fontSize: 12, fontWeight: FontWeight.w700,
-                          color: j.debut != null ? const Color(0xFF1A1A1A) : Colors.grey[400],
+                          color: j.debut != null ? AppColor.kTexte : Colors.grey[400],
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -440,16 +458,16 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
                       decoration: BoxDecoration(
-                        color: j.fin != null ? Color(0xFF6B7280).withValues(alpha: 0.06) : Colors.grey[50],
+                        color: j.fin != null ? AppColor.kTexteMoyen.withValues(alpha: 0.06) : Colors.grey[50],
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: j.fin != null
-                            ? Color(0xFF6B7280).withValues(alpha: 0.3) : Colors.grey[200]!),
+                            ? AppColor.kTexteMoyen.withValues(alpha: 0.3) : Colors.grey[200]!),
                       ),
                       child: Text(
                         j.fin != null ? _fmtTime(j.fin!) : '—',
                         style: TextStyle(
                           fontSize: 12, fontWeight: FontWeight.w700,
-                          color: j.fin != null ? Color(0xFF6B7280) : Colors.grey[400],
+                          color: j.fin != null ? AppColor.kTexteMoyen : Colors.grey[400],
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -465,12 +483,12 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                   child: Container(
                     width: 28, height: 28,
                     decoration: BoxDecoration(
-                      color: _planning.length > 1 ? Color(0xFFF4F4F5) : Colors.grey[100],
+                      color: _planning.length > 1 ? AppColor.kNeutreClair : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(Icons.close_rounded,
                       size: 14,
-                      color: _planning.length > 1 ? Color(0xFF6B7280) : Colors.grey[300],
+                      color: _planning.length > 1 ? AppColor.kTexteMoyen : Colors.grey[300],
                     ),
                   ),
                 ),
@@ -484,6 +502,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _posteCtrl.dispose(); _lieuCtrl.dispose();
     _salaireCtrl.dispose(); _nbrCongesCtrl.dispose(); _clientSearchCtrl.dispose();
     super.dispose();
@@ -512,9 +531,9 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                 width: padWidth,
                 height: 180,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF8F8FA),
+                  color: AppColor.kChamp,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
+                  border: Border.all(color: AppColor.kBordure),
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
@@ -522,12 +541,12 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
                 ),
               ),
               const SizedBox(height: 8),
-              const Text('Dessinez votre signature ci-dessus', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+              const Text('Dessinez votre signature ci-dessus', style: TextStyle(fontSize: 11, color: AppColor.kTexteMoyen)),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => controller.clear(), child: const Text('Effacer', style: TextStyle(color: Color(0xFF6B7280)))),
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuler', style: TextStyle(color: Color(0xFF6B7280)))),
+            TextButton(onPressed: () => controller.clear(), child: const Text('Effacer', style: TextStyle(color: AppColor.kTexteMoyen))),
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuler', style: TextStyle(color: AppColor.kTexteMoyen))),
             ElevatedButton(
               onPressed: () async {
                 if (controller.isEmpty) return;
@@ -586,6 +605,9 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
 
     context.read<ContratTravailBloc>().add(CreerContratTravailEvent({
       'salarieId': _selectedClient!.id,
+      // Ce qui sera imprime sur le document. Le serveur fige ces
+      // valeurs : une regeneration produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
       'poste': _posteCtrl.text.trim(),
       'type_contrat': _typeContrat,
       'lieu_travail': _lieuCtrl.text.trim(),
@@ -611,23 +633,30 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        surfaceTintColor: Colors.black,
-        scrolledUnderElevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.light,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Nouveau contrat de travail',
-            maxLines: 1, overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white)),
-        elevation: 0,
+      appBar: AppEnteteFormulaire.barre(
+        titre: 'Contrat de travail',
+        sousTitre: 'Salarié, poste et conditions d’emploi',
+        icone: Icons.badge_outlined,
+        onRetour: () => Navigator.pop(context),
       ),
       body: BlocListener<ContratTravailBloc, ContratTravailState>(
         listener: (context, state) {
           if (state is ContratTravailSuccess) {
             showToast(context, 'Contrat créé', 'Le contrat de travail a été créé avec succès.', ToastificationType.success);
-            Navigator.pop(context);
+            // Le contrat est montre a l'utilisateur avant tout retour a la
+            // liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              context,
+              libelle: 'contrat de travail',
+              document: state.documentCree,
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerContratTravail>()(id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is ContratTravailError) {
             showToast(context, 'Erreur', state.message, ToastificationType.error);
@@ -635,225 +664,226 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
         },
         child: Form(
           key: _formKey,
-          child: ListView(
+          // SingleChildScrollView et non ListView : un ListView ne monte que les
+          // sections visibles, et un TextFormField demonte n est plus rattache au
+          // Form — validate() laissait alors passer des champs obligatoires vides.
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
-            children: [
-              const Text('Salarié', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-              const SizedBox(height: 6),
-              if (_selectedClient != null)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.person, color: Colors.white, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${_selectedClient!.prenom} ${_selectedClient!.nom}',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
-                            ),
-                            if ((_selectedClient!.email ?? '').isNotEmpty)
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Ce qui figurera sur le document : prerempli depuis le profil,
+                // modifiable, et fige avec le document cote serveur.
+                SectionEmetteur(controleur: _emetteur, titre: 'Vos informations (employeur)'),
+                const SizedBox(height: 20),
+                const Text('Salarié', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                const SizedBox(height: 6),
+                if (_selectedClient != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(10)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.person, color: Colors.white, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
                               Text(
-                                _selectedClient!.email!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                                '${_selectedClient!.prenom} ${_selectedClient!.nom}',
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                               ),
-                          ],
+                              if ((_selectedClient!.email ?? '').isNotEmpty)
+                                Text(
+                                  _selectedClient!.email!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 12),
+                                ),
+                            ],
+                          ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () => setState(() => _selectedClient = null),
-                        child: const Icon(Icons.close, color: Colors.white70, size: 18),
-                      ),
-                    ],
-                  ),
-                )
-              else ...[
-                TextField(
-                  controller: _clientSearchCtrl,
-                  decoration: InputDecoration(
-                    hintText: 'Nom, prénom ou email…',
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.black),
+                        GestureDetector(
+                          onTap: () => setState(() => _selectedClient = null),
+                          child: const Icon(Icons.close, color: Colors.white70, size: 18),
+                        ),
+                      ],
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                  )
+                else ...[
+                  TextField(
+                    controller: _clientSearchCtrl,
+                    decoration: AppChampTexte.decoration(indication: 'Nom, prénom ou email…', prefixe: const Icon(Icons.search, color: Colors.grey)),
+                    onChanged: (v) {
+                      if (v.length >= 2) context.read<ClientBloc>().add(RechercherClientsEvent(v));
+                    },
                   ),
-                  onChanged: (v) {
-                    if (v.length >= 2) context.read<ClientBloc>().add(RechercherClientsEvent(v));
-                  },
-                ),
-                BlocBuilder<ClientBloc, ClientState>(
-                  builder: (context, state) {
-                    if (state is ClientsRechercheLoaded && state.clients.isNotEmpty) {
-                      return Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                          borderRadius: BorderRadius.circular(10),
-                          color: Colors.white,
-                        ),
-                        child: Column(
-                          children: state.clients.take(5).map((client) => ListTile(
-                            dense: true,
-                            leading: CircleAvatar(
-                              radius: 16,
-                              backgroundColor: Colors.black,
-                              child: Text(
-                                client.prenom.isNotEmpty ? client.prenom[0].toUpperCase() : '?',
-                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                  BlocBuilder<ClientBloc, ClientState>(
+                    builder: (context, state) {
+                      if (state is ClientsRechercheLoaded && state.clients.isNotEmpty) {
+                        return Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(10),
+                            color: Colors.white,
+                          ),
+                          child: Column(
+                            children: state.clients.take(5).map((client) => ListTile(
+                              dense: true,
+                              leading: CircleAvatar(
+                                radius: 16,
+                                backgroundColor: Colors.black,
+                                child: Text(
+                                  client.prenom.isNotEmpty ? client.prenom[0].toUpperCase() : '?',
+                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                ),
                               ),
-                            ),
-                            title: Text('${client.prenom} ${client.nom}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                            subtitle: (client.email ?? '').isNotEmpty
-                                ? Text(client.email!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)))
-                                : null,
-                            onTap: () {
-                              setState(() => _selectedClient = client);
-                              _clientSearchCtrl.clear();
-                            },
-                          )).toList(),
-                        ),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
-              const SizedBox(height: 20),
-              const Text('Informations du poste', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 14),
-              _field(_posteCtrl, 'Poste *'),
-              const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                initialValue: _typeContrat,
-                decoration: _dec('Type de contrat *'),
-                items: const [
-                  DropdownMenuItem(value: 'CDI', child: Text('CDI')),
-                  DropdownMenuItem(value: 'CDD', child: Text('CDD')),
-                  DropdownMenuItem(value: 'Stage', child: Text('Stage')),
-                  DropdownMenuItem(value: 'Freelance', child: Text('Freelance')),
-                  DropdownMenuItem(value: 'Intérim', child: Text('Intérim')),
-                ],
-                onChanged: (v) => setState(() => _typeContrat = v!),
-              ),
-              const SizedBox(height: 14),
-              _field(_lieuCtrl, 'Lieu de travail *'),
-              const SizedBox(height: 20),
-              _buildPlanningSection(),
-              const SizedBox(height: 14),
-              _datePicker('Date de début *', _dateDebut, (dt) => setState(() => _dateDebut = dt)),
-              const SizedBox(height: 14),
-              _datePicker('Date de fin (optionnel)', _dateFin, (dt) => setState(() => _dateFin = dt), required: false),
-              const SizedBox(height: 14),
-              _field(_salaireCtrl, 'Salaire mensuel *', keyboardType: TextInputType.number),
-              const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                initialValue: _moyenPaiement,
-                decoration: _dec('Moyen de paiement *'),
-                items: const [
-                  DropdownMenuItem(value: 'Espèces', child: Text('Espèces')),
-                  DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
-                  DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
-                  DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
-                  DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
-                  DropdownMenuItem(value: 'Autre', child: Text('Autre')),
-                ],
-                onChanged: (v) => setState(() => _moyenPaiement = v!),
-              ),
-              const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                initialValue: _remunerationFeries,
-                decoration: _dec('Rémunération jours fériés *'),
-                items: const [
-                  DropdownMenuItem(value: 'rémunérés', child: Text('Rémunérés')),
-                  DropdownMenuItem(value: 'non rémunérés', child: Text('Non rémunérés')),
-                  DropdownMenuItem(value: 'travail_effectif', child: Text('Travail effectif')),
-                ],
-                onChanged: (v) => setState(() => _remunerationFeries = v!),
-              ),
-              const SizedBox(height: 14),
-              DropdownButtonFormField<String>(
-                initialValue: _remunerationMaladie,
-                decoration: _dec('Rémunération absences maladie *'),
-                items: const [
-                  DropdownMenuItem(value: 'rémunérés', child: Text('Rémunérées')),
-                  DropdownMenuItem(value: 'non rémunérés', child: Text('Non rémunérées')),
-                  DropdownMenuItem(value: 'sous_conditions', child: Text('Sous conditions')),
-                ],
-                onChanged: (v) => setState(() => _remunerationMaladie = v!),
-              ),
-              const SizedBox(height: 14),
-              _field(_nbrCongesCtrl, 'Nombre de jours de congés', required: false, keyboardType: TextInputType.number),
-              const SizedBox(height: 14),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Avance sur salaire possible', style: TextStyle(fontWeight: FontWeight.w600)),
-                value: _avanceSalaire,
-                activeThumbColor: Colors.black,
-                onChanged: (v) => setState(() => _avanceSalaire = v),
-              ),
-              const SizedBox(height: 24),
-              const Text('Votre signature', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF6B7280))),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _openSignaturePad,
-                child: Container(
-                  height: 110,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    color: const Color(0xFFF8F8FA),
-                    border: Border.all(
-                      color: _signatureImage != null ? Colors.black : const Color(0xFFE5E7EB),
-                      width: _signatureImage != null ? 2 : 1,
-                    ),
+                              title: Text('${client.prenom} ${client.nom}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                              subtitle: (client.email ?? '').isNotEmpty
+                                  ? Text(client.email!, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: AppColor.kTexteMoyen))
+                                  : null,
+                              onTap: () {
+                                setState(() => _selectedClient = client);
+                                _clientSearchCtrl.clear();
+                              },
+                            )).toList(),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
                   ),
-                  child: _signatureImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(_signatureImage!, fit: BoxFit.contain),
-                        )
-                      : const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.draw_outlined, size: 28, color: Colors.black54),
-                            SizedBox(height: 6),
-                            Text('Signez ici', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13)),
-                            Text('Touchez pour ouvrir le pad de signature', style: TextStyle(color: Color(0xFF6B7280), fontSize: 11)),
-                          ],
-                        ),
+                ],
+                const SizedBox(height: 20),
+                const Text('Informations du poste', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 14),
+                _field(_posteCtrl, 'Poste *'),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _typeContrat,
+                  decoration: _dec('Type de contrat *'),
+                  items: const [
+                    DropdownMenuItem(value: 'CDI', child: Text('CDI')),
+                    DropdownMenuItem(value: 'CDD', child: Text('CDD')),
+                    DropdownMenuItem(value: 'Stage', child: Text('Stage')),
+                    DropdownMenuItem(value: 'Freelance', child: Text('Freelance')),
+                    DropdownMenuItem(value: 'Intérim', child: Text('Intérim')),
+                  ],
+                  onChanged: (v) => setState(() => _typeContrat = v!),
                 ),
-              ),
-              const SizedBox(height: 32),
-              BlocBuilder<ContratTravailBloc, ContratTravailState>(
-                builder: (context, state) {
-                  final isLoading = state is ContratTravailLoading;
-                  return SizedBox(
+                const SizedBox(height: 14),
+                _field(_lieuCtrl, 'Lieu de travail *'),
+                const SizedBox(height: 20),
+                _buildPlanningSection(),
+                const SizedBox(height: 14),
+                _datePicker('Date de début *', _dateDebut, (dt) => setState(() => _dateDebut = dt)),
+                const SizedBox(height: 14),
+                _datePicker('Date de fin (optionnel)', _dateFin, (dt) => setState(() => _dateFin = dt), required: false),
+                const SizedBox(height: 14),
+                _field(_salaireCtrl, 'Salaire mensuel *', keyboardType: TextInputType.number),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _moyenPaiement,
+                  decoration: _dec('Moyen de paiement *'),
+                  items: const [
+                    DropdownMenuItem(value: 'Espèces', child: Text('Espèces')),
+                    DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
+                    DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
+                    DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
+                    DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
+                    DropdownMenuItem(value: 'Autre', child: Text('Autre')),
+                  ],
+                  onChanged: (v) => setState(() => _moyenPaiement = v!),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _remunerationFeries,
+                  decoration: _dec('Rémunération jours fériés *'),
+                  items: const [
+                    DropdownMenuItem(value: 'rémunérés', child: Text('Rémunérés')),
+                    DropdownMenuItem(value: 'non rémunérés', child: Text('Non rémunérés')),
+                    DropdownMenuItem(value: 'travail_effectif', child: Text('Travail effectif')),
+                  ],
+                  onChanged: (v) => setState(() => _remunerationFeries = v!),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _remunerationMaladie,
+                  decoration: _dec('Rémunération absences maladie *'),
+                  items: const [
+                    DropdownMenuItem(value: 'rémunérés', child: Text('Rémunérées')),
+                    DropdownMenuItem(value: 'non rémunérés', child: Text('Non rémunérées')),
+                    DropdownMenuItem(value: 'sous_conditions', child: Text('Sous conditions')),
+                  ],
+                  onChanged: (v) => setState(() => _remunerationMaladie = v!),
+                ),
+                const SizedBox(height: 14),
+                _field(_nbrCongesCtrl, 'Nombre de jours de congés', required: false, keyboardType: TextInputType.number),
+                const SizedBox(height: 14),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Avance sur salaire possible', style: TextStyle(fontWeight: FontWeight.w600)),
+                  value: _avanceSalaire,
+                  activeThumbColor: Colors.black,
+                  onChanged: (v) => setState(() => _avanceSalaire = v),
+                ),
+                const SizedBox(height: 24),
+                const Text('Votre signature', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColor.kTexteMoyen)),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: _openSignaturePad,
+                  child: Container(
+                    height: 110,
                     width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: AppColor.kChamp,
+                      border: Border.all(
+                        color: _signatureImage != null ? Colors.black : AppColor.kBordure,
+                        width: _signatureImage != null ? 2 : 1,
                       ),
-                      onPressed: isLoading ? null : _submit,
-                      child: isLoading
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Créer le contrat', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
-                  );
-                },
-              ),
-            ],
+                    child: _signatureImage != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(_signatureImage!, fit: BoxFit.contain),
+                          )
+                        : const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.draw_outlined, size: 28, color: Colors.black54),
+                              SizedBox(height: 6),
+                              Text('Signez ici', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 13)),
+                              Text('Touchez pour ouvrir le pad de signature', style: TextStyle(color: AppColor.kTexteMoyen, fontSize: 11)),
+                            ],
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                BlocBuilder<ContratTravailBloc, ContratTravailState>(
+                  builder: (context, state) {
+                    final isLoading = state is ContratTravailLoading;
+                    return SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: isLoading ? null : _submit,
+                        child: isLoading
+                            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                            : const Text('Créer le contrat', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    );
+                  },
+                ),
+                          ],
+            ),
           ),
         ),
       ),
@@ -899,12 +929,14 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
     );
   }
 
-  InputDecoration _dec(String label) => InputDecoration(
-    labelText: label,
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Colors.black)),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-  );
+  /// Décoration déléguée au composant partagé.
+  ///
+  /// L'ancienne version utilisait un `labelText` flottant, seule de toute
+  /// l'application à le faire : le libellé sautait au-dessus du champ à la
+  /// saisie, alors que partout ailleurs il est posé au-dessus en permanence.
+  /// Il devient donc une indication.
+  InputDecoration _dec(String label) =>
+      AppChampTexte.decoration(indication: label);
 }
 
 

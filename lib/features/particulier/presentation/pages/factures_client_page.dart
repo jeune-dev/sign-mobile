@@ -7,6 +7,7 @@ import '../bloc/particulier_bloc.dart';
 import '../bloc/particulier_event.dart';
 import '../bloc/particulier_state.dart';
 import '../../domain/entities/particulier_facture.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class FacturesClientPage extends StatefulWidget {
   const FacturesClientPage({super.key});
@@ -132,9 +133,9 @@ class _FacturesClientPageState extends State<FacturesClientPage> {
               child: Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 32),
             ),
             const SizedBox(height: 16),
-            const Text('Impossible de charger', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF111827))),
+            const Text('Impossible de charger', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColor.kTexte)),
             const SizedBox(height: 6),
-            Text(message, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13), textAlign: TextAlign.center),
+            Text(message, style: const TextStyle(color: AppColor.kTexteMoyen, fontSize: 13), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -217,7 +218,7 @@ class _FactureCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColor.kBordure),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
         ],
@@ -240,12 +241,12 @@ class _FactureCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(facture.numeroFacture, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF111827))),
+                Text(facture.numeroFacture, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColor.kTexte)),
                 if (facture.professionnelEntreprise != null || facture.professionnelNom != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     facture.professionnelEntreprise ?? facture.professionnelNom ?? '',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    style: const TextStyle(fontSize: 12, color: AppColor.kTexteMoyen),
                   ),
                 ],
                 const SizedBox(height: 6),
@@ -257,14 +258,14 @@ class _FactureCard extends StatelessWidget {
                   ),
                   if (date.isNotEmpty) ...[
                     const SizedBox(width: 8),
-                    Text(date, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+                    Text(date, style: const TextStyle(fontSize: 11, color: AppColor.kTexteFaible)),
                   ],
                 ]),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Text(montant, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF111827))),
+          Text(montant, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: AppColor.kTexte)),
         ],
       ),
     );

@@ -4,6 +4,7 @@ import 'package:sign_application/core/errors/failure.dart';
 import '../../domain/entities/quittance_loyer.dart';
 import '../../domain/repositories/quittance_loyer_repository.dart';
 import '../datasources/quittance_loyer_remote_datasource.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 class QuittanceLoyerRepositoryImpl implements QuittanceLoyerRepository {
   final QuittanceLoyerRemoteDataSource remoteDataSource;
@@ -34,10 +35,10 @@ class QuittanceLoyerRepositoryImpl implements QuittanceLoyerRepository {
   }
 
   @override
-  Future<Either<Failure, void>> creerQuittance(Map<String, dynamic> data) async {
+  Future<Either<Failure, DocumentCree>> creerQuittance(Map<String, dynamic> data) async {
     try {
-      await remoteDataSource.creerQuittance(data);
-      return const Right(null);
+      final cree = await remoteDataSource.creerQuittance(data);
+      return Right(cree);
     } on DioException catch (e) {
       return Left(ServerFailure(errorMessage: _handleDioError(e)));
     } catch (e) {

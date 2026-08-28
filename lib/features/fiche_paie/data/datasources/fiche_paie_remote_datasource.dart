@@ -3,7 +3,10 @@ import 'package:sign_application/core/config/env.dart';
 import '../models/fichie_paie_model.dart';
 
 abstract class FichePaieRemoteDataSource {
-  Future<FichePaieModel> creerFichePaie(FichePaieModel fiche);
+  Future<FichePaieModel> creerFichePaie(
+    FichePaieModel fiche, {
+    Map<String, dynamic>? emetteur,
+  });
   Future<List<FichePaieModel>> getFichesPaie({int page, int limit});
   Future<List<int>> telechargerFichePaie(String ficheId);
 }
@@ -45,10 +48,17 @@ class FichePaieRemoteDataSourceImpl implements FichePaieRemoteDataSource {
   }
 
   @override
-  Future<FichePaieModel> creerFichePaie(FichePaieModel fiche) async {
+  Future<FichePaieModel> creerFichePaie(
+    FichePaieModel fiche, {
+    Map<String, dynamic>? emetteur,
+  }) async {
     final response = await dio.post(
       Env.fichePaieCreer,
-      data: fiche.toJson(),
+      data: {
+        ...fiche.toJson(),
+        // Ce qui sera imprime sur la fiche. Le serveur fige ces valeurs.
+        if (emetteur != null && emetteur.isNotEmpty) 'emetteur': emetteur,
+      },
     );
 
     if (response.data['success'] == false) {

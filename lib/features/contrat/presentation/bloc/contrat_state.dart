@@ -1,4 +1,5 @@
 import 'package:sign_application/features/contrat/domain/entities/contrat_bail.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class ContratState {}
 
@@ -22,7 +23,11 @@ class ContratsLoaded extends ContratState {
 
 class ContratSuccess extends ContratState {
   final String message;
-  ContratSuccess({this.message = 'Opération réussie'});
+
+  /// Contrat de bail tout juste cree.
+  final DocumentCree? documentCree;
+
+  ContratSuccess({this.message = 'Opération réussie', this.documentCree});
 }
 
 class ContratBytes extends ContratState {

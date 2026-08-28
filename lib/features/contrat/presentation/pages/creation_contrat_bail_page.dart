@@ -19,6 +19,13 @@ import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/confirmation_dialog.dart';
 import 'package:sign_application/core/services/form_draft_service.dart';
 import 'package:sign_application/features/etat_logement/presentation/pages/etats_logement_liste_page.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/models/document_cree.dart';
+import 'package:sign_application/features/contrat/domain/usecases/telecharger_contrat.dart';
+import 'package:sign_application/features/parcours/presentation/pages/document_genere_page.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
+import 'package:sign_application/core/widgets/app_champ_texte.dart';
 
 class CreationContratPage extends StatefulWidget {
   final User? user;
@@ -32,14 +39,22 @@ class _CreationContratPageState extends State<CreationContratPage>
     with TickerProviderStateMixin {
   final _formKey    = GlobalKey<FormState>();
   final _scrollCtrl = ScrollController();
+
+  /// Reperes des champs obligatoires, dans l'ordre du formulaire. Quand la
+  /// validation echoue, le premier champ vide est ramene a l'ecran : sans
+  /// cela le bouton semblait ne rien faire, le message d'erreur restant hors
+  /// de vue plus haut dans la page.
+  final _cleAdresse = GlobalKey();
+  final _cleVille   = GlobalKey();
+  final _cleLoyer   = GlobalKey();
   bool  _submitting = false;
   late AnimationController _shimmerCtrl;
 
   // ── Palette ─────────────────────────────────────────────────
-  static const _black   = Color(0xFF09090B);
+  static const _black   = AppColor.kTexte;
   static const _white   = Color(0xFFFFFFFF);
   static const _gray50  = Color(0xFFFAFAFA);
-  static const _gray100 = Color(0xFFF4F4F5);
+  static const _gray100 = AppColor.kNeutreClair;
   static const _gray200 = Color(0xFFE4E4E7);
   static const _gray400 = Color(0xFFA1A1AA);
   static const _gray600 = Color(0xFF52525B);
@@ -50,6 +65,10 @@ class _CreationContratPageState extends State<CreationContratPage>
   bool          _isRechercheLoading    = false;
   String        _rechercheErreur       = '';
   List<dynamic> _locatairesSelectionnes = [];
+
+  /// Informations qui figureront sur le bail : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   // ─── Bien ──────────────────────────────────────────────────
   final _bienAdresseCtrl     = TextEditingController();
@@ -166,6 +185,9 @@ class _CreationContratPageState extends State<CreationContratPage>
   @override
   void initState() {
     super.initState();
+    // Prerempli la section « Vos informations » pendant que l'utilisateur
+    // remplit les premieres etapes.
+    _emetteur.charger();
     _shimmerCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
@@ -178,6 +200,7 @@ class _CreationContratPageState extends State<CreationContratPage>
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _draftSaveTimer?.cancel();
     _scrollCtrl.dispose();
     _shimmerCtrl.dispose();
@@ -309,8 +332,53 @@ class _CreationContratPageState extends State<CreationContratPage>
   }
 
   // ── Soumission ────────────────────────────────────────────
+  /// Ramene un champ obligatoire a l ecran. Le formulaire fait plus de sept
+  /// sections : un champ vide reste souvent hors de vue, et son message
+  /// d erreur avec lui.
+  Future<void> _montrerChamp(GlobalKey cle) async {
+    final contexte = cle.currentContext;
+    if (contexte == null) return;
+    await Scrollable.ensureVisible(
+      contexte,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      alignment: 0.15,
+    );
+  }
+
+  /// Un loyer absent, illisible ou nul — le serveur exige un montant positif.
+  static bool _loyerInvalide(String? valeur) {
+    final montant = double.tryParse((valeur ?? '').trim());
+    return montant == null || montant <= 0;
+  }
+
+  /// Premier champ obligatoire encore vide, dans l ordre du formulaire.
+  MapEntry<GlobalKey, String>? get _premierChampVide {
+    if (_bienAdresseCtrl.text.trim().isEmpty) {
+      return MapEntry(_cleAdresse, 'adresse du bien');
+    }
+    if (_bienVilleCtrl.text.trim().isEmpty) {
+      return MapEntry(_cleVille, 'ville du bien');
+    }
+    if (_loyerInvalide(_loyerCtrl.text)) {
+      return MapEntry(_cleLoyer, 'loyer mensuel');
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      // Sans ce rappel, le bouton semblait ne rien faire : la validation
+      // echouait sur un champ reste plus haut dans la page, hors de vue.
+      final manquant = _premierChampVide;
+      if (manquant != null) {
+        _showError('Renseignez le champ « ${manquant.value} » pour continuer.');
+        await _montrerChamp(manquant.key);
+      } else {
+        _showError('Certains champs obligatoires sont incomplets.');
+      }
+      return;
+    }
     if (_locatairesSelectionnes.isEmpty) {
       _showError('Sélectionnez au moins un locataire');
       return;
@@ -341,6 +409,9 @@ class _CreationContratPageState extends State<CreationContratPage>
     context.read<ContratBloc>().add(CreerContratBailEvent({
       'locatairesIds':
           _locatairesSelectionnes.map((l) => l['id'].toString()).toList(),
+      // Ce qui sera imprime sur le bail. Le serveur fige ces valeurs :
+      // une regeneration a la signature produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
       'bien': {
         'adresse':         _bienAdresseCtrl.text.trim(),
         'ville':           _bienVilleCtrl.text.trim(),
@@ -393,8 +464,28 @@ class _CreationContratPageState extends State<CreationContratPage>
     }));
   }
 
-  Future<void> _showSuccess() async {
-    showToast(context, 'Contrat créé', 'Le contrat de bail a été créé avec succès.', ToastificationType.success);
+  Future<void> _showSuccess(DocumentCree? documentCree) async {
+    // Le bail est d'abord montre a l'utilisateur (§ 9). L'ecran de
+    // confirmation se referme sur « Terminé », et la proposition d'etat des
+    // lieux prend le relais.
+    if (documentCree != null && documentCree.exploitable) {
+      await Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => DocumentGenerePage(
+          libelle: 'contrat de bail',
+          reference: documentCree.reference,
+          telecharger: () async {
+            final resultat = await sl<TelechargerContrat>()(documentCree.id!);
+            return resultat.fold(
+              (echec) => throw Exception(echec.errorMessage),
+              (octets) => octets,
+            );
+          },
+        ),
+      ));
+      if (!mounted) return;
+    } else {
+      showToast(context, 'Contrat créé', 'Le contrat de bail a été créé avec succès.', ToastificationType.success);
+    }
 
     // On propose directement de créer l'état des lieux du logement.
     final creerEtat = await showConfirmationDialog(
@@ -403,7 +494,7 @@ class _CreationContratPageState extends State<CreationContratPage>
       message: 'Voulez-vous créer l\'état des lieux de ce logement maintenant ?',
       confirmLabel: 'État des lieux',
       cancelLabel: 'Plus tard',
-      confirmColor: const Color(0xFF1A1A1A),
+      confirmColor: AppColor.kTexte,
       icon: Icons.fact_check_outlined,
     );
 
@@ -435,7 +526,7 @@ class _CreationContratPageState extends State<CreationContratPage>
             if (state is ContratSuccess) {
               setState(() => _submitting = false);
               FormDraftService.clear(_draftKey);
-              _showSuccess();
+              _showSuccess(state.documentCree);
             }
             if (state is ContratError) {
               setState(() => _submitting = false);
@@ -465,17 +556,31 @@ class _CreationContratPageState extends State<CreationContratPage>
         ),
       ],
       child: Scaffold(
-        backgroundColor: const Color(0xFFF2F2F7),
+        backgroundColor: AppColor.kFond,
         body: Column(
           children: [
             _buildTopBar(),
             Expanded(
               child: Form(
                 key: _formKey,
-                child: ListView(
+                // SingleChildScrollView et non ListView : un ListView ne monte
+                // que les sections visibles, et un TextFormField demonte n est
+                // plus rattache au Form. validate() ignorait donc les champs
+                // restes hors ecran — on signait en bas de page avec l adresse
+                // et le loyer vides, et le serveur rejetait la creation
+                // (422 : « bien.adresse is not allowed to be empty »).
+                child: SingleChildScrollView(
                   controller: _scrollCtrl,
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
-                  children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                    // Ce qui figurera sur le bail : prerempli depuis le profil,
+                    // modifiable, et fige avec le document cote serveur.
+                    SectionEmetteur(
+                        controleur: _emetteur,
+                        titre: 'Vos informations (bailleur)'),
+                    const SizedBox(height: 20),
                     _buildSectionLocataires(),
                     _buildSectionBien(),
                     _buildSectionBail(),
@@ -483,7 +588,8 @@ class _CreationContratPageState extends State<CreationContratPage>
                     _buildSectionDepot(),
                     _buildSectionClauses(),
                     _buildSectionSignature(),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -555,8 +661,8 @@ class _CreationContratPageState extends State<CreationContratPage>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      const Color(0xFF1A1A1A).withValues(alpha: 0.8),
-                      const Color(0xFF1A1A1A).withValues(alpha: 0.5),
+                      AppColor.kTexte.withValues(alpha: 0.8),
+                      AppColor.kTexte.withValues(alpha: 0.5),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
@@ -699,8 +805,11 @@ class _CreationContratPageState extends State<CreationContratPage>
     bool disabled = false, // grisé pour durée auto
     VoidCallback? onTap,
     List<TextInputFormatter>? inputFormatters,
+    Key? cle, // repere pour ramener le champ a l ecran (champs obligatoires)
+    String? Function(String?)? validateur, // controle propre au champ
   }) {
     return Padding(
+      key: cle,
       padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -718,43 +827,28 @@ class _CreationContratPageState extends State<CreationContratPage>
                 (type == TextInputType.number
                     ? [FilteringTextInputFormatter.digitsOnly]
                     : null),
-            validator: required
-                ? (v) => (v == null || v.trim().isEmpty)
-                    ? 'Ce champ est requis'
-                    : null
-                : null,
+            validator: validateur ??
+                (required
+                    ? (v) => (v == null || v.trim().isEmpty)
+                        ? 'Ce champ est requis'
+                        : null
+                    : null),
             style: TextStyle(
                 fontSize: 14,
                 color: disabled ? _gray400 : _black),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: const TextStyle(color: _gray400, fontSize: 13),
-              filled: true,
-              fillColor: disabled ? _gray100 : _gray50,
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _gray200)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _gray200)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _black, width: 1.5)),
-              errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF1A1A1A))),
-              disabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _gray100)),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              suffixIcon: disabled
+            // Décoration déléguée au composant partagé ; seul le fond
+            // change pour un champ grisé (durée calculée automatiquement).
+            decoration: AppChampTexte.decoration(
+              indication: hint,
+              suffixe: disabled
                   ? const Icon(Icons.lock_outline_rounded,
                       size: 14, color: _gray400)
                   : (readOnly && onTap != null)
                       ? const Icon(Icons.calendar_today_outlined,
                           size: 16, color: _gray400)
                       : null,
+            ).copyWith(
+              fillColor: disabled ? AppColor.kNeutreClair : null,
             ),
           ),
         ],
@@ -822,7 +916,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                         });
                       },
                       child: const Icon(Icons.check_circle_rounded,
-                          size: 16, color: Color(0xFF1A1A1A)),
+                          size: 16, color: AppColor.kTexte),
                     ),
                 ],
               ),
@@ -850,21 +944,7 @@ class _CreationContratPageState extends State<CreationContratPage>
             style: const TextStyle(fontSize: 14, color: _black),
             icon: const Icon(Icons.keyboard_arrow_down_rounded,
                 color: _gray400),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: _gray50,
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _gray200)),
-              enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _gray200)),
-              focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: _black, width: 1.5)),
-              contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 13),
-            ),
+            decoration: AppChampTexte.decoration(),
             items: items
                 .map((e) => DropdownMenuItem(
                     value: e,
@@ -939,17 +1019,22 @@ class _CreationContratPageState extends State<CreationContratPage>
   }
 
   Widget _label(String text, {bool required = false}) {
+    // Convention partagée : on signale les champs facultatifs, pas les requis.
     return RichText(
       text: TextSpan(
         text: text,
         style: const TextStyle(
-            fontSize: 12.5,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: _gray600),
+            color: AppColor.kTexte),
         children: required
-            ? [const TextSpan(
-                text: ' *', style: TextStyle(color: Color(0xFF1A1A1A)))]
-            : [],
+            ? []
+            : [const TextSpan(
+                text: '   facultatif',
+                style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColor.kTexteFaible))],
       ),
     );
   }
@@ -971,7 +1056,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionLocataires() {
     return _section(
       Icons.person_search_rounded,
-      const Color(0xFF1A1A1A),
+      AppColor.kTexte,
       'Sélection du locataire',
       [
         if (_locatairesSelectionnes.isNotEmpty) ...[
@@ -1004,25 +1089,8 @@ class _CreationContratPageState extends State<CreationContratPage>
         // ── Champ recherche ──
         TextField(
           controller: _rechercheCtrl,
-          decoration: InputDecoration(
-            hintText: 'Rechercher par nom, email ou téléphone…',
-            hintStyle: const TextStyle(color: _gray400, fontSize: 13),
-            prefixIcon: const Icon(Icons.search_rounded,
-                size: 20, color: _gray400),
-            filled: true,
-            fillColor: _gray50,
-            border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _gray200)),
-            enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _gray200)),
-            focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _black, width: 1.5)),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          ),
+          decoration: AppChampTexte.decoration(indication: 'Rechercher par nom, email ou téléphone…', prefixe: const Icon(Icons.search_rounded,
+                size: 20, color: _gray400)),
           onChanged: (v) => Future.delayed(
               const Duration(milliseconds: 450),
               () { if (v == _rechercheCtrl.text) _rechercherClients(v); }),
@@ -1039,16 +1107,16 @@ class _CreationContratPageState extends State<CreationContratPage>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                color: Color(0xFFF4F4F5),
+                color: AppColor.kNeutreClair,
                 borderRadius: BorderRadius.circular(10)),
             child: Row(
               children: [
-                Icon(Icons.error_outline, color: Color(0xFF6B7280), size: 16),
+                Icon(Icons.error_outline, color: AppColor.kTexteMoyen, size: 16),
                 const SizedBox(width: 8),
                 Expanded(
                     child: Text(_rechercheErreur,
                         style: TextStyle(
-                            color: Color(0xFF374151), fontSize: 12))),
+                            color: AppColor.kTexteFort, fontSize: 12))),
               ],
             ),
           ),
@@ -1084,7 +1152,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                             fontSize: 11, color: _gray400)),
                     trailing: already
                         ? const Icon(Icons.check_circle_rounded,
-                            color: Color(0xFF1A1A1A), size: 20)
+                            color: AppColor.kTexte, size: 20)
                         : const Icon(Icons.add_circle_outline_rounded,
                             color: _black, size: 20),
                     onTap: () {
@@ -1105,21 +1173,21 @@ class _CreationContratPageState extends State<CreationContratPage>
             margin: const EdgeInsets.only(top: 10),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-                color: const Color(0xFFF4F4F5),
+                color: AppColor.kNeutreClair,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                    color: const Color(0xFF1A1A1A).withValues(alpha: 0.2))),
+                    color: AppColor.kTexte.withValues(alpha: 0.2))),
             child: const Row(
               children: [
                 Icon(Icons.info_outline_rounded,
-                    size: 16, color: Color(0xFF1A1A1A)),
+                    size: 16, color: AppColor.kTexte),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'Tapez le nom ou l\'email d\'un locataire pour le rechercher.\nVous pouvez en sélectionner plusieurs.',
                     style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF1A1A1A),
+                        color: AppColor.kTexte,
                         height: 1.5),
                   ),
                 ),
@@ -1147,9 +1215,9 @@ class _CreationContratPageState extends State<CreationContratPage>
                 begin: Alignment(-1 + shimmerPos * 2, 0),
                 end: Alignment(1 + shimmerPos * 2, 0),
                 colors: const [
-                  Color(0xFFF4F4F5),
+                  AppColor.kNeutreClair,
                   Color(0xFFE9E9EC),
-                  Color(0xFFF4F4F5),
+                  AppColor.kNeutreClair,
                 ],
               ),
             ),
@@ -1195,13 +1263,18 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionBien() {
     return _section(
       Icons.home_outlined,
-      const Color(0xFF1A1A1A),
+      AppColor.kTexte,
       'Bien immobilier',
       [
         _field('Adresse', _bienAdresseCtrl,
-            hint: 'Avenue des Baobabs, N°12', required: true),
+            hint: 'Avenue des Baobabs, N°12', required: true,
+            cle: _cleAdresse),
         _row2(
-          _field('Ville', _bienVilleCtrl, hint: 'Dakar'),
+          // Obligatoire : c est cette ville qui est imprimee au bas du bail
+          // (« Fait à …, le … »). Laissee vide, le contrat sortait avec un
+          // lieu de signature en pointilles.
+          _field('Ville', _bienVilleCtrl, hint: 'Dakar', required: true,
+              cle: _cleVille),
           _field('Code postal', _bienCodePostalCtrl,
               hint: '12000', type: TextInputType.number),
         ),
@@ -1251,7 +1324,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionBail() {
     return _section(
       Icons.calendar_month_outlined,
-      const Color(0xFF6B7280),
+      AppColor.kTexteMoyen,
       'Conditions du bail',
       [
         // Date début
@@ -1282,10 +1355,10 @@ class _CreationContratPageState extends State<CreationContratPage>
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Color(0xFFF4F4F5),
+              color: AppColor.kNeutreClair,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: Color(0xFF6B7280).withValues(alpha: 0.3)),
+                  color: AppColor.kTexteMoyen.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -1295,7 +1368,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                 Expanded(
                   child: Text(_dateError!,
                       style: TextStyle(
-                          color: Color(0xFF374151),
+                          color: AppColor.kTexteFort,
                           fontSize: 12,
                           fontWeight: FontWeight.w500)),
                 ),
@@ -1323,14 +1396,17 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionPaiement() {
     return _section(
       Icons.payments_outlined,
-      const Color(0xFF1A1A1A),
+      AppColor.kTexte,
       'Conditions de paiement',
       [
         _row2(
-          _field('Loyer mensuel', _loyerCtrl,
+          _field('Loyer mensuel', _loyerCtrl, cle: _cleLoyer,
               hint: '500 000',
               type: TextInputType.number,
-              required: true),
+              required: true,
+              // Un loyer a zero passait le controle « champ requis » mais le
+              // serveur le refuse (montant_loyer must be a positive number).
+              validateur: (v) => _loyerInvalide(v) ? 'Indiquez un loyer superieur a 0' : null),
           _dropdown('Devise', _devise, _devises,
               (v) => setState(() => _devise = v!)),
         ),
@@ -1400,20 +1476,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                   child: TextFormField(
                     controller: ac['label'],
                     style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Ex: Eau',
-                      hintStyle: const TextStyle(
-                          color: _gray400, fontSize: 12),
-                      filled: true, fillColor: _gray50,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: _gray200)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: _gray200)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 11),
-                    ),
+                    decoration: AppChampTexte.decoration(indication: 'Ex: Eau'),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -1423,20 +1486,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                     controller: ac['montant'],
                     keyboardType: TextInputType.number,
                     style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Montant',
-                      hintStyle: const TextStyle(
-                          color: _gray400, fontSize: 12),
-                      filled: true, fillColor: _gray50,
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: _gray200)),
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: _gray200)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 11),
-                    ),
+                    decoration: AppChampTexte.decoration(indication: 'Montant'),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -1449,7 +1499,7 @@ class _CreationContratPageState extends State<CreationContratPage>
                   child: const Padding(
                     padding: EdgeInsets.only(top: 10),
                     child: Icon(Icons.remove_circle_outline_rounded,
-                        size: 20, color: Color(0xFF1A1A1A)),
+                        size: 20, color: AppColor.kTexte),
                   ),
                 ),
               ],
@@ -1464,7 +1514,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionDepot() {
     return _section(
       Icons.shield_outlined,
-      const Color(0xFF1A1A1A),
+      AppColor.kTexte,
       'Dépôt de garantie / Caution',
       [
         _toggle('Dépôt de garantie prévu', _depotPrevu,
@@ -1492,7 +1542,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionSignature() {
     return _section(
       Icons.draw_rounded,
-      const Color(0xFF1A1A1A),
+      AppColor.kTexte,
       'Signature du bailleur',
       [
         // Bannière info
@@ -1500,18 +1550,18 @@ class _CreationContratPageState extends State<CreationContratPage>
           width: double.infinity,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A).withValues(alpha: 0.07),
+            color: AppColor.kTexte.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.25)),
+            border: Border.all(color: AppColor.kTexte.withValues(alpha: 0.25)),
           ),
           child: const Row(
             children: [
-              Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFF1A1A1A)),
+              Icon(Icons.info_outline_rounded, size: 16, color: AppColor.kTexte),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Signez ci-dessous pour valider et créer ce contrat de bail.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF1A1A1A), height: 1.4),
+                  style: TextStyle(fontSize: 12, color: AppColor.kTexte, height: 1.4),
                 ),
               ),
             ],
@@ -1523,7 +1573,7 @@ class _CreationContratPageState extends State<CreationContratPage>
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            border: Border.all(color: const Color(0xFF1A1A1A).withValues(alpha: 0.4), width: 2),
+            border: Border.all(color: AppColor.kTexte.withValues(alpha: 0.4), width: 2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: ClipRRect(
@@ -1582,7 +1632,7 @@ class _CreationContratPageState extends State<CreationContratPage>
   Widget _buildSectionClauses() {
     return _section(
       Icons.rule_folder_outlined,
-      const Color(0xFF1A1A1A),
+      AppColor.kTexte,
       'Clauses du contrat',
       [
         _toggle('Sous-location autorisée', _sousLocation,
@@ -1653,16 +1703,16 @@ class _SuccessDialogState extends State<_SuccessDialog> {
           Container(
             width: 72, height: 72,
             decoration: const BoxDecoration(
-                color: Color(0xFFF4F4F5), shape: BoxShape.circle),
+                color: AppColor.kNeutreClair, shape: BoxShape.circle),
             child: const Icon(Icons.check_rounded,
-                color: Color(0xFF1A1A1A), size: 40),
+                color: AppColor.kTexte, size: 40),
           ),
           const SizedBox(height: 20),
           const Text('Contrat créé !',
               style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF09090B))),
+                  color: AppColor.kTexte)),
           const SizedBox(height: 10),
           const Text(
             'Le contrat de bail a été créé avec succès.\nUn email a été envoyé aux parties concernées.',
@@ -1692,7 +1742,7 @@ class _SuccessDialogState extends State<_SuccessDialog> {
             child: ElevatedButton(
               onPressed: widget.onRetour,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF09090B),
+                backgroundColor: AppColor.kTexte,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14)),

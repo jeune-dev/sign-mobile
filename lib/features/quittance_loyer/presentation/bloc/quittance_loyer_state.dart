@@ -1,4 +1,5 @@
 import 'package:sign_application/features/quittance_loyer/domain/entities/quittance_loyer.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class QuittanceLoyerState {}
 
@@ -19,7 +20,11 @@ class QuittanceDetailLoaded extends QuittanceLoyerState {
 
 class QuittanceLoyerSuccess extends QuittanceLoyerState {
   final String message;
-  QuittanceLoyerSuccess({this.message = 'Opération réussie'});
+
+  /// Quittance tout juste creee.
+  final DocumentCree? documentCree;
+
+  QuittanceLoyerSuccess({this.message = 'Opération réussie', this.documentCree});
 }
 
 class QuittanceBytes extends QuittanceLoyerState {

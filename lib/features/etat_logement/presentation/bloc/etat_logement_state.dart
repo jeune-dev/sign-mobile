@@ -1,4 +1,5 @@
 import '../../domain/entities/etat_logement.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class EtatLogementState {}
 
@@ -18,7 +19,11 @@ class EtatLogementDetailLoaded extends EtatLogementState {
 
 class EtatLogementSuccess extends EtatLogementState {
   final String message;
-  EtatLogementSuccess({this.message = 'Opération réussie'});
+
+  /// Etat des lieux tout juste cree. Null pour une signature.
+  final DocumentCree? documentCree;
+
+  EtatLogementSuccess({this.message = 'Opération réussie', this.documentCree});
 }
 
 class EtatLogementBytes extends EtatLogementState {

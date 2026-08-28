@@ -2,6 +2,8 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -20,6 +22,8 @@ import 'package:sign_application/core/widgets/shimmer_list.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/injection_container.dart' as di;
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/widgets/barre_filtre_direction.dart';
 
 class ContratBailListePage extends StatefulWidget {
   const ContratBailListePage({super.key});
@@ -29,6 +33,12 @@ class ContratBailListePage extends StatefulWidget {
 }
 
 class _ContratBailListePageState extends State<ContratBailListePage> {
+  /// Filtre courant : 'tous', 'envoyes' ou 'recus'.
+  ///
+  /// Un bail recu en tant que locataire n'apparaissait pas du tout : la
+  /// requete ne regardait que le cote bailleur.
+  String _filtre = 'tous';
+
   int _statsTotal = 0, _statsSignes = 0, _statsEnAttente = 0;
   bool _statsLoading = true;
   final Set<String> _downloading = {};
@@ -129,7 +139,7 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: AppColor.kFond,
       body: BlocListener<ContratBloc, ContratState>(
         listener: (ctx, state) {
           if (state is ContratBytes) {
@@ -146,9 +156,23 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
             final loading = state is ContratLoading;
             final contrats = state is ContratsLoaded ? state.contrats : <ContratBail>[];
 
+            // Le filtre porte sur l'affichage seul : les compteurs de la
+            // barre doivent refleter l'ensemble, pas la selection.
+            final affiches = _filtre == 'tous'
+                ? contrats
+                : contrats.where((c) =>
+                    _filtre == 'recus' ? c.estRecu : !c.estRecu).toList();
+
             return Column(
               children: [
                 _buildTopBar(),
+                BarreFiltreDirection(
+                  valeur: _filtre,
+                  onChange: (v) => setState(() => _filtre = v),
+                  total: contrats.length,
+                  envoyes: contrats.where((c) => !c.estRecu).length,
+                  recus: contrats.where((c) => c.estRecu).length,
+                ),
                 Expanded(
                   child: loading
                       ? const ShimmerList()
@@ -160,12 +184,12 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
                                 context.read<ContratBloc>().add(LoadContratsImmobilier());
                                 _loadStats();
                               },
-                              child: contrats.isEmpty ? _buildEmpty()
+                              child: affiches.isEmpty ? _buildEmpty()
                                   : ListView.separated(
                                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                                      itemCount: contrats.length,
+                                      itemCount: affiches.length,
                                       separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                      itemBuilder: (_, i) => _buildCard(contrats[i]),
+                                      itemBuilder: (_, i) => _buildCard(affiches[i]),
                                     ),
                             ),
                 ),
@@ -177,13 +201,16 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        onPressed: () => Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const CreationContratPage()))
-            .then((_) {
-              if (!context.mounted) return;
-              context.read<ContratBloc>().add(LoadContratsImmobilier());
-              _loadStats();
-            }),
+        onPressed: () async {
+          await ParcoursDocument.ouvrir(
+            context,
+            typeDocument: TypeDocumentSigns.contratBail,
+            page: (_) => const CreationContratPage(),
+          );
+          if (!context.mounted) return;
+          context.read<ContratBloc>().add(LoadContratsImmobilier());
+          _loadStats();
+        },
         icon: const Icon(Icons.add_rounded),
         label: const Text('Nouveau', style: TextStyle(fontWeight: FontWeight.w700)),
       ),

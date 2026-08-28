@@ -3,7 +3,7 @@
 
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 class PrimaryTextButton extends StatelessWidget {
   const PrimaryTextButton({
     super.key,
@@ -28,7 +28,7 @@ class PrimaryTextButton extends StatelessWidget {
       child: Text(
         titre,
         style: style ??
-            GoogleFonts.plusJakartaSans(
+            AppTypo.jakarta(
               color: AppColor.kPrimary,
               fontWeight: FontWeight.w600,
               fontSize: 14,

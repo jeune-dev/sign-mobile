@@ -11,6 +11,11 @@ import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/autres_contrats/domain/usecases/telecharger_autre_contrat.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 
 class CreationContratPartenariatPage extends StatefulWidget {
   const CreationContratPartenariatPage({super.key});
@@ -20,11 +25,19 @@ class CreationContratPartenariatPage extends StatefulWidget {
 }
 
 class _State extends State<CreationContratPartenariatPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que
+    // l'utilisateur remplit les premieres etapes.
+    _emetteur.charger();
+  }
+
   int _step = 0;
   static const int _totalSteps = 3;
   static const _steps = ['Partenaire', 'Accord', 'Revenus'];
 
-  static const _accent = Color(0xFF1A1A1A);
+  static const _accent = AppColor.kTexte;
   static const _icon   = Icons.people_alt_outlined;
   static const _titre  = 'Contrat de partenariat';
 
@@ -32,6 +45,10 @@ class _State extends State<CreationContratPartenariatPage> {
   final _formKey2 = GlobalKey<FormState>();
 
   Client? _client;
+
+  /// Informations qui figureront sur le document : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   final _objetCtrl   = TextEditingController();
   final _dureeCtrl   = TextEditingController();
@@ -48,6 +65,7 @@ class _State extends State<CreationContratPartenariatPage> {
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _objetCtrl.dispose(); _dureeCtrl.dispose(); _resp1Ctrl.dispose();
     _resp2Ctrl.dispose(); _contrib1Ctrl.dispose(); _contrib2Ctrl.dispose();
     _pct1Ctrl.dispose(); _pct2Ctrl.dispose(); _villeCtrl.dispose();
@@ -94,6 +112,9 @@ class _State extends State<CreationContratPartenariatPage> {
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
       'signature_generateur': sigBase64,
+      // Ce qui sera imprime sur le contrat. Le serveur fige ces valeurs :
+      // une regeneration a la signature produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
     }));
   }
 
@@ -113,7 +134,22 @@ class _State extends State<CreationContratPartenariatPage> {
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
             showToast(ctx, 'Contrat créé', 'Le contrat de partenariat a été créé avec succès.', ToastificationType.success);
-            Navigator.pop(ctx);
+            // Le document est montre a l'utilisateur avant tout retour
+            // a la liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              ctx,
+              libelle: 'contrat de partenariat',
+              feminin: false,
+              document: state.documentCree,
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerAutreContrat>()(
+                    ContratType.partenariat.apiValue, id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is AutresContratsError) _showError(state.message);
         },
@@ -183,105 +219,121 @@ class _State extends State<CreationContratPartenariatPage> {
 
   Widget _step1() => Form(
     key: _formKey1,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Objet & Durée',
-          icon: Icons.handshake_outlined,
-          accentColor: _accent,
-          children: [
-            CField(controller: _objetCtrl, label: 'Objet du partenariat', accentColor: _accent, maxLines: 3, hint: 'Décrivez la nature et les objectifs du partenariat…'),
-            kGap,
-            CDurationField(controller: _dureeCtrl, label: 'Durée', accentColor: _accent, icon: Icons.timer_outlined),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Responsabilités',
-          icon: Icons.balance_outlined,
-          accentColor: _accent,
-          subtitle: 'Ce que chaque partie s\'engage à faire',
-          children: [
-            _partyLabel('Partie 1 — Vous'),
-            kGapSm,
-            CField(controller: _resp1Ctrl, label: 'Responsabilités', accentColor: _accent, maxLines: 2, hint: 'Ce que vous apportez et gérez…'),
-            kGap,
-            CField(controller: _contrib1Ctrl, label: 'Contribution', accentColor: _accent, hint: 'Ressources, moyens, compétences…'),
-            kGapLg,
-            _partyLabel('Partie 2 — Partenaire'),
-            kGapSm,
-            CField(controller: _resp2Ctrl, label: 'Responsabilités', accentColor: _accent, maxLines: 2, hint: 'Ce que le partenaire apporte et gère…'),
-            kGap,
-            CField(controller: _contrib2Ctrl, label: 'Contribution', accentColor: _accent, hint: 'Ressources, moyens, compétences…'),
-          ],
-        ),
-      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CSection(
+            title: 'Objet & Durée',
+            icon: Icons.handshake_outlined,
+            accentColor: _accent,
+            children: [
+              CField(controller: _objetCtrl, label: 'Objet du partenariat', accentColor: _accent, maxLines: 3, hint: 'Décrivez la nature et les objectifs du partenariat…'),
+              kGap,
+              CDurationField(controller: _dureeCtrl, label: 'Durée', accentColor: _accent, icon: Icons.timer_outlined),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Responsabilités',
+            icon: Icons.balance_outlined,
+            accentColor: _accent,
+            subtitle: 'Ce que chaque partie s\'engage à faire',
+            children: [
+              _partyLabel('Partie 1 — Vous'),
+              kGapSm,
+              CField(controller: _resp1Ctrl, label: 'Responsabilités', accentColor: _accent, maxLines: 2, hint: 'Ce que vous apportez et gérez…'),
+              kGap,
+              CField(controller: _contrib1Ctrl, label: 'Contribution', accentColor: _accent, hint: 'Ressources, moyens, compétences…'),
+              kGapLg,
+              _partyLabel('Partie 2 — Partenaire'),
+              kGapSm,
+              CField(controller: _resp2Ctrl, label: 'Responsabilités', accentColor: _accent, maxLines: 2, hint: 'Ce que le partenaire apporte et gère…'),
+              kGap,
+              CField(controller: _contrib2Ctrl, label: 'Contribution', accentColor: _accent, hint: 'Ressources, moyens, compétences…'),
+            ],
+          ),
+              ],
+      ),
     ),
   );
 
   Widget _step2() => Form(
     key: _formKey2,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Partage des revenus',
-          icon: Icons.pie_chart_outline_rounded,
-          accentColor: _accent,
-          subtitle: 'Optionnel — définissez la répartition des bénéfices',
-          children: [
-            CToggle(
-              title: 'Partage des revenus',
-              subtitle: 'Activez pour définir les pourcentages',
-              value: _partageRevenus,
-              accentColor: _accent,
-              onChanged: (v) => setState(() => _partageRevenus = v),
-            ),
-            if (_partageRevenus) ...[
-              kGap,
-              Row(children: [
-                Expanded(child: CField(controller: _pct1Ctrl, label: '% Partie 1', accentColor: _accent,
-                    icon: Icons.percent_rounded, keyboardType: TextInputType.number, required: false, hint: '50')),
-                const SizedBox(width: 12),
-                Expanded(child: CField(controller: _pct2Ctrl, label: '% Partie 2', accentColor: _accent,
-                    icon: Icons.percent_rounded, keyboardType: TextInputType.number, required: false, hint: '50')),
-              ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Ce qui figurera sur le document : prerempli depuis le profil,
+          // modifiable, et fige avec le document cote serveur.
+          SectionEmetteur(controleur: _emetteur, titre: 'Vos informations'),
+          const SizedBox(height: 20),
+          CSection(
+            title: 'Partage des revenus',
+            icon: Icons.pie_chart_outline_rounded,
+            accentColor: _accent,
+            subtitle: 'Optionnel — définissez la répartition des bénéfices',
+            children: [
+              CToggle(
+                title: 'Partage des revenus',
+                subtitle: 'Activez pour définir les pourcentages',
+                value: _partageRevenus,
+                accentColor: _accent,
+                onChanged: (v) => setState(() => _partageRevenus = v),
+              ),
+              if (_partageRevenus) ...[
+                kGap,
+                Row(children: [
+                  Expanded(child: CField(controller: _pct1Ctrl, label: '% Partie 1', accentColor: _accent,
+                      icon: Icons.percent_rounded, keyboardType: TextInputType.number, required: false, hint: '50')),
+                  const SizedBox(width: 12),
+                  Expanded(child: CField(controller: _pct2Ctrl, label: '% Partie 2', accentColor: _accent,
+                      icon: Icons.percent_rounded, keyboardType: TextInputType.number, required: false, hint: '50')),
+                ]),
+              ],
             ],
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Récapitulatif',
-          icon: Icons.summarize_outlined,
-          accentColor: _accent,
-          children: [
-            if (_client != null) CSummaryRow(label: 'Partenaire', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
-            CSummaryRow(label: 'Objet', value: _objetCtrl.text.isNotEmpty ? _objetCtrl.text : '—', icon: Icons.handshake_outlined, accentColor: _accent),
-            CSummaryRow(label: 'Durée', value: _dureeCtrl.text.isNotEmpty ? _dureeCtrl.text : '—', icon: Icons.timer_outlined, accentColor: _accent),
-            CSummaryRow(label: 'Partage revenus', value: _partageRevenus ? 'Oui' : 'Non', icon: Icons.pie_chart_outline_rounded, accentColor: _accent),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Lieu de signature',
-          icon: Icons.place_outlined,
-          accentColor: _accent,
-          children: [
-            CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar, Abidjan…'),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Signature',
-          icon: Icons.draw_outlined,
-          accentColor: _accent,
-          subtitle: 'Signez pour valider la création du contrat',
-          children: [
-            CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
-          ],
-        ),
-      ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Récapitulatif',
+            icon: Icons.summarize_outlined,
+            accentColor: _accent,
+            children: [
+              if (_client != null) CSummaryRow(label: 'Partenaire', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
+              CSummaryRow(label: 'Objet', value: _objetCtrl.text.isNotEmpty ? _objetCtrl.text : '—', icon: Icons.handshake_outlined, accentColor: _accent),
+              CSummaryRow(label: 'Durée', value: _dureeCtrl.text.isNotEmpty ? _dureeCtrl.text : '—', icon: Icons.timer_outlined, accentColor: _accent),
+              CSummaryRow(label: 'Partage revenus', value: _partageRevenus ? 'Oui' : 'Non', icon: Icons.pie_chart_outline_rounded, accentColor: _accent),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Lieu de signature',
+            icon: Icons.place_outlined,
+            accentColor: _accent,
+            children: [
+              CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar, Abidjan…'),
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Signature',
+            icon: Icons.draw_outlined,
+            accentColor: _accent,
+            subtitle: 'Signez pour valider la création du contrat',
+            children: [
+              CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
+            ],
+          ),
+              ],
+      ),
     ),
   );
 

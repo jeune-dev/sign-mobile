@@ -22,6 +22,8 @@ import 'package:sign_application/features/etat_logement/presentation/bloc/etat_l
 import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_event.dart';
 import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_state.dart';
 import 'package:sign_application/features/etat_logement/presentation/pages/creation_etat_logement_page.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/widgets/barre_filtre_direction.dart';
 
 const Color _kAccent = Color(0xFF059669);
 
@@ -46,6 +48,12 @@ class EtatsLogementListePage extends StatefulWidget {
 }
 
 class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
+  /// Filtre courant : 'tous', 'envoyes' ou 'recus'.
+  ///
+  /// Un etat des lieux rattache a un bail dont je ne suis que locataire
+  /// n'apparaissait pas : le filtre ne retenait que le cote bailleur.
+  String _filtre = 'tous';
+
   List<EtatLogement>? _etats;
   final Set<String> _downloading = {};
   static final _dateFmt = DateFormat('dd/MM/yyyy');
@@ -351,7 +359,7 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: AppColor.kFond,
       body: BlocConsumer<EtatLogementBloc, EtatLogementState>(
         listener: (ctx, state) {
           if (state is EtatsLogementLoaded) {
@@ -373,24 +381,40 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
         },
         builder: (ctx, state) {
           final loadingInitial = _etats == null && state is EtatLogementLoading;
+          final tous = _etats ?? const [];
+
+          // Le filtre porte sur l'affichage seul : les compteurs de la barre
+          // doivent refleter l'ensemble, pas la selection.
+          final affiches = _filtre == 'tous'
+              ? tous
+              : tous.where((e) =>
+                  _filtre == 'recus' ? e.estRecu : !e.estRecu).toList();
+
           return Column(
             children: [
               _buildTopBar(),
+              BarreFiltreDirection(
+                valeur: _filtre,
+                onChange: (v) => setState(() => _filtre = v),
+                total: tous.length,
+                envoyes: tous.where((e) => !e.estRecu).length,
+                recus: tous.where((e) => e.estRecu).length,
+              ),
               Expanded(
                 child: loadingInitial
                     ? const ShimmerList()
                     : RefreshIndicator(
                         color: _kAccent,
                         onRefresh: () async => _reload(),
-                        child: (_etats == null || _etats!.isEmpty)
+                        child: affiches.isEmpty
                             ? _buildEmpty()
                             : ListView.separated(
                                 padding:
                                     const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                                itemCount: _etats!.length,
+                                itemCount: affiches.length,
                                 separatorBuilder: (_, __) =>
                                     const SizedBox(height: 12),
-                                itemBuilder: (_, i) => _buildCard(_etats![i]),
+                                itemBuilder: (_, i) => _buildCard(affiches[i]),
                               ),
                       ),
               ),

@@ -1,4 +1,5 @@
 import 'package:sign_application/features/contrat_travail/domain/entities/contrat_travail.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class ContratTravailState {}
 
@@ -27,7 +28,11 @@ class ContratTravailDetailLoaded extends ContratTravailState {
 
 class ContratTravailSuccess extends ContratTravailState {
   final String message;
-  ContratTravailSuccess({this.message = 'Opération réussie'});
+
+  /// Contrat de travail tout juste cree. Null pour une signature.
+  final DocumentCree? documentCree;
+
+  ContratTravailSuccess({this.message = 'Opération réussie', this.documentCree});
 }
 
 class ContratTravailBytes extends ContratTravailState {

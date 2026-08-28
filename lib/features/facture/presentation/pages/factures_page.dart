@@ -2,6 +2,8 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -22,6 +24,7 @@ import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
 import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class FacturesPage extends StatefulWidget {
   final User? user;
@@ -33,6 +36,13 @@ class FacturesPage extends StatefulWidget {
 
 class _FacturesPageState extends State<FacturesPage> {
   final Set<String> _downloading = {};
+
+  /// Filtre courant : 'tous', 'envoyes' ou 'recus'.
+  ///
+  /// Les factures recues n'apparaissaient nulle part : le backend ne les
+  /// renvoyait pas, et l'ecran n'avait aucun moyen de les distinguer. Meme
+  /// mecanisme que les quittances et les fiches de paie.
+  String _filtre = 'tous';
   static final _dateFmt   = DateFormat('dd/MM/yyyy');
   static final _montantFmt = NumberFormat('#,###', 'fr_FR');
 
@@ -354,22 +364,43 @@ class _FacturesPageState extends State<FacturesPage> {
             if (f.statut == 'payee') { payees++; } else { enAttente++; }
           }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+          // Le filtre s'applique a l'affichage seul : les compteurs de la
+          // barre doivent porter sur l'ensemble, pas sur la selection.
+          final affichees = _filtre == 'tous'
+              ? factures
+              : factures.where((f) =>
+                  _filtre == 'recus' ? f.estRecue : !f.estRecue).toList();
+
+          // Toute la page defile d'un seul bloc. Auparavant l'en-tete, le
+          // bouton et la barre de filtres etaient figes hors du scrollable et
+          // seule la liste bougeait : sur un ecran de 360 dp, ils occupaient
+          // la moitie de la hauteur et il ne restait qu'une lucarne pour les
+          // factures.
+          return RefreshIndicator(
+            color: Colors.black87,
+            onRefresh: () async => context.read<FactureBloc>().add(LoadFactures()),
+            child: CustomScrollView(
+              // Toujours defilable : sans quoi le geste de rafraichissement ne
+              // repond pas quand la liste tient dans l'ecran.
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
               // ── Header stats ──────────────────────────────────────────
-              _buildHeader(total, payees, enAttente, montantTotal, isLoading),
+              SliverToBoxAdapter(
+                child: _buildHeader(total, payees, enAttente, montantTotal, isLoading),
+              ),
 
               // ── Bouton créer ──────────────────────────────────────────
-              Padding(
+              SliverToBoxAdapter(
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () async {
-                      await Navigator.push(
+                      await ParcoursDocument.ouvrir(
                         context,
-                        MaterialPageRoute(builder: (_) => const CreeFacture()),
+                        typeDocument: TypeDocumentSigns.facture,
+                        page: (_) => const CreeFacture(),
                       );
                       if (context.mounted) {
                         context.read<FactureBloc>().add(LoadFactures());
@@ -388,10 +419,12 @@ class _FacturesPageState extends State<FacturesPage> {
                     ),
                   ),
                 ),
+                ),
               ),
 
               // ── Accès quittances de loyer & fiches de paie (même ligne) ──
-              Padding(
+              SliverToBoxAdapter(
+                child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Row(
                   children: [
@@ -410,16 +443,21 @@ class _FacturesPageState extends State<FacturesPage> {
                         onTap: _ouvrirFichesPaie,
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
               // ── Liste ────────────────────────────────────────────────
-              Expanded(child: _buildBody(state, factures, isLoading)),
+              SliverToBoxAdapter(child: _buildFilterBar(factures)),
+
+              _buildBody(state, affichees, isLoading),
 
               // ── Pagination ───────────────────────────────────────────
-              if (totalPages > 1) _buildPagination(currentPage, totalPages),
+              if (totalPages > 1)
+                SliverToBoxAdapter(child: _buildPagination(currentPage, totalPages)),
             ],
+            ),
           );
         },
       ),
@@ -439,7 +477,7 @@ class _FacturesPageState extends State<FacturesPage> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF1a1a1a), Color(0xFF3a3a3a)],
+                colors: [AppColor.kTexte, Color(0xFF3a3a3a)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -579,25 +617,90 @@ class _FacturesPageState extends State<FacturesPage> {
   }
 
   // ── Corps ─────────────────────────────────────────────────────────────────
+  /// Barre Toutes / Envoyees / Recues, calquee sur celle des quittances.
+  Widget _buildFilterBar(List<Facture> toutes) {
+    final nbEnvoyees = toutes.where((f) => !f.estRecue).length;
+    final nbRecues = toutes.where((f) => f.estRecue).length;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+      child: Row(children: [
+        _filterChip('Toutes', 'tous', toutes.length),
+        const SizedBox(width: 8),
+        _filterChip('Envoyées', 'envoyes', nbEnvoyees),
+        const SizedBox(width: 8),
+        _filterChip('Reçues', 'recus', nbRecues),
+      ]),
+    );
+  }
+
+  Widget _filterChip(String label, String value, int count) {
+    final selected = _filtre == value;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _filtre = value),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? AppColor.kTexte : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: selected ? AppColor.kTexte : AppColor.kBordure),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            // Trois chips se partagent la largeur : « Envoyées » + son
+            // compteur depassent des que la police systeme est agrandie.
+            Flexible(
+              child: Text(label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : AppColor.kTexteFort,
+                )),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+              decoration: BoxDecoration(
+                color: selected ? Colors.white.withValues(alpha: 0.22) : AppColor.kNeutreClair,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text('$count', style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w700,
+                color: selected ? Colors.white : AppColor.kTexteMoyen,
+              )),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// Corps de la page, sous forme de sliver : il partage le defilement de
+  /// l'en-tete au lieu d'avoir le sien.
   Widget _buildBody(
       FactureState state, List<Facture> factures, bool isLoading) {
+    // Chargement, erreur et liste vide occupent la hauteur restante sous
+    // l'en-tete. `hasScrollBody` reste a sa valeur par defaut (true) : ces
+    // trois etats portent chacun leur propre zone defilante (ShimmerList est
+    // un ListView, EmptyState et l'erreur des SingleChildScrollView), et
+    // `false` leur aurait donne une hauteur non bornee — le sliver levait
+    // alors une exception de layout et TOUTE la page restait blanche.
     if (isLoading && factures.isEmpty) {
-      return const ShimmerList();
+      return const SliverFillRemaining(child: ShimmerList());
     }
 
     if (state is FactureError && factures.isEmpty) {
-      return _buildError(state.message);
+      return SliverFillRemaining(child: _buildError(state.message));
     }
 
     if (factures.isEmpty) {
-      return _buildEmpty();
+      return SliverFillRemaining(child: _buildEmpty());
     }
 
-    return RefreshIndicator(
-      color: Colors.black87,
-      onRefresh: () async => context.read<FactureBloc>().add(LoadFactures()),
-      child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      sliver: SliverList.separated(
         itemCount: factures.length,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (context, index) =>
@@ -1005,7 +1108,11 @@ class _FacturesPageState extends State<FacturesPage> {
 
   // ── Erreur ────────────────────────────────────────────────────────────────
   Widget _buildError(String message) {
-    return Center(
+    // Meme precaution que pour l etat vide : la place restante sous l en-tete,
+    // les boutons et la barre de filtres ne suffit pas toujours, et un message
+    // d erreur long tenait encore moins. Le bloc defile plutot que de deborder.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

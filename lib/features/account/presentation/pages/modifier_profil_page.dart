@@ -148,112 +148,120 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
 
           return Form(
             key: _formKey,
-            child: ListView(
+            // SingleChildScrollView et non ListView : un ListView ne monte que les
+            // sections visibles, et un TextFormField demonte n est plus rattache au
+            // Form — validate() laissait alors passer des champs obligatoires vides.
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
-              children: [
-                // ── Informations personnelles ──────────────────────────────
-                _card(
-                  title: 'Informations personnelles',
-                  icon: Icons.person_outline,
-                  children: [
-                    _field(controller: _prenom, label: 'Prénom', icon: Icons.badge_outlined),
-                    _field(controller: _nom, label: 'Nom', icon: Icons.badge_outlined),
-                    _field(
-                      controller: _email,
-                      label: 'Email',
-                      icon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: _validateEmail,
-                    ),
-                    _field(
-                      controller: _telephone,
-                      label: 'Téléphone',
-                      icon: Icons.phone_outlined,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    _field(controller: _adresse, label: 'Adresse', icon: Icons.location_on_outlined),
-                    _field(
-                      controller: _cin,
-                      label: 'N° CIN',
-                      icon: Icons.credit_card_outlined,
-                      keyboardType: TextInputType.number,
-                      isLast: true,
-                    ),
-                  ],
-                ),
-
-                if (isPro) ...[
-                  const SizedBox(height: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // ── Informations personnelles ──────────────────────────────
                   _card(
-                    title: isEntreprise
-                        ? 'Informations entreprise'
-                        : 'Informations professionnelles',
-                    icon: isEntreprise ? Icons.business_outlined : Icons.work_outline,
+                    title: 'Informations personnelles',
+                    icon: Icons.person_outline,
                     children: [
+                      _field(controller: _prenom, label: 'Prénom', icon: Icons.badge_outlined),
+                      _field(controller: _nom, label: 'Nom', icon: Icons.badge_outlined),
                       _field(
-                          controller: _nomEntreprise,
-                          label: 'Raison sociale',
-                          icon: Icons.store_outlined),
-                      _field(
-                          controller: _adresseEntreprise,
-                          label: 'Adresse pro',
-                          icon: Icons.location_city_outlined),
-                      _field(
-                        controller: _telephoneEntreprise,
-                        label: 'Tél. professionnel',
-                        icon: Icons.phone_in_talk_outlined,
-                        keyboardType: TextInputType.phone,
-                      ),
-                      _field(
-                        controller: _emailEntreprise,
-                        label: 'Email professionnel',
-                        icon: Icons.alternate_email,
+                        controller: _email,
+                        label: 'Email',
+                        icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         validator: _validateEmail,
-                        isLast: !isEntreprise,
                       ),
-                      if (isEntreprise) ...[
-                        _field(controller: _ninea, label: 'NINEA', icon: Icons.tag_outlined),
-                        _field(
-                            controller: _rc,
-                            label: 'RC',
-                            icon: Icons.numbers_outlined,
-                            isLast: true),
-                      ],
+                      _field(
+                        controller: _telephone,
+                        label: 'Téléphone',
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                      ),
+                      _field(controller: _adresse, label: 'Adresse', icon: Icons.location_on_outlined),
+                      _field(
+                        controller: _cin,
+                        // Ce champ porte le numero de la piece d'identite, qui
+                        // peut etre un passeport : clavier texte obligatoire,
+                        // un numero de passeport commence par une lettre.
+                        label: 'N° pièce d’identité',
+                        icon: Icons.credit_card_outlined,
+                        isLast: true,
+                      ),
                     ],
                   ),
-                ],
 
-                const SizedBox(height: 28),
-
-                // ── Bouton Enregistrer ──────────────────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: isLoading ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.black38,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+                  if (isPro) ...[
+                    const SizedBox(height: 20),
+                    _card(
+                      title: isEntreprise
+                          ? 'Informations entreprise'
+                          : 'Informations professionnelles',
+                      icon: isEntreprise ? Icons.business_outlined : Icons.work_outline,
+                      children: [
+                        _field(
+                            controller: _nomEntreprise,
+                            label: 'Raison sociale',
+                            icon: Icons.store_outlined),
+                        _field(
+                            controller: _adresseEntreprise,
+                            label: 'Adresse pro',
+                            icon: Icons.location_city_outlined),
+                        _field(
+                          controller: _telephoneEntreprise,
+                          label: 'Tél. professionnel',
+                          icon: Icons.phone_in_talk_outlined,
+                          keyboardType: TextInputType.phone,
+                        ),
+                        _field(
+                          controller: _emailEntreprise,
+                          label: 'Email professionnel',
+                          icon: Icons.alternate_email,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: _validateEmail,
+                          isLast: !isEntreprise,
+                        ),
+                        if (isEntreprise) ...[
+                          _field(controller: _ninea, label: 'NINEA', icon: Icons.tag_outlined),
+                          _field(
+                              controller: _rc,
+                              label: 'RC',
+                              icon: Icons.numbers_outlined,
+                              isLast: true),
+                        ],
+                      ],
                     ),
-                    child: isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2.4),
-                          )
-                        : const Text(
-                            'Enregistrer les modifications',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                          ),
+                  ],
+
+                  const SizedBox(height: 28),
+
+                  // ── Bouton Enregistrer ──────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: isLoading ? null : _save,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.black38,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2.4),
+                            )
+                          : const Text(
+                              'Enregistrer les modifications',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                    ),
                   ),
-                ),
-              ],
+                              ],
+              ),
             ),
           );
         },

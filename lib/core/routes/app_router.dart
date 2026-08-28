@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sign_application/core/services/token_service.dart';
 import 'package:sign_application/features/auth/presentation/pages/login_page.dart';
-import 'package:sign_application/features/auth/presentation/pages/register_page.dart';
 import 'package:sign_application/features/home/presentation/pages/client/clientpage.dart';
 import 'package:sign_application/features/home/presentation/pages/professionnel/professionnelpage.dart';
 import 'package:sign_application/features/auth/presentation/widgets/ContiditionUtilisation.dart';
@@ -12,6 +11,11 @@ import 'package:sign_application/features/fiche_paie/presentation/page/creation_
 import 'package:sign_application/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:sign_application/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:sign_application/features/auth/presentation/pages/onboarding_page.dart';
+import 'package:sign_application/features/auth/presentation/pages/inscription_rapide_page.dart';
+import 'package:sign_application/features/auth/presentation/pages/verification_email_page.dart';
+import 'package:sign_application/features/onboarding/presentation/pages/bienvenue_page.dart';
+import 'package:sign_application/features/parcours/presentation/pages/compte_complet_page.dart';
+import 'package:sign_application/features/parcours/presentation/pages/justificatifs_page.dart';
 import 'package:sign_application/injection_container.dart';
 
 class AppRouter {
@@ -25,6 +29,18 @@ class AppRouter {
   static const String contiditionUtilisationRoute = '/condition-utilisation';
 
   static const String onboardingRoute = '/onboarding';
+
+  // ── Nouveau parcours utilisateur ──────────────────────────────────────
+  /// Page de bienvenue, première ouverture uniquement (§ 1).
+  static const String bienvenueRoute = '/bienvenue';
+  /// Création rapide du profil (§ 2).
+  static const String inscriptionRapideRoute = '/inscription';
+  /// Confirmation de l'adresse e-mail — obligatoire avant tout accès.
+  static const String verificationEmailRoute = '/verification-email';
+  /// Création du compte complet (§ 11).
+  static const String compteCompletRoute = '/compte-complet';
+  /// Dépôt et suivi des justificatifs (§ 12).
+  static const String justificatifsRoute = '/justificatifs';
   static const String fichePaieRoute = '/fiche-paie';
   static const String forgotPasswordRoute = '/forgot-password';
   static const String resetPasswordRoute = '/reset-password';
@@ -34,8 +50,33 @@ class AppRouter {
       case loginRoute:
         return MaterialPageRoute(builder: (_) => LoginPage());
 
+      // L'inscription passe désormais par le parcours rapide (§ 2) :
+      // /register y mène aussi, pour que les liens et raccourcis existants
+      // (« Créer un compte » depuis la connexion) continuent de fonctionner.
       case registerRoute:
-        return MaterialPageRoute(builder: (_) => const RegisterPage());
+      case inscriptionRapideRoute:
+        return MaterialPageRoute(builder: (_) => const InscriptionRapidePage());
+
+      case verificationEmailRoute:
+        // L'adresse à confirmer est passée en argument par l'inscription ou
+        // par la connexion (compte non encore vérifié).
+        final adresse = settings.arguments as String? ?? '';
+        return MaterialPageRoute(
+          builder: (_) => VerificationEmailPage(email: adresse),
+        );
+
+      case bienvenueRoute:
+        return MaterialPageRoute(builder: (_) => const BienvenuePage());
+
+      case compteCompletRoute:
+        return MaterialPageRoute(
+          builder: (_) => const _AuthGuard(child: CompteCompletPage()),
+        );
+
+      case justificatifsRoute:
+        return MaterialPageRoute(
+          builder: (_) => const _AuthGuard(child: JustificatifsPage()),
+        );
 
       case clientRoute:
         final args = settings.arguments;

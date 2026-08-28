@@ -52,7 +52,8 @@ class AutresContratsBloc extends Bloc<AutresContratsEvent, AutresContratsState> 
     final result = await creerContrat(event.type, event.body);
     result.fold(
       (failure) => emit(AutresContratsError(failure.errorMessage)),
-      (_) => emit(AutresContratsSuccess(message: 'Contrat créé avec succès')),
+      (cree) => emit(AutresContratsSuccess(
+          message: 'Contrat créé avec succès', documentCree: cree)),
     );
   }
 

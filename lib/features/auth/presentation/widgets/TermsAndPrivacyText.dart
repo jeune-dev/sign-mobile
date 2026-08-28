@@ -1,7 +1,7 @@
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class TermsAndPrivacyText extends StatefulWidget {
   const TermsAndPrivacyText({
@@ -55,12 +55,12 @@ class _TermsAndPrivacyTextState extends State<TermsAndPrivacyText> {
 
   @override
   Widget build(BuildContext context) {
-    final styleParDefaut = GoogleFonts.plusJakartaSans(
+    final styleParDefaut = AppTypo.jakarta(
       color: AppColor.kGrayscale40,
       fontWeight: FontWeight.w500,
       fontSize: 14,
     );
-    final styleLien = GoogleFonts.plusJakartaSans(
+    final styleLien = AppTypo.jakarta(
       color: widget.couleurTermes ?? AppColor.kGrayscaleDark100,
       fontWeight: FontWeight.w600,
       fontSize: 14,

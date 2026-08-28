@@ -55,7 +55,8 @@ class EtatLogementBloc extends Bloc<EtatLogementEvent, EtatLogementState> {
     final result = await creerEtatLogement(event.contratId, event.data);
     result.fold(
       (failure) => emit(EtatLogementError(failure.errorMessage)),
-      (_) => emit(EtatLogementSuccess(message: 'État des lieux créé avec succès')),
+      (cree) => emit(EtatLogementSuccess(
+          message: 'État des lieux créé avec succès', documentCree: cree)),
     );
   }
 

@@ -13,6 +13,8 @@ import 'package:sign_application/core/widgets/shimmer_list.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
 import 'package:sign_application/core/services/token_service.dart';
 import 'package:sign_application/injection_container.dart' as di;
@@ -21,6 +23,8 @@ import '../bloc/autres_contrats_event.dart';
 import '../bloc/autres_contrats_state.dart';
 import '../../domain/entities/autre_contrat.dart';
 import 'contrat_signature_page.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/widgets/barre_filtre_direction.dart';
 
 class AutresContratsListePage extends StatefulWidget {
   final String type;
@@ -41,6 +45,12 @@ class AutresContratsListePage extends StatefulWidget {
 }
 
 class _AutresContratsListePageState extends State<AutresContratsListePage> {
+  /// Filtre courant : 'tous', 'envoyes' ou 'recus'.
+  ///
+  /// Les contrats recus se confondaient avec les contrats emis : rien ne les
+  /// distinguait dans la liste, et rien n'indiquait qu'il en etait arrive un.
+  String _filtre = 'tous';
+
   // Stats
   int _statsTotal = 0, _statsSignes = 0, _statsEnAttente = 0;
   bool _statsLoading = true;
@@ -190,7 +200,7 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: AppColor.kFond,
       body: BlocConsumer<AutresContratsBloc, AutresContratsState>(
         listener: (ctx, state) {
           if (state is AutresContratsBytes) {
@@ -206,9 +216,23 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
           final loading = state is AutresContratsLoading;
           final contrats = state is AutresContratsListLoaded ? state.contrats : <AutreContrat>[];
 
+          // Le filtre porte sur l'affichage seul : les compteurs de la
+          // barre doivent refleter l'ensemble, pas la selection.
+          final affiches = _filtre == 'tous'
+              ? contrats
+              : contrats.where((c) =>
+                  _filtre == 'recus' ? c.estRecu : !c.estRecu).toList();
+
           return Column(
             children: [
               _buildTopBar(),
+              BarreFiltreDirection(
+                valeur: _filtre,
+                onChange: (v) => setState(() => _filtre = v),
+                total: contrats.length,
+                envoyes: contrats.where((c) => !c.estRecu).length,
+                recus: contrats.where((c) => c.estRecu).length,
+              ),
               Expanded(
                 child: loading
                     ? const ShimmerList()
@@ -222,16 +246,16 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
                                   .add(LoadContrats(widget.type));
                               _loadStats();
                             },
-                            child: contrats.isEmpty
+                            child: affiches.isEmpty
                                 ? _buildEmpty()
                                 : ListView.separated(
                                     padding: const EdgeInsets.fromLTRB(
                                         16, 12, 16, 100),
-                                    itemCount: contrats.length,
+                                    itemCount: affiches.length,
                                     separatorBuilder: (_, __) =>
                                         const SizedBox(height: 12),
                                     itemBuilder: (_, i) =>
-                                        _buildCard(contrats[i]),
+                                        _buildCard(affiches[i]),
                                   ),
                           ),
               ),
@@ -242,14 +266,19 @@ class _AutresContratsListePageState extends State<AutresContratsListePage> {
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: widget.createPageBuilder),
-        ).then((_) {
+        onPressed: () async {
+          // Même parcours que depuis l'écran des contrats : informations
+          // manquantes réclamées avant (§ 4), proposition de compte complet
+          // après la création (§ 10).
+          await ParcoursDocument.ouvrir(
+            context,
+            typeDocument: TypeDocumentSigns.depuisIdContrat(widget.type),
+            page: widget.createPageBuilder,
+          );
           if (!context.mounted) return;
           context.read<AutresContratsBloc>().add(LoadContrats(widget.type));
           _loadStats();
-        }),
+        },
         icon: const Icon(Icons.add_rounded),
         label: const Text('Nouveau',
             style: TextStyle(fontWeight: FontWeight.w700)),

@@ -1,6 +1,6 @@
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class PasswordTextField extends StatefulWidget {
   final String hintText;
@@ -38,7 +38,7 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
       child: TextFormField(
         obscureText: _obscureText,
         controller: widget.controller,
-        style: GoogleFonts.plusJakartaSans(
+        style: AppTypo.jakarta(
           color: AppColor.kGrayscaleDark100,
           fontSize: 14,
           fontWeight: FontWeight.w500,
@@ -67,7 +67,7 @@ class _PasswordTextFieldState extends State<PasswordTextField> {
             tooltip: _obscureText ? 'Afficher le mot de passe' : 'Masquer le mot de passe',
           ),
           hintText: widget.hintText,
-          hintStyle: GoogleFonts.plusJakartaSans(
+          hintStyle: AppTypo.jakarta(
             color: AppColor.kGrayscale40,
             fontWeight: FontWeight.w500,
             fontSize: 14,

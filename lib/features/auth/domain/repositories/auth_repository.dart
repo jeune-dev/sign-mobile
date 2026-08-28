@@ -15,12 +15,16 @@ abstract class AuthRepository {
   Future<Either<Failure, User>> register({
     required String nom,
     required String prenom,
-    required String email,
-    required String mot_de_passe,
-    required String adresse,
     required String telephone,
-    required String carte_identite_national_num,
     required String role,
+    // Facultatifs depuis l'inscription rapide (§ 2) : seuls nom, prénom,
+    // ville, téléphone et le type de profil sont demandés. Les anciens
+    // champs restent acceptés par le backend.
+    String? ville,
+    String? email,
+    String? mot_de_passe,
+    String? adresse,
+    String? carte_identite_national_num,
     String? typeDocumentIdentite,
     XFile? documentIdentite,
     XFile? photoProfil,

@@ -12,6 +12,12 @@ class AccountUser extends Equatable {
   final String? logo;
   final String? signature;
   final String? carteIdentiteNationalNum;
+  /// Ville de résidence, demandée dès l'inscription rapide (§ 2).
+  final String? ville;
+  /// NIN / numéro personnel, réclamé seulement quand un document l'exige.
+  final String? nin;
+  /// L'utilisateur a suivi le parcours « compte complet » (§ 11).
+  final bool profilComplet;
   final String? rc;
   final String? ninea;
   final String? nomEntreprise;
@@ -32,6 +38,9 @@ class AccountUser extends Equatable {
     this.logo,
     this.signature,
     this.carteIdentiteNationalNum,
+    this.ville,
+    this.nin,
+    this.profilComplet = false,
     this.rc,
     this.ninea,
     this.nomEntreprise,

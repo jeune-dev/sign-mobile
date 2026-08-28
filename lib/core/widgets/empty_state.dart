@@ -95,8 +95,23 @@ class EmptyState extends StatelessWidget {
     );
 
     if (!scrollable) {
-      return Center(
-        child: Padding(padding: const EdgeInsets.all(32), child: content),
+      // Le contenu est centre tant qu il y a la place, et defile des que la
+      // hauteur disponible ne suffit plus. Un simple Center debordait ici :
+      // dans les pages liste, l en-tete, les boutons et la barre de filtres
+      // laissent parfois moins de place que l illustration + les textes.
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final hauteurUtile = constraints.maxHeight.isFinite
+              ? (constraints.maxHeight - 64).clamp(0.0, double.infinity)
+              : 0.0;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(32),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: hauteurUtile),
+              child: Center(child: content),
+            ),
+          );
+        },
       );
     }
 

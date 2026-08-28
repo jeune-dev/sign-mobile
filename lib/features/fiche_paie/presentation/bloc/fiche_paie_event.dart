@@ -10,10 +10,15 @@ abstract class FichePaieEvent extends Equatable {
 
 class CreerFichePaieEvent extends FichePaieEvent {
   final FichePaie fiche;
-  const CreerFichePaieEvent(this.fiche);
+
+  /// Informations de l'emetteur saisies dans le formulaire. Facultatives :
+  /// le backend retombe sur le profil si elles manquent.
+  final Map<String, dynamic>? emetteur;
+
+  const CreerFichePaieEvent(this.fiche, {this.emetteur});
 
   @override
-  List<Object?> get props => [fiche];
+  List<Object?> get props => [fiche, emetteur];
 }
 
 class LoadFichesPaieEvent extends FichePaieEvent {

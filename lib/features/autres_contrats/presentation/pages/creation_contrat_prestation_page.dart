@@ -13,6 +13,11 @@ import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/autres_contrats/domain/usecases/telecharger_autre_contrat.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 
 class CreationContratPrestationPage extends StatefulWidget {
   const CreationContratPrestationPage({super.key});
@@ -23,12 +28,20 @@ class CreationContratPrestationPage extends StatefulWidget {
 
 class _State extends State<CreationContratPrestationPage>
     with SingleTickerProviderStateMixin {
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que l'utilisateur
+    // remplit les premieres etapes.
+    _emetteur.charger();
+  }
+
   // ── Stepper ───────────────────────────────────────────────────────────────
   int _step = 0;
   static const int _totalSteps = 3;
   static const _steps = ['Partie', 'Mission', 'Finalisation'];
 
-  static const _accent  = Color(0xFF1A1A1A);
+  static const _accent  = AppColor.kTexte;
   static const _icon    = Icons.handshake_outlined;
   static const _titre   = 'Contrat de prestation';
 
@@ -37,6 +50,10 @@ class _State extends State<CreationContratPrestationPage>
   final _formKey2 = GlobalKey<FormState>();
 
   Client? _client;
+
+  /// Informations qui figureront sur le contrat : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   final _titreCtrl   = TextEditingController();
   final _objetCtrl   = TextEditingController();
@@ -54,6 +71,7 @@ class _State extends State<CreationContratPrestationPage>
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _titreCtrl.dispose(); _objetCtrl.dispose(); _typeCtrl.dispose();
     _descCtrl.dispose(); _dureeCtrl.dispose(); _montantCtrl.dispose();
     _villeCtrl.dispose();
@@ -110,6 +128,9 @@ class _State extends State<CreationContratPrestationPage>
         'mode_paiement':      _modePaiement,
       },
       'signature_generateur': sigBase64,
+      // Ce qui sera imprime sur le contrat. Le serveur fige ces valeurs :
+      // une regeneration a la signature produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
     }));
   }
 
@@ -130,7 +151,22 @@ class _State extends State<CreationContratPrestationPage>
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
             showToast(ctx, 'Contrat créé', 'Le contrat de prestation a été créé avec succès.', ToastificationType.success);
-            Navigator.pop(ctx);
+            // Le document est montre a l'utilisateur avant tout retour
+            // a la liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              ctx,
+              libelle: 'contrat de prestation',
+              feminin: false,
+              document: state.documentCree,
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerAutreContrat>()(
+                    ContratType.prestation.apiValue, id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is AutresContratsError) _showError(state.message);
         },
@@ -227,35 +263,41 @@ class _State extends State<CreationContratPrestationPage>
   Widget _buildStep1() {
     return Form(
       key: _formKey1,
-      child: ListView(
+      // SingleChildScrollView et non ListView : un ListView ne monte que les
+      // sections visibles, et un TextFormField demonte n est plus rattache au
+      // Form — validate() laissait alors passer des champs obligatoires vides.
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-        children: [
-          CSection(
-            title: 'Identification',
-            icon: Icons.title_rounded,
-            accentColor: _accent,
-            subtitle: 'Nommez et catégorisez ce contrat',
-            children: [
-              CField(controller: _titreCtrl, label: 'Titre du contrat', accentColor: _accent, hint: 'Ex: Développement site web'),
-              kGap,
-              CField(controller: _objetCtrl, label: 'Objet de la prestation', accentColor: _accent, hint: 'Décrivez l\'objet principal'),
-              kGap,
-              CField(controller: _typeCtrl, label: 'Type de prestation', accentColor: _accent, hint: 'Ex: Conseil, Développement, Design…'),
-            ],
-          ),
-          kGapLg,
-          CSection(
-            title: 'Description de la mission',
-            icon: Icons.assignment_outlined,
-            accentColor: _accent,
-            subtitle: 'Décrivez en détail ce qui doit être réalisé',
-            children: [
-              CField(controller: _descCtrl, label: 'Description détaillée', accentColor: _accent, maxLines: 4, hint: 'Listez les livrables, étapes, contraintes…'),
-              kGap,
-              CDurationField(controller: _dureeCtrl, label: 'Durée estimée', accentColor: _accent, icon: Icons.timer_outlined),
-            ],
-          ),
-        ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CSection(
+              title: 'Identification',
+              icon: Icons.title_rounded,
+              accentColor: _accent,
+              subtitle: 'Nommez et catégorisez ce contrat',
+              children: [
+                CField(controller: _titreCtrl, label: 'Titre du contrat', accentColor: _accent, hint: 'Ex: Développement site web'),
+                kGap,
+                CField(controller: _objetCtrl, label: 'Objet de la prestation', accentColor: _accent, hint: 'Décrivez l\'objet principal'),
+                kGap,
+                CField(controller: _typeCtrl, label: 'Type de prestation', accentColor: _accent, hint: 'Ex: Conseil, Développement, Design…'),
+              ],
+            ),
+            kGapLg,
+            CSection(
+              title: 'Description de la mission',
+              icon: Icons.assignment_outlined,
+              accentColor: _accent,
+              subtitle: 'Décrivez en détail ce qui doit être réalisé',
+              children: [
+                CField(controller: _descCtrl, label: 'Description détaillée', accentColor: _accent, maxLines: 4, hint: 'Listez les livrables, étapes, contraintes…'),
+                kGap,
+                CDurationField(controller: _dureeCtrl, label: 'Durée estimée', accentColor: _accent, icon: Icons.timer_outlined),
+              ],
+            ),
+                  ],
+        ),
       ),
     );
   }
@@ -265,120 +307,139 @@ class _State extends State<CreationContratPrestationPage>
     final fmt = DateFormat('dd/MM/yyyy');
     return Form(
       key: _formKey2,
-      child: ListView(
+      // SingleChildScrollView et non ListView : un ListView ne monte que les
+      // sections visibles, et un TextFormField demonte n est plus rattache au
+      // Form — validate() laissait alors passer des champs obligatoires vides.
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-        children: [
-          CSection(
-            title: 'Calendrier',
-            icon: Icons.date_range_outlined,
-            accentColor: _accent,
-            subtitle: 'Définissez les jalons temporels',
-            children: [
-              CDateField(
-                label: 'Date du contrat',
-                value: _dateContrat,
-                accentColor: _accent,
-                onTap: () async {
-                  final d = await cPickDate(context);
-                  if (d != null) setState(() => _dateContrat = d);
-                },
-              ),
-              kGap,
-              Row(children: [
-                Expanded(child: CDateField(
-                  label: 'Début mission',
-                  value: _dateDebut,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            CSection(
+              title: 'Vos informations',
+              icon: Icons.person_outline,
+              accentColor: _accent,
+              subtitle: 'Ce qui figurera sur le contrat',
+              children: [
+                SectionEmetteur(controleur: _emetteur, titre: ''),
+              ],
+            ),
+            kGapLg,
+            CSection(
+              title: 'Calendrier',
+              icon: Icons.date_range_outlined,
+              accentColor: _accent,
+              subtitle: 'Définissez les jalons temporels',
+              children: [
+                CDateField(
+                  label: 'Date du contrat',
+                  value: _dateContrat,
                   accentColor: _accent,
                   onTap: () async {
                     final d = await cPickDate(context);
-                    if (d != null) setState(() => _dateDebut = d);
+                    if (d != null) setState(() => _dateContrat = d);
                   },
-                )),
-                const SizedBox(width: 10),
-                Expanded(child: CDateField(
-                  label: 'Fin mission',
-                  value: _dateFin,
+                ),
+                kGap,
+                Row(children: [
+                  Expanded(child: CDateField(
+                    label: 'Début mission',
+                    value: _dateDebut,
+                    accentColor: _accent,
+                    onTap: () async {
+                      final d = await cPickDate(context);
+                      if (d != null) setState(() => _dateDebut = d);
+                    },
+                  )),
+                  const SizedBox(width: 10),
+                  Expanded(child: CDateField(
+                    label: 'Fin mission',
+                    value: _dateFin,
+                    accentColor: _accent,
+                    onTap: () async {
+                      final d = await cPickDate(context);
+                      if (d != null) setState(() => _dateFin = d);
+                    },
+                  )),
+                ]),
+              ],
+            ),
+            kGapLg,
+            CSection(
+              title: 'Rémunération',
+              icon: Icons.payments_outlined,
+              accentColor: _accent,
+              subtitle: 'Conditions financières de la prestation',
+              children: [
+                CField(
+                  controller: _montantCtrl,
+                  label: 'Montant total (FCFA)',
                   accentColor: _accent,
-                  onTap: () async {
-                    final d = await cPickDate(context);
-                    if (d != null) setState(() => _dateFin = d);
-                  },
-                )),
-              ]),
-            ],
-          ),
-          kGapLg,
-          CSection(
-            title: 'Rémunération',
-            icon: Icons.payments_outlined,
-            accentColor: _accent,
-            subtitle: 'Conditions financières de la prestation',
-            children: [
-              CField(
-                controller: _montantCtrl,
-                label: 'Montant total (FCFA)',
-                accentColor: _accent,
-                icon: Icons.monetization_on_outlined,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                hint: '0',
-              ),
-              kGap,
-              CDropdown<String>(
-                label: 'Mode de paiement',
-                value: _modePaiement,
-                accentColor: _accent,
-                icon: Icons.credit_card_outlined,
-                items: const [
-                  DropdownMenuItem(value: 'Espèces', child: Text('Espèces')),
-                  DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
-                  DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
-                  DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
-                  DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
-                  DropdownMenuItem(value: 'Autre', child: Text('Autre')),
-                ],
-                onChanged: (v) => setState(() => _modePaiement = v!),
-              ),
-            ],
-          ),
-          kGapLg,
-          // Récapitulatif
-          CSection(
-            title: 'Récapitulatif',
-            icon: Icons.summarize_outlined,
-            accentColor: _accent,
-            children: [
-              if (_client != null)
-                CSummaryRow(label: 'Interlocuteur', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
-              CSummaryRow(label: 'Titre', value: _titreCtrl.text.isNotEmpty ? _titreCtrl.text : '—', icon: Icons.title, accentColor: _accent),
-              CSummaryRow(label: 'Type', value: _typeCtrl.text.isNotEmpty ? _typeCtrl.text : '—', icon: Icons.category_outlined, accentColor: _accent),
-              CSummaryRow(label: 'Durée', value: _dureeCtrl.text.isNotEmpty ? _dureeCtrl.text : '—', icon: Icons.timer_outlined, accentColor: _accent),
-              if (_dateDebut != null && _dateFin != null)
-                CSummaryRow(label: 'Période', value: '${fmt.format(_dateDebut!)} → ${fmt.format(_dateFin!)}', icon: Icons.date_range_outlined, accentColor: _accent),
-              if (_montantCtrl.text.isNotEmpty)
-                CSummaryRow(label: 'Montant', value: '${_montantCtrl.text} FCFA', icon: Icons.payments_outlined, accentColor: _accent),
-            ],
-          ),
-          kGapLg,
-          CSection(
-            title: 'Lieu de signature',
-            icon: Icons.place_outlined,
-            accentColor: _accent,
-            children: [
-              CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, required: false, icon: Icons.location_city_outlined, hint: 'Ex: Dakar, Abidjan…'),
-            ],
-          ),
-          kGapLg,
-          CSection(
-            title: 'Signature',
-            icon: Icons.draw_outlined,
-            accentColor: _accent,
-            subtitle: 'Signez pour valider la création du contrat',
-            children: [
-              CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
-            ],
-          ),
-        ],
+                  icon: Icons.monetization_on_outlined,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  hint: '0',
+                ),
+                kGap,
+                CDropdown<String>(
+                  label: 'Mode de paiement',
+                  value: _modePaiement,
+                  accentColor: _accent,
+                  icon: Icons.credit_card_outlined,
+                  items: const [
+                    DropdownMenuItem(value: 'Espèces', child: Text('Espèces')),
+                    DropdownMenuItem(value: 'Virement bancaire', child: Text('Virement bancaire')),
+                    DropdownMenuItem(value: 'Mobile Money', child: Text('Mobile Money')),
+                    DropdownMenuItem(value: 'Chèque', child: Text('Chèque')),
+                    DropdownMenuItem(value: 'ALL', child: Text('Tout mode de paiement')),
+                    DropdownMenuItem(value: 'Autre', child: Text('Autre')),
+                  ],
+                  onChanged: (v) => setState(() => _modePaiement = v!),
+                ),
+              ],
+            ),
+            kGapLg,
+            // Récapitulatif
+            CSection(
+              title: 'Récapitulatif',
+              icon: Icons.summarize_outlined,
+              accentColor: _accent,
+              children: [
+                if (_client != null)
+                  CSummaryRow(label: 'Interlocuteur', value: '${_client!.prenom} ${_client!.nom}', icon: Icons.person_outline, accentColor: _accent),
+                CSummaryRow(label: 'Titre', value: _titreCtrl.text.isNotEmpty ? _titreCtrl.text : '—', icon: Icons.title, accentColor: _accent),
+                CSummaryRow(label: 'Type', value: _typeCtrl.text.isNotEmpty ? _typeCtrl.text : '—', icon: Icons.category_outlined, accentColor: _accent),
+                CSummaryRow(label: 'Durée', value: _dureeCtrl.text.isNotEmpty ? _dureeCtrl.text : '—', icon: Icons.timer_outlined, accentColor: _accent),
+                if (_dateDebut != null && _dateFin != null)
+                  CSummaryRow(label: 'Période', value: '${fmt.format(_dateDebut!)} → ${fmt.format(_dateFin!)}', icon: Icons.date_range_outlined, accentColor: _accent),
+                if (_montantCtrl.text.isNotEmpty)
+                  CSummaryRow(label: 'Montant', value: '${_montantCtrl.text} FCFA', icon: Icons.payments_outlined, accentColor: _accent),
+              ],
+            ),
+            kGapLg,
+            CSection(
+              title: 'Lieu de signature',
+              icon: Icons.place_outlined,
+              accentColor: _accent,
+              children: [
+                // Obligatoire ici, contrairement aux autres contrats : le
+                // serveur exige ville_signature pour la prestation
+                // (contrats.validation.js, creerContratPrestationSchema).
+                CField(controller: _villeCtrl, label: 'Ville de signature', accentColor: _accent, icon: Icons.location_city_outlined, hint: 'Ex: Dakar, Abidjan…'),
+              ],
+            ),
+            kGapLg,
+            CSection(
+              title: 'Signature',
+              icon: Icons.draw_outlined,
+              accentColor: _accent,
+              subtitle: 'Signez pour valider la création du contrat',
+              children: [
+                CSignatureSection(image: _signatureImage, onTap: _openSignaturePad, accentColor: _accent),
+              ],
+            ),
+                  ],
+        ),
       ),
     );
   }

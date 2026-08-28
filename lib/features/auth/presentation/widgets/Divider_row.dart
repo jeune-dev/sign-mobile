@@ -1,6 +1,6 @@
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class DividerRow extends StatelessWidget {
   final String title;
@@ -23,7 +23,7 @@ class DividerRow extends StatelessWidget {
               softWrap: false,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: GoogleFonts.plusJakartaSans(
+              style: AppTypo.jakarta(
                 color: AppColor.kGrayscale40,
                 fontWeight: FontWeight.w500,
                 fontSize: 14,

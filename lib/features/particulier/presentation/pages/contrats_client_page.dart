@@ -9,6 +9,7 @@ import '../bloc/particulier_event.dart';
 import '../bloc/particulier_state.dart';
 import '../../domain/entities/particulier_contrat.dart';
 import 'detail_contrat_client_page.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 // Types de contrats disponibles pour le particulier.
 // contrat-travail et contrat-bail sont des features séparées — pas dans ContratType.
@@ -200,9 +201,9 @@ class _ContratsClientPageState extends State<ContratsClientPage> {
               child: Icon(Icons.error_outline_rounded, color: Colors.red.shade400, size: 32),
             ),
             const SizedBox(height: 16),
-            const Text('Impossible de charger', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: Color(0xFF111827))),
+            const Text('Impossible de charger', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: AppColor.kTexte)),
             const SizedBox(height: 6),
-            Text(message, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13), textAlign: TextAlign.center),
+            Text(message, style: const TextStyle(color: AppColor.kTexteMoyen, fontSize: 13), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -282,7 +283,7 @@ class _ContratCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColor.kBordure),
           boxShadow: [
             BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
           ],
@@ -302,14 +303,14 @@ class _ContratCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(contrat.numeroContrat, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF111827))),
+                  Text(contrat.numeroContrat, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColor.kTexte)),
                   const SizedBox(height: 2),
-                  Text(contrat.typeLabel, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                  Text(contrat.typeLabel, style: const TextStyle(fontSize: 12, color: AppColor.kTexteMoyen)),
                   if (contrat.generateurNom != null || contrat.generateurEntreprise != null) ...[
                     const SizedBox(height: 1),
                     Text(
                       contrat.generateurEntreprise ?? contrat.generateurNom ?? '',
-                      style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                      style: const TextStyle(fontSize: 11, color: AppColor.kTexteFaible),
                     ),
                   ],
                   const SizedBox(height: 6),
@@ -333,9 +334,9 @@ class _ContratCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Column(mainAxisSize: MainAxisSize.min, children: [
-              if (date.isNotEmpty) Text(date, style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+              if (date.isNotEmpty) Text(date, style: const TextStyle(fontSize: 11, color: AppColor.kTexteFaible)),
               const SizedBox(height: 4),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF), size: 20),
+              const Icon(Icons.chevron_right_rounded, color: AppColor.kTexteFaible, size: 20),
             ]),
           ],
         ),

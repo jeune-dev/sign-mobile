@@ -13,6 +13,13 @@ class ContratBail extends Equatable {
   final List<dynamic>? locataires;
   final Map<String, dynamic>? proprietaire;
 
+  /// 'envoye' si je suis a l'origine du document, 'recu' s'il m'est adresse.
+  ///
+  /// Renseigne par le backend : lui seul connait l'utilisateur courant. Sans
+  /// cette information, un document recu se confondait avec un document emis.
+  final String? direction;
+
+
   const ContratBail({
     required this.id,
     this.numeroContrat,
@@ -25,8 +32,11 @@ class ContratBail extends Equatable {
     this.dateDebutBail,
     this.locataires,
     this.proprietaire,
+    this.direction,
   });
 
+  bool get estRecu => direction == 'recu';
+
   @override
-  List<Object?> get props => [id, numeroContrat];
+  List<Object?> get props => [id, numeroContrat, direction];
 }

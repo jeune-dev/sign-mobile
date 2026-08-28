@@ -1,4 +1,5 @@
 import 'package:sign_application/features/autres_contrats/domain/entities/autre_contrat.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class AutresContratsState {}
 
@@ -20,7 +21,12 @@ class AutresContratsDetailLoaded extends AutresContratsState {
 
 class AutresContratsSuccess extends AutresContratsState {
   final String message;
-  AutresContratsSuccess({this.message = 'Opération réussie'});
+
+  /// Document tout juste cree, quand l'operation en a produit un.
+  /// Null pour une signature ou toute autre operation sans nouveau document.
+  final DocumentCree? documentCree;
+
+  AutresContratsSuccess({this.message = 'Opération réussie', this.documentCree});
 }
 
 class AutresContratsBytes extends AutresContratsState {

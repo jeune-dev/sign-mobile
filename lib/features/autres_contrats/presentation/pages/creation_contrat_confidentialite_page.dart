@@ -11,6 +11,11 @@ import '../widgets/client_search_field.dart';
 import '../widgets/contrat_form_widgets.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/autres_contrats/domain/usecases/telecharger_autre_contrat.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
+import 'package:sign_application/injection_container.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 
 class CreationContratConfidentialitePage extends StatefulWidget {
   const CreationContratConfidentialitePage({super.key});
@@ -20,17 +25,29 @@ class CreationContratConfidentialitePage extends StatefulWidget {
 }
 
 class _State extends State<CreationContratConfidentialitePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Prerempli la section « Vos informations » pendant que
+    // l'utilisateur remplit les premieres etapes.
+    _emetteur.charger();
+  }
+
   int _step = 0;
   static const int _totalSteps = 3;
   static const _steps = ['Partie', 'Confidentialité', 'Détails'];
 
-  static const _accent = Color(0xFF1A1A1A);
+  static const _accent = AppColor.kTexte;
   static const _icon   = Icons.lock_outline;
   static const _titre  = 'Accord de confidentialité';
 
   final _formKey1 = GlobalKey<FormState>();
 
   Client? _client;
+
+  /// Informations qui figureront sur le document : preremplies depuis le
+  /// profil, modifiables, et figees avec le document cote serveur.
+  final _emetteur = ControleurEmetteur();
 
   final _typeInfoCtrl  = TextEditingController();
   final _dureeCtrl     = TextEditingController();
@@ -44,6 +61,7 @@ class _State extends State<CreationContratConfidentialitePage> {
 
   @override
   void dispose() {
+    _emetteur.dispose();
     _typeInfoCtrl.dispose(); _dureeCtrl.dispose(); _sanctionsCtrl.dispose();
     _documentsCtrl.dispose(); _personnesCtrl.dispose(); _villeCtrl.dispose();
     super.dispose();
@@ -86,6 +104,9 @@ class _State extends State<CreationContratConfidentialitePage> {
         if (_villeCtrl.text.trim().isNotEmpty) 'ville_signature': _villeCtrl.text.trim(),
       },
       'signature_generateur': sigBase64,
+      // Ce qui sera imprime sur le contrat. Le serveur fige ces valeurs :
+      // une regeneration a la signature produira le meme document.
+      'emetteur': _emetteur.valeursPourEnvoi(),
     }));
   }
 
@@ -101,8 +122,8 @@ class _State extends State<CreationContratConfidentialitePage> {
   Color get _niveauColor {
     switch (_niveauConf) {
       case 'faible': return Color(0xFFA1A1AA);
-      case 'élevé':  return Color(0xFF1A1A1A);
-      default:       return Color(0xFF6B7280);
+      case 'élevé':  return AppColor.kTexte;
+      default:       return AppColor.kTexteMoyen;
     }
   }
 
@@ -114,7 +135,22 @@ class _State extends State<CreationContratConfidentialitePage> {
         listener: (ctx, state) {
           if (state is AutresContratsSuccess) {
             showToast(ctx, 'Contrat créé', 'Le contrat de confidentialité a été créé avec succès.', ToastificationType.success);
-            Navigator.pop(ctx);
+            // Le document est montre a l'utilisateur avant tout retour
+            // a la liste (§ 9), puis le parcours reprend la main (§ 10).
+            afficherDocumentGenere(
+              ctx,
+              libelle: 'accord de confidentialité',
+              feminin: false,
+              document: state.documentCree,
+              telecharger: (id) async {
+                final resultat = await sl<TelechargerAutreContrat>()(
+                    ContratType.confidentialite.apiValue, id);
+                return resultat.fold(
+                  (echec) => throw Exception(echec.errorMessage),
+                  (octets) => octets,
+                );
+              },
+            );
           }
           if (state is AutresContratsError) _showError(state.message);
         },
@@ -219,69 +255,79 @@ class _State extends State<CreationContratConfidentialitePage> {
 
   Widget _step1() => Form(
     key: _formKey1,
-    child: ListView(
+    // SingleChildScrollView et non ListView : un ListView ne monte que les
+    // sections visibles, et un TextFormField demonte n est plus rattache au
+    // Form — validate() laissait alors passer des champs obligatoires vides.
+    child: SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-      children: [
-        CSection(
-          title: 'Informations protégées',
-          icon: Icons.lock_outline,
-          accentColor: _accent,
-          children: [
-            CField(controller: _typeInfoCtrl, label: "Type d'informations confidentielles", accentColor: _accent,
-                hint: 'Ex: données financières, code source, plans stratégiques…', icon: Icons.info_outline),
-            kGap,
-            // Niveau selector (chips)
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              _buildLabel('Niveau de confidentialité', required: true),
-              const SizedBox(height: 8),
-              Row(children: [
-                _levelChip('faible', 'Faible', Color(0xFFA1A1AA)),
-                const SizedBox(width: 8),
-                _levelChip('moyen', 'Moyen', Color(0xFF6B7280)),
-                const SizedBox(width: 8),
-                _levelChip('élevé', 'Élevé', Color(0xFF1A1A1A)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CSection(
+            title: 'Informations protégées',
+            icon: Icons.lock_outline,
+            accentColor: _accent,
+            children: [
+              CField(controller: _typeInfoCtrl, label: "Type d'informations confidentielles", accentColor: _accent,
+                  hint: 'Ex: données financières, code source, plans stratégiques…', icon: Icons.info_outline),
+              kGap,
+              // Niveau selector (chips)
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _buildLabel('Niveau de confidentialité', required: true),
+                const SizedBox(height: 8),
+                Row(children: [
+                  _levelChip('faible', 'Faible', Color(0xFFA1A1AA)),
+                  const SizedBox(width: 8),
+                  _levelChip('moyen', 'Moyen', AppColor.kTexteMoyen),
+                  const SizedBox(width: 8),
+                  _levelChip('élevé', 'Élevé', AppColor.kTexte),
+                ]),
+                const SizedBox(height: 8),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _niveauColor.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    _niveauConf == 'faible'
+                        ? 'Informations générales non critiques — divulgation peu préjudiciable.'
+                        : _niveauConf == 'moyen'
+                            ? 'Informations sensibles — divulgation pourrait nuire aux activités.'
+                            : 'Informations hautement sensibles — divulgation pourrait causer un préjudice grave.',
+                    style: TextStyle(fontSize: 11, color: _niveauColor, height: 1.4),
+                  ),
+                ),
               ]),
-              const SizedBox(height: 8),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _niveauColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  _niveauConf == 'faible'
-                      ? 'Informations générales non critiques — divulgation peu préjudiciable.'
-                      : _niveauConf == 'moyen'
-                          ? 'Informations sensibles — divulgation pourrait nuire aux activités.'
-                          : 'Informations hautement sensibles — divulgation pourrait causer un préjudice grave.',
-                  style: TextStyle(fontSize: 11, color: _niveauColor, height: 1.4),
-                ),
-              ),
-            ]),
-          ],
-        ),
-        kGapLg,
-        CSection(
-          title: 'Engagement',
-          icon: Icons.gavel_outlined,
-          accentColor: _accent,
-          subtitle: 'Durée et sanctions applicables',
-          children: [
-            CDurationField(controller: _dureeCtrl, label: 'Durée de confidentialité', accentColor: _accent,
-                icon: Icons.timer_outlined, autoriserIndetermine: true),
-            kGap,
-            CField(controller: _sanctionsCtrl, label: 'Sanctions en cas de violation', accentColor: _accent,
-                maxLines: 3, hint: 'Ex: dommages et intérêts, résiliation immédiate, poursuites judiciaires…'),
-          ],
-        ),
-      ],
+            ],
+          ),
+          kGapLg,
+          CSection(
+            title: 'Engagement',
+            icon: Icons.gavel_outlined,
+            accentColor: _accent,
+            subtitle: 'Durée et sanctions applicables',
+            children: [
+              CDurationField(controller: _dureeCtrl, label: 'Durée de confidentialité', accentColor: _accent,
+                  icon: Icons.timer_outlined, autoriserIndetermine: true),
+              kGap,
+              CField(controller: _sanctionsCtrl, label: 'Sanctions en cas de violation', accentColor: _accent,
+                  maxLines: 3, hint: 'Ex: dommages et intérêts, résiliation immédiate, poursuites judiciaires…'),
+            ],
+          ),
+              ],
+      ),
     ),
   );
 
   Widget _step2() => ListView(
     padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
     children: [
+      // Ce qui figurera sur le document : prerempli depuis le profil,
+      // modifiable, et fige avec le document cote serveur.
+      SectionEmetteur(controleur: _emetteur, titre: 'Vos informations'),
+      const SizedBox(height: 20),
       CSection(
         title: 'Périmètre précis',
         icon: Icons.article_outlined,

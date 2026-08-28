@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:toastification/toastification.dart';
 import '../../../../core/widgets/toastNotif.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -74,10 +75,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       width: 88,
                       height: 88,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
+                        color: AppColor.kNeutreClair,
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: const Icon(Icons.lock_reset_rounded, size: 44, color: Color(0xFF111827)),
+                      child: const Icon(Icons.lock_reset_rounded, size: 44, color: AppColor.kTexte),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -85,16 +86,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   // ── Titre ──────────────────────────────────────────────────
                   Text(
                     'Mot de passe oublié ?',
-                    style: GoogleFonts.plusJakartaSans(
+                    style: AppTypo.jakarta(
                       fontSize: 26, fontWeight: FontWeight.w800,
-                      color: const Color(0xFF111827), letterSpacing: -0.5,
+                      color: AppColor.kTexte, letterSpacing: -0.5,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Entrez votre adresse email et nous vous enverrons un code de réinitialisation.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15, color: const Color(0xFF6B7280), height: 1.5,
+                    style: AppTypo.jakarta(
+                      fontSize: 15, color: AppColor.kTexteMoyen, height: 1.5,
                     ),
                   ),
                   const SizedBox(height: 36),
@@ -102,8 +103,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                   // ── Champ email ────────────────────────────────────────────
                   Text(
                     'Adresse email',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF111827),
+                    style: AppTypo.jakarta(
+                      fontSize: 13, fontWeight: FontWeight.w600, color: AppColor.kTexte,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -112,17 +113,17 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _submit(),
-                    style: GoogleFonts.plusJakartaSans(fontSize: 15, color: const Color(0xFF111827)),
+                    style: AppTypo.jakarta(fontSize: 15, color: AppColor.kTexte),
                     decoration: InputDecoration(
                       hintText: 'exemple@email.com',
-                      hintStyle: GoogleFonts.plusJakartaSans(fontSize: 15, color: const Color(0xFF9CA3AF)),
-                      prefixIcon: const Icon(Icons.email_outlined, color: Color(0xFF6B7280), size: 20),
+                      hintStyle: AppTypo.jakarta(fontSize: 15, color: AppColor.kTexteFaible),
+                      prefixIcon: const Icon(Icons.email_outlined, color: AppColor.kTexteMoyen, size: 20),
                       filled: true,
-                      fillColor: const Color(0xFFF8F8FA),
+                      fillColor: AppColor.kChamp,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF111827), width: 1.5)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColor.kTexte, width: 1.5)),
                       errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
                       focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Colors.redAccent, width: 1.5)),
                     ),
@@ -155,7 +156,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text('Envoyer le code', style: GoogleFonts.plusJakartaSans(fontSize: 16, fontWeight: FontWeight.w700)),
+                                    Text('Envoyer le code', style: AppTypo.jakarta(fontSize: 16, fontWeight: FontWeight.w700)),
                                     const SizedBox(width: 8),
                                     const Icon(Icons.send_rounded, size: 18),
                                   ],
@@ -171,8 +172,8 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       onPressed: () => Navigator.of(context).pop(),
                       child: Text(
                         'Retour à la connexion',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF111827),
+                        style: AppTypo.jakarta(
+                          fontSize: 14, fontWeight: FontWeight.w600, color: AppColor.kTexte,
                         ),
                       ),
                     ),

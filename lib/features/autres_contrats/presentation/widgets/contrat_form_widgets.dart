@@ -5,16 +5,28 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:signature/signature.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
+import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/theme/app_dimensions.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
+import 'package:sign_application/core/widgets/app_champ_texte.dart';
+import 'package:sign_application/core/widgets/app_entete_formulaire.dart';
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
-const double kCardRadius   = 20.0;
-const double kFieldRadius  = 14.0;
-const Color  kBgColor      = Color(0xFFF4F6FB);
-const Color  kCardColor    = Colors.white;
-const Color  kLabelColor   = Color(0xFF6B7280);
-const Color  kValueColor   = Color(0xFF111827);
-const Color  kBorderColor  = Color(0xFFE5E7EB);
-const Color  kSubtleColor  = Color(0xFFF9FAFB);
+//
+// Ces constantes ne définissent plus de valeurs propres : elles pointent vers
+// le système partagé (`core/theme`). Les formulaires de contrats avaient
+// dérivé — rayon 14 contre 12, fond #F9FAFB contre #F8F8FA, libellés 12 px
+// contre 13 — et l'écart se voyait en passant d'un écran à l'autre.
+//
+// Elles restent exposées pour ne pas réécrire les pages qui les utilisent.
+const double kCardRadius   = AppRayon.carte;
+const double kFieldRadius  = AppRayon.champ;
+const Color  kBgColor      = AppColor.kFond;
+const Color  kCardColor    = AppColor.kSurface;
+const Color  kLabelColor   = AppColor.kTexteMoyen;
+const Color  kValueColor   = AppColor.kTexte;
+const Color  kBorderColor  = AppColor.kBordure;
+const Color  kSubtleColor  = AppColor.kChamp;
 
 List<BoxShadow> get kCardShadow => [
   BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 4)),
@@ -147,80 +159,21 @@ class CFormHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final top = MediaQuery.of(context).padding.top;
-    return Container(
-      color: Colors.black,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top row: back + title + badge
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, top + 14, 20, 16),
-            child: Row(
-              children: [
-                GestureDetector(
-                  onTap: onBack,
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                    ),
-                    child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        titre,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        stepSubtitle,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: accentColor, size: 18),
-                ),
-              ],
-            ),
-          ),
-          // Step bar
-          CStepBar(
-            currentStep: currentStep,
-            totalSteps: totalSteps,
-            labels: stepLabels,
-            accentColor: accentColor,
-          ),
-        ],
-      ),
+    // Rendu délégué à la barre partagée : les écrans de contrats, de facture
+    // et de fiche de paie affichaient trois en-têtes différents. La signature
+    // de ce composant est conservée pour ne pas réécrire les pages.
+    return AppEnteteFormulaire(
+      titre: titre,
+      sousTitre: stepSubtitle,
+      icone: icon,
+      accent: accentColor,
+      onRetour: onBack,
+      etapeCourante: currentStep,
+      totalEtapes: totalSteps,
+      libellesEtapes: stepLabels,
     );
   }
 }
-
-// ─── Section card ─────────────────────────────────────────────────────────────
 
 class CSection extends StatelessWidget {
   final String title;
@@ -915,13 +868,19 @@ class CBottomBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(color: kBorderColor),
                 ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.arrow_back_rounded, size: 18, color: kValueColor),
-                    SizedBox(width: 6),
-                    Text('Retour', style: TextStyle(fontWeight: FontWeight.w600, color: kValueColor, fontSize: 14)),
-                  ],
+                // FittedBox : avec une police systeme agrandie, « Retour »
+                // s elargit et vole la place du bouton principal au lieu de
+                // s adapter.
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.arrow_back_rounded, size: 18, color: kValueColor),
+                      SizedBox(width: 6),
+                      Text('Retour', maxLines: 1, style: TextStyle(fontWeight: FontWeight.w600, color: kValueColor, fontSize: 14)),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -947,20 +906,32 @@ class CBottomBar extends StatelessWidget {
                 child: Center(
                   child: isLoading
                       ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5))
-                      : Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              isLast ? submitLabel : 'Suivant',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+                      // Le libelle est libre (« Créer le contrat de
+                      // confidentialite » fait plus du double de « Suivant ») et
+                      // la place restante depend du bouton Retour : sans
+                      // FittedBox, le Row debordait de la barre. Reduire un peu
+                      // le texte vaut mieux que le tronquer.
+                      : Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  isLast ? submitLabel : 'Suivant',
+                                  maxLines: 1,
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  isLast ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              isLast ? Icons.check_rounded : Icons.arrow_forward_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                          ],
+                          ),
                         ),
                 ),
               ),
@@ -989,33 +960,46 @@ class _CLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RichText(
-      text: TextSpan(
-        text: label,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kLabelColor),
-        children: required
-            ? [TextSpan(text: '  *', style: TextStyle(color: accentColor, fontWeight: FontWeight.w800))]
-            : [],
-      ),
+    // Même convention que le reste de l'application : plutôt qu'une étoile sur
+    // les champs requis — qui finit par en couvrir l'écran — on signale les
+    // rares champs facultatifs.
+    return Row(
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: AppTypo.jakarta(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColor.kTexte,
+            ),
+          ),
+        ),
+        if (!required) ...[
+          const SizedBox(width: AppEspace.s),
+          Text(
+            'facultatif',
+            style: AppTypo.jakarta(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w500,
+              color: AppColor.kTexteFaible,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
 
-InputDecoration _fieldDec(String? hint, IconData? icon, Color accentColor) => InputDecoration(
-  hintText: hint,
-  hintStyle: const TextStyle(color: kLabelColor, fontSize: 14),
-  filled: true,
-  fillColor: kSubtleColor,
-  prefixIcon: icon != null
-      ? Icon(icon, color: accentColor, size: 18)
-      : null,
-  border: OutlineInputBorder(borderRadius: BorderRadius.circular(kFieldRadius), borderSide: const BorderSide(color: kBorderColor)),
-  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kFieldRadius), borderSide: const BorderSide(color: kBorderColor)),
-  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kFieldRadius), borderSide: BorderSide(color: accentColor, width: 1.5)),
-  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kFieldRadius), borderSide: const BorderSide(color: Colors.red)),
-  focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(kFieldRadius), borderSide: const BorderSide(color: Colors.red, width: 1.5)),
-  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-);
+/// Décoration des champs de contrat.
+///
+/// Délègue entièrement au composant partagé : un champ de contrat est
+/// désormais identique à un champ d'inscription ou de profil. La couleur
+/// d'accent du type de contrat reste sur les en-têtes et les icônes de
+/// section, mais plus sur les bordures de saisie — c'est ce qui donnait
+/// l'impression de sept applications différentes.
+InputDecoration _fieldDec(String? hint, IconData? icon, Color accentColor) =>
+    AppChampTexte.decoration(indication: hint, icone: icon);
 
 // ─── Date picker helper ───────────────────────────────────────────────────────
 
@@ -1071,9 +1055,9 @@ Future<File?> openSignaturePad(BuildContext context) async {
               width: padWidth,
               height: 180,
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F8FA),
+                color: AppColor.kChamp,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: AppColor.kBordure),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
@@ -1085,17 +1069,17 @@ Future<File?> openSignaturePad(BuildContext context) async {
               ),
             ),
             const SizedBox(height: 8),
-            const Text('Dessinez votre signature ci-dessus', style: TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+            const Text('Dessinez votre signature ci-dessus', style: TextStyle(fontSize: 11, color: AppColor.kTexteMoyen)),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => controller.clear(),
-            child: const Text('Effacer', style: TextStyle(color: Color(0xFF6B7280))),
+            child: const Text('Effacer', style: TextStyle(color: AppColor.kTexteMoyen)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler', style: TextStyle(color: Color(0xFF6B7280))),
+            child: const Text('Annuler', style: TextStyle(color: AppColor.kTexteMoyen)),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1158,9 +1142,9 @@ class CSignatureSection extends StatelessWidget {
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              color: const Color(0xFFF8F8FA),
+              color: AppColor.kChamp,
               border: Border.all(
-                color: image != null ? accentColor : const Color(0xFFE5E7EB),
+                color: image != null ? accentColor : AppColor.kBordure,
                 width: image != null ? 2 : 1,
               ),
             ),

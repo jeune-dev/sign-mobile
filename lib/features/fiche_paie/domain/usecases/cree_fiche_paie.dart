@@ -7,8 +7,11 @@ class CreerFichePaie {
   final FichePaieRepository repository;
   CreerFichePaie(this.repository);
 
-  Future<Either<Failure, FichePaie>> call(FichePaie fiche) =>
-      repository.creerFichePaie(fiche);
+  Future<Either<Failure, FichePaie>> call(
+    FichePaie fiche, {
+    Map<String, dynamic>? emetteur,
+  }) =>
+      repository.creerFichePaie(fiche, emetteur: emetteur);
 }
 
 class GetFichesPaie {

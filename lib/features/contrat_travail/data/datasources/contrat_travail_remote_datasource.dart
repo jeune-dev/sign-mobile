@@ -2,11 +2,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_application/core/config/env.dart';
 import '../models/contrat_travail_model.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class ContratTravailRemoteDataSource {
   Future<List<ContratTravailModel>> getContratsTravail({int page, int limit});
   Future<ContratTravailModel> getContratTravailDetail(String contratId);
-  Future<void> creerContratTravail(Map<String, dynamic> data);
+  Future<DocumentCree> creerContratTravail(Map<String, dynamic> data);
   Future<void> signerContratTravail(String contratId, String signature);
   Future<List<int>> telechargerContratTravail(String contratId);
   Future<Map<String, int>> getStatsTravail();
@@ -56,7 +57,7 @@ class ContratTravailRemoteDataSourceImpl implements ContratTravailRemoteDataSour
   }
 
   @override
-  Future<void> creerContratTravail(Map<String, dynamic> data) async {
+  Future<DocumentCree> creerContratTravail(Map<String, dynamic> data) async {
     // Backend attend : { salarieId, signature_employeur, data: { ...reste } }
     final salarieId          = data.remove('salarieId');
     final signatureEmployeur = data.remove('signature_employeur') ?? '';
@@ -66,7 +67,10 @@ class ContratTravailRemoteDataSourceImpl implements ContratTravailRemoteDataSour
       'signature_employeur': signatureEmployeur,
       'data':                data,
     };
-    await dio.post(Env.contratTravailCreer, data: body);
+    // La reponse porte le document cree : on en retient
+    // l'identifiant et le numero pour l'ecran de confirmation (§ 9).
+    final reponse = await dio.post(Env.contratTravailCreer, data: body);
+    return DocumentCree.depuisReponse(reponse.data);
   }
 
   @override

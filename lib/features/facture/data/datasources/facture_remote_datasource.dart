@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:sign_application/core/config/env.dart';
 import '../models/facture_model.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 /// Résultat paginé retourné par le backend
 class FacturesResult {
@@ -21,7 +22,7 @@ class FacturesResult {
 
 abstract class FactureRemoteDataSource {
   Future<FacturesResult> getFactures({int page, int limit});
-  Future<void> creerFacture(Map<String, dynamic> data);
+  Future<DocumentCree> creerFacture(Map<String, dynamic> data);
   Future<List<int>> ouvrirDocument(String documentId);
   Future<Map<String, dynamic>> mettreAJourFacture({
     required String documentId,
@@ -60,8 +61,11 @@ class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
   }
 
   @override
-  Future<void> creerFacture(Map<String, dynamic> data) async {
-    await dio.post(Env.documentCreer, data: data);
+  Future<DocumentCree> creerFacture(Map<String, dynamic> data) async {
+    final reponse = await dio.post(Env.documentCreer, data: data);
+    // La reponse porte la facture creee : on en retient l'identifiant et le
+    // numero pour l'ecran de confirmation (§ 9).
+    return DocumentCree.depuisReponse(reponse.data);
   }
 
   @override

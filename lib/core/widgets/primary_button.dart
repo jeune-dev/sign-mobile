@@ -3,7 +3,7 @@
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 class PrimaryButton extends StatefulWidget {
   final VoidCallback onTap;
   final String text;
@@ -90,7 +90,7 @@ class _PrimaryButtonState extends State<PrimaryButton>
             ),
             child: widget.child ?? Text(
               widget.text,
-              style: GoogleFonts.plusJakartaSans(
+              style: AppTypo.jakarta(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: AppColor.kWhite)

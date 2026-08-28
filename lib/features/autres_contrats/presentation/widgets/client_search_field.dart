@@ -4,6 +4,8 @@ import 'package:sign_application/features/client/domain/entities/client.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_bloc.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_event.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_state.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/autre_partie_sheet.dart';
+import 'package:sign_application/core/validation/identifiant_validator.dart';
 
 class ClientSearchField extends StatefulWidget {
   final String label;
@@ -22,6 +24,70 @@ class ClientSearchField extends StatefulWidget {
 class _ClientSearchFieldState extends State<ClientSearchField> {
   final TextEditingController _searchCtrl = TextEditingController();
   Client? _selectedClient;
+
+  /// Vrai quand la saisie constitue un critère de recherche complet.
+  /// C'est la condition d'affichage des résultats : tant qu'elle est fausse,
+  /// aucune liste n'apparaît.
+  bool _critereComplet = false;
+
+  /// Aide affichée sous le champ, adaptée à ce que l'utilisateur est en train
+  /// de taper.
+  String? _aideSaisie = 'E-mail, numéro de téléphone, ou nom et prénom';
+
+  /// Décide si la saisie est exploitable, et sous quelle forme l'envoyer.
+  ///
+  /// La recherche accepte les trois critères, mais aucun résultat n'est
+  /// affiché tant que le critère n'est pas complet : chercher dès le premier
+  /// caractère afficherait une partie du répertoire — des coordonnées de
+  /// tiers — à qui tape une seule lettre.
+  ({bool complet, String? terme, String? aide}) _analyser(String saisie) {
+    final texte = saisie.trim();
+    if (texte.isEmpty) {
+      return (complet: false, terme: null, aide: 'E-mail, numéro de téléphone, ou nom et prénom');
+    }
+
+    // E-mail : reconnu dès la présence d'un @, complet quand la syntaxe l'est.
+    if (texte.contains('@')) {
+      final resultat = IdentifiantValidator.email(texte);
+      return (
+        complet: resultat.estAcceptable,
+        terme: resultat.valeur ?? texte,
+        aide: resultat.estAcceptable ? null : 'Saisissez l’adresse e-mail complète',
+      );
+    }
+
+    // Téléphone : dès que la saisie ne contient que des chiffres et des
+    // signes de numéro, on attend le numéro entier.
+    if (RegExp(r'^[0-9+\s.\-()]+$').hasMatch(texte)) {
+      final resultat = IdentifiantValidator.telephone(texte);
+      return (
+        complet: resultat.estAcceptable,
+        terme: resultat.valeur ?? texte,
+        aide: resultat.estAcceptable ? null : resultat.message,
+      );
+    }
+
+    // Nom : on exige le nom ET le prénom, comme la recherche de l'autre
+    // partie côté backend — un prénom seul ramènerait trop de monde.
+    final mots = texte.split(RegExp(r'\s+')).where((m) => m.length >= 2).toList();
+    if (mots.length < 2) {
+      return (complet: false, terme: null, aide: 'Saisissez le nom ET le prénom');
+    }
+    return (complet: true, terme: texte, aide: null);
+  }
+
+  void _surSaisie(String saisie) {
+    final analyse = _analyser(saisie);
+    if (analyse.complet != _critereComplet || analyse.aide != _aideSaisie) {
+      setState(() {
+        _critereComplet = analyse.complet;
+        _aideSaisie = analyse.aide;
+      });
+    }
+    if (analyse.complet && analyse.terme != null) {
+      context.read<ClientBloc>().add(RechercherClientsEvent(analyse.terme!));
+    }
+  }
 
   @override
   void dispose() {
@@ -54,17 +120,29 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () => setState(() => _selectedClient = null),
+                  onTap: () => setState(() {
+                    _selectedClient = null;
+                    _critereComplet = false;
+                    _aideSaisie = 'E-mail, numéro de téléphone, ou nom et prénom';
+                    _searchCtrl.clear();
+                  }),
                   child: const Icon(Icons.close, color: Colors.white70, size: 18),
                 ),
               ],
             ),
           )
         else ...[
+          // Recherche par e-mail, numéro de téléphone, ou nom et prénom.
+          // Les résultats n'apparaissent qu'une fois le critère complet —
+          // voir _analyser().
           TextField(
             controller: _searchCtrl,
+            keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
-              hintText: 'Rechercher un client...',
+              hintText: 'E-mail, téléphone, ou nom et prénom',
+              helperText: _aideSaisie,
+              helperStyle: const TextStyle(fontSize: 11.5),
+              helperMaxLines: 2,
               prefixIcon: const Icon(Icons.search, color: Colors.grey),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               focusedBorder: OutlineInputBorder(
@@ -73,20 +151,20 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
             ),
-            onChanged: (v) {
-              if (v.length >= 2) {
-                context.read<ClientBloc>().add(RechercherClientsEvent(v));
-              }
-            },
+            onChanged: _surSaisie,
           ),
           BlocBuilder<ClientBloc, ClientState>(
             builder: (context, state) {
-              if (state is ClientLoading && _searchCtrl.text.length >= 2) {
+              if (state is ClientLoading && _critereComplet) {
                 return const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: LinearProgressIndicator(color: Colors.black),
                 );
               }
+              // Tant que le critère est incomplet, aucun résultat n'est
+              // affiché — même si le bloc en porte encore d'une saisie
+              // précédente.
+              if (!_critereComplet) return const SizedBox.shrink();
               if (state is ClientsRechercheLoaded && state.clients.isNotEmpty) {
                 return Container(
                   margin: const EdgeInsets.only(top: 4),
@@ -123,8 +201,36 @@ class _ClientSearchFieldState extends State<ClientSearchField> {
               return const SizedBox.shrink();
             },
           ),
+          // § 8 : la personne n'est pas dans mes clients. On la cherche alors
+          // dans tout SIGNS (préremplissage automatique si elle a un compte),
+          // ou on l'invite à en créer un.
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _ouvrirRechercheGlobale,
+              icon: const Icon(Icons.person_search_outlined, size: 18),
+              label: const Text(
+                'Cette personne n’est pas dans ma liste',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+            ),
+          ),
         ],
       ],
     );
+  }
+
+  /// Ouvre la recherche globale SIGNS (§ 8). Si une personne est retenue,
+  /// elle est traitée exactement comme un client sélectionné.
+  Future<void> _ouvrirRechercheGlobale() async {
+    final partie = await AutrePartieSheet.afficher(context);
+    if (partie == null || !mounted) return;
+    setState(() => _selectedClient = partie);
+    _searchCtrl.clear();
+    widget.onClientSelected(partie);
   }
 }

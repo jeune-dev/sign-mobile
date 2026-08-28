@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'app_color.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 
 class AppTheme {
   AppTheme._();
@@ -25,7 +25,7 @@ class AppTheme {
         backgroundColor: AppColor.kWhite,
         foregroundColor: AppColor.kGrayscaleDark100,
         elevation: 0,
-        titleTextStyle: GoogleFonts.plusJakartaSans(
+        titleTextStyle: AppTypo.jakarta(
           color: AppColor.kGrayscaleDark100,
           fontWeight: FontWeight.w600,
           fontSize: 18,
@@ -37,7 +37,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColor.kPrimary,
           foregroundColor: AppColor.kWhite,
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: AppTypo.jakarta(
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -52,7 +52,7 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColor.kPrimary,
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: AppTypo.jakarta(
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -67,7 +67,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: AppColor.kPrimary,
-          textStyle: GoogleFonts.plusJakartaSans(
+          textStyle: AppTypo.jakarta(
             fontWeight: FontWeight.w500,
             fontSize: 14,
           ),
@@ -78,12 +78,12 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColor.kBackground,
-        hintStyle: GoogleFonts.plusJakartaSans(
+        hintStyle: AppTypo.jakarta(
           color: AppColor.kGrayscale40,
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
-        labelStyle: GoogleFonts.plusJakartaSans(
+        labelStyle: AppTypo.jakarta(
           color: AppColor.kGrayscaleDark100,
           fontWeight: FontWeight.w500,
         ),
@@ -104,7 +104,7 @@ class AppTheme {
       // 💬 SnackBar stylé
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColor.kGrayscaleDark100,
-        contentTextStyle: GoogleFonts.plusJakartaSans(
+        contentTextStyle: AppTypo.jakarta(
           color: Colors.white,
           fontSize: 14,
         ),
@@ -113,7 +113,7 @@ class AppTheme {
       ),
 
       // 📄 Typographie générale
-      textTheme: GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+      textTheme: AppTypo.theme(base.textTheme).apply(
         bodyColor: AppColor.kGrayscaleDark100,
         displayColor: AppColor.kGrayscaleDark100,
       ),

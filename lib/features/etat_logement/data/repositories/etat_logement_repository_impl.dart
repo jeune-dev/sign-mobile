@@ -4,6 +4,7 @@ import 'package:sign_application/core/errors/failure.dart';
 import '../../domain/entities/etat_logement.dart';
 import '../../domain/repositories/etat_logement_repository.dart';
 import '../datasources/etat_logement_remote_datasource.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 class EtatLogementRepositoryImpl implements EtatLogementRepository {
   final EtatLogementRemoteDataSource remoteDataSource;
@@ -35,13 +36,13 @@ class EtatLogementRepositoryImpl implements EtatLogementRepository {
   }
 
   @override
-  Future<Either<Failure, void>> creerEtatLogement(
+  Future<Either<Failure, DocumentCree>> creerEtatLogement(
     String contratId,
     Map<String, dynamic> data,
   ) async {
     try {
-      await remoteDataSource.creerEtatLogement(contratId, data);
-      return const Right(null);
+      final cree = await remoteDataSource.creerEtatLogement(contratId, data);
+      return Right(cree);
     } on DioException catch (e) {
       return Left(ServerFailure(errorMessage: _handleDioError(e)));
     } catch (e) {

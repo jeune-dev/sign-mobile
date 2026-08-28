@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sign_application/core/utils/download_helper.dart';
@@ -16,6 +17,8 @@ import '../bloc/quittance_loyer_event.dart';
 import '../bloc/quittance_loyer_state.dart';
 import '../../domain/entities/quittance_loyer.dart';
 import 'creation_quittance_page.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
+import 'package:sign_application/core/theme/app_color.dart';
 
 class QuittancesListePage extends StatefulWidget {
   // false côté client (destinataire) : pas de création, lecture seule.
@@ -77,17 +80,23 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F7),
+      backgroundColor: AppColor.kFond,
       floatingActionButton: widget.canCreate
           ? FloatingActionButton.extended(
-              backgroundColor: const Color(0xFF1A1A1A),
+              backgroundColor: AppColor.kTexte,
               foregroundColor: Colors.white,
               elevation: 4,
               icon: const Icon(Icons.add_rounded),
               label: const Text('Nouvelle', style: TextStyle(fontWeight: FontWeight.w700)),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const CreationQuittancePage()))
-                    .then((_) { if (context.mounted) context.read<QuittanceLoyerBloc>().add(LoadQuittances()); });
+              onPressed: () async {
+                await ParcoursDocument.ouvrir(
+                  context,
+                  typeDocument: TypeDocumentSigns.quittanceLoyer,
+                  page: (_) => const CreationQuittancePage(),
+                );
+                if (context.mounted) {
+                  context.read<QuittanceLoyerBloc>().add(LoadQuittances());
+                }
               },
             )
           : null,
@@ -157,7 +166,7 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
     final topPad = MediaQuery.of(context).padding.top;
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
+        color: AppColor.kTexte,
         borderRadius: BorderRadius.only(
           bottomLeft:  Radius.circular(28),
           bottomRight: Radius.circular(28),
@@ -235,25 +244,25 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1A1A1A) : Colors.white,
+            color: selected ? AppColor.kTexte : Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: selected ? const Color(0xFF1A1A1A) : const Color(0xFFE5E7EB)),
+            border: Border.all(color: selected ? AppColor.kTexte : AppColor.kBordure),
           ),
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text(label, style: TextStyle(
               fontSize: 12.5, fontWeight: FontWeight.w700,
-              color: selected ? Colors.white : const Color(0xFF374151),
+              color: selected ? Colors.white : AppColor.kTexteFort,
             )),
             const SizedBox(width: 6),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
-                color: selected ? Colors.white.withValues(alpha: 0.22) : const Color(0xFFF3F4F6),
+                color: selected ? Colors.white.withValues(alpha: 0.22) : AppColor.kNeutreClair,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text('$count', style: TextStyle(
                 fontSize: 11, fontWeight: FontWeight.w700,
-                color: selected ? Colors.white : const Color(0xFF6B7280),
+                color: selected ? Colors.white : AppColor.kTexteMoyen,
               )),
             ),
           ]),
@@ -269,7 +278,7 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
       const SizedBox(height: 12),
       Center(child: Text(
         _filtre == 'recus' ? 'Aucune quittance reçue' : 'Aucune quittance envoyée',
-        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColor.kTexteMoyen),
       )),
     ],
   );
@@ -290,13 +299,13 @@ class _QuittancesListePageState extends State<QuittancesListePage> {
           children: [
             Container(
               width: 64, height: 64,
-              decoration: const BoxDecoration(color: Color(0xFFF3F4F6), shape: BoxShape.circle),
-              child: const Icon(Icons.error_outline_rounded, color: Color(0xFF1A1A1A), size: 32),
+              decoration: const BoxDecoration(color: AppColor.kNeutreClair, shape: BoxShape.circle),
+              child: const Icon(Icons.error_outline_rounded, color: AppColor.kTexte, size: 32),
             ),
             const SizedBox(height: 16),
-            Text('Impossible de charger', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15, color: const Color(0xFF111827))),
+            Text('Impossible de charger', style: AppTypo.jakarta(fontWeight: FontWeight.w700, fontSize: 15, color: AppColor.kTexte)),
             const SizedBox(height: 6),
-            Text(message, style: GoogleFonts.plusJakartaSans(color: const Color(0xFF6B7280), fontSize: 13), textAlign: TextAlign.center),
+            Text(message, style: AppTypo.jakarta(color: AppColor.kTexteMoyen, fontSize: 13), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -366,7 +375,7 @@ class _QuittanceCard extends StatelessWidget {
           Container(
             width: 46, height: 46,
             decoration: BoxDecoration(
-              color: const Color(0xFF1a1a1a),
+              color: AppColor.kTexte,
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.receipt_long_rounded, color: Colors.white, size: 22),
@@ -380,7 +389,7 @@ class _QuittanceCard extends StatelessWidget {
                 Flexible(
                   child: Text(
                     quittance.numeroQuittance ?? 'Quittance #${quittance.id.substring(0, 8)}',
-                    style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14, color: const Color(0xFF111827)),
+                    style: AppTypo.jakarta(fontWeight: FontWeight.w800, fontSize: 14, color: AppColor.kTexte),
                     maxLines: 1, overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -403,22 +412,22 @@ class _QuittanceCard extends StatelessWidget {
               ]),
               if (quittance.adresseLogement != null) ...[
                 const SizedBox(height: 3),
-                Text(quittance.adresseLogement!, style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF6B7280)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(quittance.adresseLogement!, style: AppTypo.jakarta(fontSize: 12, color: AppColor.kTexteMoyen), maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
               const SizedBox(height: 6),
               Row(children: [
                 if (quittance.mois != null && quittance.annee != null) ...[
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: const Color(0xFFF3F4F6), borderRadius: BorderRadius.circular(8)),
-                    child: Text('${quittance.mois} ${quittance.annee}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
+                    decoration: BoxDecoration(color: AppColor.kNeutreClair, borderRadius: BorderRadius.circular(8)),
+                    child: Text('${quittance.mois} ${quittance.annee}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColor.kTexteFort)),
                   ),
                   const SizedBox(width: 8),
                 ],
-                Text(montant, style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13, color: const Color(0xFF111827))),
+                Text(montant, style: AppTypo.jakarta(fontWeight: FontWeight.w700, fontSize: 13, color: AppColor.kTexte)),
               ]),
               const SizedBox(height: 4),
-              Text(locataireNom, style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF9CA3AF))),
+              Text(locataireNom, style: AppTypo.jakarta(fontSize: 11, color: AppColor.kTexteFaible)),
             ]),
           ),
           const SizedBox(width: 8),
@@ -451,14 +460,14 @@ class _QuittanceCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 11),
         decoration: BoxDecoration(
-          color: filled ? const Color(0xFF1A1A1A) : Colors.white,
+          color: filled ? AppColor.kTexte : Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: filled ? const Color(0xFF1A1A1A) : const Color(0xFFE5E7EB)),
+          border: Border.all(color: filled ? AppColor.kTexte : AppColor.kBordure),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, size: 16, color: filled ? Colors.white : const Color(0xFF374151)),
+          Icon(icon, size: 16, color: filled ? Colors.white : AppColor.kTexteFort),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: filled ? Colors.white : const Color(0xFF374151))),
+          Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: filled ? Colors.white : AppColor.kTexteFort)),
         ]),
       ),
     );

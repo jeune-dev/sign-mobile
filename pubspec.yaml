@@ -139,6 +139,11 @@ flutter:
            weight: 600
          - asset: assets/fonts/PlusJakartaSans-Bold.ttf
            weight: 700
+         # ExtraBold : le fichier etait deja present mais n'etait pas declare,
+         # alors que les titres utilisent FontWeight.w800 - la graisse etait
+         # donc synthetisee par le moteur de rendu au lieu d'etre lue.
+         - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+           weight: 800
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

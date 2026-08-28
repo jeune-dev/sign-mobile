@@ -89,7 +89,8 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
     final result = await creerFacture(event.data);
     result.fold(
       (failure) => emit(FactureError(failure.errorMessage)),
-      (_) => emit(FactureSuccess(message: 'Facture créée avec succès')),
+      (cree) => emit(FactureSuccess(
+          message: 'Facture créée avec succès', documentCree: cree)),
     );
   }
 

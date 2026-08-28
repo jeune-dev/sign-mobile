@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:sign_application/core/errors/failure.dart';
 import '../entities/etat_logement.dart';
+import 'package:sign_application/core/models/document_cree.dart';
 
 abstract class EtatLogementRepository {
   /// Liste tous les états des lieux du bailleur connecté.
@@ -10,7 +11,7 @@ abstract class EtatLogementRepository {
   Future<Either<Failure, EtatLogement>> getEtatLogementDetail(String etatId);
 
   /// Crée un état des lieux pour un contrat de bail donné.
-  Future<Either<Failure, void>> creerEtatLogement(
+  Future<Either<Failure, DocumentCree>> creerEtatLogement(
     String contratId,
     Map<String, dynamic> data,
   );
