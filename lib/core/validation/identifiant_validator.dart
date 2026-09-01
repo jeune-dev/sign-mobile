@@ -55,11 +55,114 @@ class ResultatValidation {
 /// Le backend expose ses propres valeurs via `GET /profil/referentiels` :
 /// `IdentifiantValidator.appliquerReferentiel()` permet de les injecter au
 /// démarrage pour que l'app suive toute évolution sans nouvelle version.
+/// Règles téléphoniques d'un pays.
+///
+/// Le sélecteur d'indicatif ne propose que les pays présents ici : offrir les
+/// deux cents pays du monde alors qu'un seul jeu de règles était appliqué
+/// derrière revenait à refuser des numéros parfaitement valides, et à en
+/// accepter d'impossibles.
+class PaysTelephone {
+  /// Code ISO à deux lettres — c'est lui qui relie l'entrée au drapeau et au
+  /// nom affichés par le sélecteur.
+  final String iso;
+  final String nom;
+  final String indicatif;
+
+  /// Longueur du numéro national, hors indicatif.
+  final int longueur;
+
+  /// Plages attribuées. Leur longueur varie d'un pays à l'autre (un chiffre au
+  /// Mali, deux au Sénégal) : la comparaison se fait par « commence par ».
+  final List<String> prefixesMobiles;
+
+  /// Acceptés uniquement là où un numéro fixe a du sens (téléphone
+  /// d'entreprise), jamais pour le numéro de compte personnel.
+  final List<String> prefixesFixes;
+
+  const PaysTelephone({
+    required this.iso,
+    required this.nom,
+    required this.indicatif,
+    required this.longueur,
+    required this.prefixesMobiles,
+    required this.prefixesFixes,
+  });
+
+  /// Chiffres de l'indicatif, sans le '+'.
+  String get indicatifChiffres => indicatif.replaceAll('+', '');
+
+  factory PaysTelephone.depuisJson(Map<String, dynamic> json) => PaysTelephone(
+        iso: json['iso']?.toString() ?? '',
+        nom: json['nom']?.toString() ?? '',
+        indicatif: json['indicatif']?.toString() ?? '',
+        longueur: json['longueur'] is int ? json['longueur'] as int : 0,
+        prefixesMobiles: (json['prefixesMobiles'] as List?)
+                ?.map((p) => p.toString())
+                .toList() ??
+            const [],
+        prefixesFixes: (json['prefixesFixes'] as List?)
+                ?.map((p) => p.toString())
+                .toList() ??
+            const [],
+      );
+}
+
 class ReferentielIdentifiants {
   static String indicatifTelephone = '+221';
   static int longueurTelephone = 9;
-  static List<String> prefixesMobiles = const ['70', '76', '77', '78'];
+  static List<String> prefixesMobiles = const ['70', '75', '76', '77', '78'];
   static List<String> prefixesFixes = const ['33', '30', '39'];
+
+  /// Valeurs par défaut, alignées sur `PAYS_TELEPHONE` côté backend. Elles
+  /// sont remplacées au démarrage par celles que renvoie
+  /// `GET /profil/referentiels`, pour qu'une plage nouvellement attribuée
+  /// n'attende pas une mise à jour de l'application.
+  static List<PaysTelephone> paysTelephone = const [
+    PaysTelephone(
+      iso: 'SN', nom: 'Sénégal', indicatif: '+221', longueur: 9,
+      prefixesMobiles: ['70', '75', '76', '77', '78'],
+      prefixesFixes: ['33', '30', '39'],
+    ),
+    PaysTelephone(
+      iso: 'ML', nom: 'Mali', indicatif: '+223', longueur: 8,
+      prefixesMobiles: ['6', '7', '8', '9'], prefixesFixes: ['2'],
+    ),
+    PaysTelephone(
+      iso: 'CI', nom: 'Côte d’Ivoire', indicatif: '+225', longueur: 10,
+      prefixesMobiles: ['01', '05', '07'], prefixesFixes: ['21', '25', '27'],
+    ),
+    PaysTelephone(
+      iso: 'GN', nom: 'Guinée', indicatif: '+224', longueur: 9,
+      prefixesMobiles: ['6'], prefixesFixes: ['3'],
+    ),
+    PaysTelephone(
+      iso: 'GM', nom: 'Gambie', indicatif: '+220', longueur: 7,
+      prefixesMobiles: ['2', '3', '5', '6', '7', '9'], prefixesFixes: ['4'],
+    ),
+    PaysTelephone(
+      iso: 'MR', nom: 'Mauritanie', indicatif: '+222', longueur: 8,
+      prefixesMobiles: ['2', '3', '4'], prefixesFixes: ['45'],
+    ),
+    PaysTelephone(
+      iso: 'BF', nom: 'Burkina Faso', indicatif: '+226', longueur: 8,
+      prefixesMobiles: ['5', '6', '7'], prefixesFixes: ['2'],
+    ),
+    PaysTelephone(
+      iso: 'FR', nom: 'France', indicatif: '+33', longueur: 9,
+      prefixesMobiles: ['6', '7'],
+      prefixesFixes: ['1', '2', '3', '4', '5', '9'],
+    ),
+  ];
+
+  /// Pays retenu quand le numéro est saisi sans indicatif.
+  static String paysTelephoneDefaut = 'SN';
+
+  /// Le pays par défaut, ou le premier de la liste s'il a disparu du
+  /// référentiel envoyé par le serveur.
+  static PaysTelephone get paysParDefaut => paysTelephone.firstWhere(
+        (p) => p.iso == paysTelephoneDefaut,
+        orElse: () => paysTelephone.first,
+      );
 
   static int longueurCni = 17;
   static int longueurNin = 13;
@@ -73,6 +176,18 @@ class ReferentielIdentifiants {
 
 class IdentifiantValidator {
   IdentifiantValidator._();
+
+  /// Message unique des refus de numéro d'identité (CNI, NIN).
+  ///
+  /// Le moteur sait exactement ce qui cloche — longueur, chiffre de sexe, date
+  /// de naissance impossible, année hors bornes. Le dire au saisisseur revenait
+  /// à lui enseigner la structure du numéro règle par règle : avec quelques
+  /// essais, on fabrique un numéro qui passe tous les contrôles sans posséder
+  /// la moindre carte.
+  ///
+  /// Le champ vide garde son propre message : il n'apprend rien à personne.
+  static const String _messageIdentiteInvalide =
+      'Numéro non valide. Vérifiez le numéro figurant sur votre pièce.';
 
   /// Remplace le référentiel local par celui renvoyé par le backend.
   /// Tout champ absent de la réponse conserve sa valeur par défaut.
@@ -96,6 +211,22 @@ class IdentifiantValidator {
       if (fixes is List && fixes.isNotEmpty) {
         ReferentielIdentifiants.prefixesFixes =
             fixes.map((p) => p.toString()).toList();
+      }
+
+      // Liste des pays acceptés. Absente des serveurs antérieurs à l'ouverture
+      // multi-pays : on garde alors les valeurs embarquées.
+      final pays = tel['pays'];
+      if (pays is List && pays.isNotEmpty) {
+        final liste = pays
+            .whereType<Map>()
+            .map((p) => PaysTelephone.depuisJson(Map<String, dynamic>.from(p)))
+            .where((p) => p.iso.isNotEmpty && p.longueur > 0)
+            .toList();
+        if (liste.isNotEmpty) ReferentielIdentifiants.paysTelephone = liste;
+      }
+      final defaut = tel['paysDefaut'];
+      if (defaut is String && defaut.isNotEmpty) {
+        ReferentielIdentifiants.paysTelephoneDefaut = defaut;
       }
     }
 
@@ -149,21 +280,92 @@ class IdentifiantValidator {
 
   // ── Téléphone ─────────────────────────────────────────────────────────────
 
-  /// Valide un numéro sénégalais et renvoie la forme `+221XXXXXXXXX`.
+  /// Retrouve le pays d'un numéro déjà débarrassé de son '+' ou de son '00'.
+  ///
+  /// Les indicatifs les plus longs sont essayés en premier, pour qu'un futur
+  /// indicatif court n'éclipse pas un indicatif long qui le prolonge.
+  static PaysTelephone? _paysDepuisIndicatif(String numero) {
+    final tries = [...ReferentielIdentifiants.paysTelephone]
+      ..sort((a, b) =>
+          b.indicatifChiffres.length.compareTo(a.indicatifChiffres.length));
+    for (final pays in tries) {
+      if (numero.startsWith(pays.indicatifChiffres)) return pays;
+    }
+    return null;
+  }
+
+  /// Numéro saisi sans '+' ni '00' mais préfixé de son indicatif
+  /// (« 221771234567 »).
+  ///
+  /// On ne retient un pays que si la longueur totale correspond EXACTEMENT à
+  /// indicatif + numéro national : sinon un numéro gambien de 7 chiffres
+  /// commençant par 2 passerait pour un mauritanien (+222).
+  static PaysTelephone? _paysDepuisNumeroComplet(String numero) {
+    for (final pays in ReferentielIdentifiants.paysTelephone) {
+      final indicatif = pays.indicatifChiffres;
+      if (numero.startsWith(indicatif) &&
+          numero.length == indicatif.length + pays.longueur) {
+        return pays;
+      }
+    }
+    return null;
+  }
+
+  /// Préfixe le plus long de [prefixes] par lequel commence [numero].
+  static String? _prefixeCorrespondant(String numero, List<String> prefixes) {
+    final tries = [...prefixes]..sort((a, b) => b.length.compareTo(a.length));
+    for (final prefixe in tries) {
+      if (numero.startsWith(prefixe)) return prefixe;
+    }
+    return null;
+  }
+
+  /// Valide un numéro et renvoie sa forme internationale `+XXXNNNNNNNNN`.
+  ///
+  /// Chaque pays du référentiel porte ses propres règles : un numéro ivoirien
+  /// est contrôlé avec les règles ivoiriennes, pas avec celles du Sénégal. Un
+  /// indicatif hors référentiel est refusé — le sélecteur de l'application ne
+  /// propose de toute façon que ces pays-là.
+  ///
+  /// Sans indicatif, le numéro est rattaché au pays par défaut, ce qui
+  /// préserve les comptes créés avant l'ouverture aux autres pays.
   ///
   /// La propriété du numéro n'est pas vérifiée (pas d'OTP) : un numéro au bon
   /// format est considéré comme acquis.
   static ResultatValidation telephone(String? saisie, {bool autoriserFixe = false}) {
     var brut = _nettoyer(saisie);
-    if (brut.isEmpty) return const ResultatValidation.invalide('Numéro de téléphone requis');
+    if (brut.isEmpty) {
+      return const ResultatValidation.invalide('Numéro de téléphone requis');
+    }
 
-    final indicatifChiffres =
-        ReferentielIdentifiants.indicatifTelephone.replaceAll('+', '');
-    if (brut.startsWith('+')) brut = brut.substring(1);
-    if (brut.startsWith('00')) brut = brut.substring(2);
-    if (brut.startsWith(indicatifChiffres) &&
-        brut.length > ReferentielIdentifiants.longueurTelephone) {
-      brut = brut.substring(indicatifChiffres.length);
+    var indicatifExplicite = false;
+    if (brut.startsWith('+')) {
+      brut = brut.substring(1);
+      indicatifExplicite = true;
+    } else if (brut.startsWith('00')) {
+      brut = brut.substring(2);
+      indicatifExplicite = true;
+    }
+
+    PaysTelephone pays;
+    if (indicatifExplicite) {
+      final trouve = _paysDepuisIndicatif(brut);
+      if (trouve == null) {
+        return ResultatValidation.invalide(
+          'Cet indicatif n’est pas pris en charge. Pays acceptés : '
+          '${ReferentielIdentifiants.paysTelephone.map((p) => p.nom).join(', ')}.',
+        );
+      }
+      pays = trouve;
+      brut = brut.substring(pays.indicatifChiffres.length);
+    } else {
+      final trouve = _paysDepuisNumeroComplet(brut);
+      if (trouve != null) {
+        pays = trouve;
+        brut = brut.substring(pays.indicatifChiffres.length);
+      } else {
+        pays = ReferentielIdentifiants.paysParDefaut;
+      }
     }
 
     if (!RegExp(r'^\d+$').hasMatch(brut)) {
@@ -171,26 +373,25 @@ class IdentifiantValidator {
           'Le numéro ne doit contenir que des chiffres');
     }
 
-    final attendue = ReferentielIdentifiants.longueurTelephone;
-    if (brut.length != attendue) {
+    if (brut.length != pays.longueur) {
       return ResultatValidation.invalide(
-        'Le numéro doit comporter $attendue chiffres — ${brut.length} saisi${brut.length > 1 ? 's' : ''}',
+        'Un numéro ${pays.nom} doit comporter ${pays.longueur} chiffres — '
+        '${brut.length} saisi${brut.length > 1 ? 's' : ''}',
       );
     }
 
-    final prefixe = brut.substring(0, 2);
     final autorises = autoriserFixe
-        ? [...ReferentielIdentifiants.prefixesMobiles, ...ReferentielIdentifiants.prefixesFixes]
-        : ReferentielIdentifiants.prefixesMobiles;
+        ? [...pays.prefixesMobiles, ...pays.prefixesFixes]
+        : pays.prefixesMobiles;
 
-    if (!autorises.contains(prefixe)) {
+    if (_prefixeCorrespondant(brut, autorises) == null) {
       return ResultatValidation.invalide(
-        'Le préfixe $prefixe n’est pas une plage autorisée (${autorises.join(', ')})',
+        'Ce numéro ne correspond à aucune plage ${pays.nom} autorisée '
+        '(${autorises.join(', ')})',
       );
     }
 
-    return ResultatValidation.valide(
-        '${ReferentielIdentifiants.indicatifTelephone}$brut');
+    return ResultatValidation.valide('${pays.indicatif}$brut');
   }
 
   // ── E-mail ────────────────────────────────────────────────────────────────
@@ -235,21 +436,17 @@ class IdentifiantValidator {
     final brut = _nettoyer(saisie);
     if (brut.isEmpty) return const ResultatValidation.invalide('Numéro de CNI requis');
     if (!RegExp(r'^\d+$').hasMatch(brut)) {
-      return const ResultatValidation.invalide(
-          'Le numéro de CNI ne doit contenir que des chiffres');
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
 
     final attendue = ReferentielIdentifiants.longueurCni;
     if (brut.length != attendue) {
-      return ResultatValidation.invalide(
-        'Le numéro de CNI doit comporter $attendue chiffres — ${brut.length} saisi${brut.length > 1 ? 's' : ''}',
-      );
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
 
     final sexe = brut.substring(0, 1);
     if (sexe != '1' && sexe != '2') {
-      return ResultatValidation.invalide(
-          'Le chiffre de sexe « $sexe » n’est pas valide (attendu : 1 ou 2)');
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
 
     final annee = int.tryParse(brut.substring(3, 7)) ?? 0;
@@ -257,17 +454,12 @@ class IdentifiantValidator {
     final jour = int.tryParse(brut.substring(9, 11)) ?? 0;
 
     if (!_dateExiste(annee, mois, jour)) {
-      final mm = brut.substring(7, 9);
-      final jj = brut.substring(9, 11);
-      final aaaa = brut.substring(3, 7);
-      return ResultatValidation.invalide(
-          'La date de naissance $jj/$mm/$aaaa n’existe pas');
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
 
     final anneeCourante = DateTime.now().year;
     if (annee < 1900 || annee > anneeCourante) {
-      return ResultatValidation.invalide(
-          'L’année de naissance $annee est hors des bornes admises (1900–$anneeCourante)');
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
 
     // Le chiffre de contrôle n'est pas vérifiable : l'algorithme officiel de
@@ -310,26 +502,23 @@ class IdentifiantValidator {
   static ResultatValidation nin(String? saisie) {
     final brut = _nettoyer(saisie);
     if (brut.isEmpty) return const ResultatValidation.invalide('NIN requis');
+    // Même raisonnement que pour la CNI : détailler la règle enfreinte
+    // revient à apprendre à fabriquer un numéro qui passe les contrôles.
     if (!RegExp(r'^\d+$').hasMatch(brut)) {
-      return const ResultatValidation.invalide(
-          'Le NIN ne doit contenir que des chiffres');
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
     final attendue = ReferentielIdentifiants.longueurNin;
     if (brut.length != attendue) {
-      return ResultatValidation.invalide(
-        'Le NIN doit comporter $attendue chiffres — ${brut.length} saisi${brut.length > 1 ? 's' : ''}',
-      );
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
     final sexe = brut.substring(0, 1);
     if (sexe != '1' && sexe != '2') {
-      return ResultatValidation.invalide(
-          'Le chiffre de sexe « $sexe » n’est pas valide (attendu : 1 ou 2)');
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
     final annee = int.tryParse(brut.substring(4, 8)) ?? 0;
     final anneeCourante = DateTime.now().year;
     if (annee < 1900 || annee > anneeCourante) {
-      return ResultatValidation.invalide(
-          'L’année $annee du NIN est hors des bornes admises (1900–$anneeCourante)');
+      return const ResultatValidation.invalide(_messageIdentiteInvalide);
     }
     return ResultatValidation.formatValide(
       brut,

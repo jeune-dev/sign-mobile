@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -201,8 +202,10 @@ class _DocumentGenerePageState extends State<DocumentGenerePage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                    AppEspace.xl, AppEspace.s, AppEspace.xl, AppEspace.xxl),
+                padding: avecMargeBasse(
+                    context,
+                    const EdgeInsets.fromLTRB(
+                        AppEspace.xl, AppEspace.s, AppEspace.xl, AppEspace.xxl)),
                 child: AppBouton(libelle: 'Terminé', onPressed: _terminer),
               ),
             ],

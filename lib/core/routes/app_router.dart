@@ -19,6 +19,16 @@ import 'package:sign_application/features/parcours/presentation/pages/justificat
 import 'package:sign_application/injection_container.dart';
 
 class AppRouter {
+  /// Clé du Navigator racine, partagée par toute l'application.
+  ///
+  /// Elle permet de naviguer depuis du code qui ne dispose d'aucun
+  /// `BuildContext` valide — typiquement le tap sur une notification, qui
+  /// survient alors que l'écran ayant initialisé le service peut avoir été
+  /// démonté depuis longtemps, voire ne jamais avoir existé (app relancée
+  /// depuis une notification).
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   static const String loginRoute = '/login';
   static const String registerRoute = '/register';
   static const String homeRoute = '/home';

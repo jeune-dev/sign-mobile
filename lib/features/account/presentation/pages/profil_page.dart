@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'package:flutter/material.dart';
 import 'package:sign_application/core/config/user_role.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,8 @@ import 'package:sign_application/features/auth/presentation/bloc/auth_bloc.dart'
 import 'package:sign_application/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/widgets/logout_dialog.dart';
+import 'package:sign_application/features/parcours/data/suivi_profil_service.dart';
+import 'package:sign_application/injection_container.dart';
 
 class ProfilPage extends StatefulWidget {
   final AccountUser? user;
@@ -32,6 +35,9 @@ class _ProfilPageState extends State<ProfilPage> {
     if (state is AccountInitial) {
       context.read<AccountBloc>().add(LoadMe());
     }
+    // Les deux raccourcis ci-dessous annoncent ce qu'il reste à faire : le
+    // chiffre doit être celui d'aujourd'hui, pas celui du dernier passage.
+    sl<SuiviProfilService>().rafraichir();
   }
 
   // Photos hébergées sur Cloudflare R2 → URL complète directement utilisable
@@ -158,6 +164,7 @@ class _ProfilPageState extends State<ProfilPage> {
                     ),
                     const SizedBox(height: 4),
                     _buildRoleBadge(user.role),
+                    _buildStatutVerification(user),
                   ],
                 ),
               ],
@@ -167,7 +174,7 @@ class _ProfilPageState extends State<ProfilPage> {
 
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 40),
+            padding: avecMargeBasse(context, const EdgeInsets.fromLTRB(16, 24, 16, 40)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -472,6 +479,59 @@ class _ProfilPageState extends State<ProfilPage> {
   }
 
   // ── Grande photo de profil ─────────────────────────────────────────────────
+  /// État de vérification du compte, sous le rôle.
+  ///
+  /// Deux informations distinctes, jamais fusionnées : `compteVerifie` dit que
+  /// l'identité a été contrôlée par un administrateur, `statut` dit où en est
+  /// le compte. Un compte peut être vérifié PUIS désactivé ; n'afficher que
+  /// l'un des deux donnerait une lecture fausse.
+  ///
+  /// Rien ne s'affiche tant qu'aucun justificatif n'a été déposé : un badge
+  /// « non vérifié » sur un profil qui vient d'être créé se lirait comme un
+  /// reproche plutôt que comme une étape.
+  Widget _buildStatutVerification(dynamic user) {
+    final bool verifie = user.compteVerifie == true;
+    final bool enExamen = user.statut == 'en_attente_validation';
+    if (!verifie && !enExamen) return const SizedBox.shrink();
+
+    final IconData icone =
+        verifie ? Icons.verified_rounded : Icons.hourglass_top_rounded;
+    final String libelle =
+        verifie ? 'Compte vérifié' : 'Profil en cours d’examen';
+    // Sur la bannière sombre du profil, un fond translucide tient mieux qu'une
+    // couleur pleine : le badge reste lisible sans percer la photo.
+    final Color teinte =
+        verifie ? const Color(0xFF6EE7B7) : const Color(0xFFFCD34D);
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: teinte.withValues(alpha: 0.55)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icone, size: 14, color: teinte),
+            const SizedBox(width: 6),
+            Text(
+              libelle,
+              style: TextStyle(
+                color: teinte,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLargeAvatar(String? photoUrl, AccountUser user) {
     const double size = 86;
     final initials = _getInitials(user.prenom, user.nom);
@@ -587,39 +647,58 @@ class _ProfilPageState extends State<ProfilPage> {
   //   - « Mes justificatifs », toujours disponible (§ 12), y compris pour
   //     déposer une pièce ou demander sa suppression.
   Widget _buildBlocCompteSigns(AccountUser user) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      elevation: 1.5,
-      shadowColor: Colors.black.withValues(alpha: 0.12),
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Column(
-          children: [
-            if (!user.profilComplet)
-              _buildActionCompte(
-                icone: Icons.assignment_turned_in_outlined,
-                titre: 'Finaliser mon compte',
-                sousTitre:
-                    'Enregistrez vos informations une fois pour toutes : elles seront '
-                    'préremplies dans tous vos prochains documents.',
-                onTap: () =>
-                    Navigator.of(context).pushNamed(AppRouter.compteCompletRoute),
-              ),
-            _buildActionCompte(
-              icone: Icons.verified_user_outlined,
-              titre: 'Mes justificatifs',
-              sousTitre:
-                  'Déposez votre pièce d’identité et vos documents professionnels, '
-                  'ou demandez leur suppression.',
-              onTap: () =>
-                  Navigator.of(context).pushNamed(AppRouter.justificatifsRoute),
+    final suivi = sl<SuiviProfilService>();
+
+    // Le bloc se redessine quand l'état d'avancement change : revenir d'un
+    // dépôt de pièce doit faire baisser le compteur sans quitter la page.
+    return AnimatedBuilder(
+      animation: suivi,
+      builder: (context, _) {
+        final etat = suivi.etat;
+        return Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          elevation: 1.5,
+          shadowColor: Colors.black.withValues(alpha: 0.12),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Column(
+              children: [
+                if (!user.profilComplet)
+                  _buildActionCompte(
+                    icone: Icons.assignment_turned_in_outlined,
+                    titre: 'Finaliser mon compte',
+                    sousTitre:
+                        'Enregistrez vos informations une fois pour toutes : elles seront '
+                        'préremplies dans tous vos prochains documents.',
+                    restant: etat?.nombreChampsManquants ?? 0,
+                    uniteRestant: 'information',
+                    onTap: () => _ouvrirEtRafraichir(AppRouter.compteCompletRoute),
+                  ),
+                _buildActionCompte(
+                  icone: Icons.verified_user_outlined,
+                  titre: 'Mes justificatifs',
+                  sousTitre:
+                      'Déposez votre pièce d’identité et vos documents professionnels, '
+                      'ou demandez leur suppression.',
+                  restant: etat?.nombreDocumentsManquants ?? 0,
+                  uniteRestant: 'document',
+                  onTap: () => _ouvrirEtRafraichir(AppRouter.justificatifsRoute),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
+  }
+
+  /// Ouvre un écran de complétion et recalcule l'état au retour : les
+  /// compteurs et la pastille doivent refléter ce qui vient d'être fait.
+  Future<void> _ouvrirEtRafraichir(String route) async {
+    await Navigator.of(context).pushNamed(route);
+    await sl<SuiviProfilService>().rafraichir();
   }
 
   Widget _buildActionCompte({
@@ -627,6 +706,10 @@ class _ProfilPageState extends State<ProfilPage> {
     required String titre,
     required String sousTitre,
     required VoidCallback onTap,
+    /// Nombre d'éléments encore attendus derrière ce raccourci. À zéro,
+    /// aucune pastille : une pastille permanente ne se lit plus.
+    int restant = 0,
+    String uniteRestant = 'élément',
   }) {
     return ListTile(
       onTap: onTap,
@@ -640,14 +723,38 @@ class _ProfilPageState extends State<ProfilPage> {
         ),
         child: Icon(icone, color: Colors.white, size: 18),
       ),
-      title: Text(
-        titre,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-          color: Colors.black87,
-          letterSpacing: -0.2,
-        ),
+      title: Row(
+        children: [
+          Flexible(
+            child: Text(
+              titre,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: Colors.black87,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          if (restant > 0) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColor.kDanger.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                '$restant $uniteRestant${restant > 1 ? 's' : ''}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: AppColor.kDanger,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
       subtitle: Padding(
         padding: const EdgeInsets.only(top: 3),

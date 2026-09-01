@@ -108,7 +108,7 @@ class _SplashScreenState extends State<SplashScreen>
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: const Text(
-                          'Sign Application',
+                          'SIGNS',
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,

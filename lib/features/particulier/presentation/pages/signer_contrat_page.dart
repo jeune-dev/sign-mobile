@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -84,7 +85,7 @@ class _SignerContratPageState extends State<SignerContratPage> {
             final isLoading = state is ContratSignatureEnCours;
 
             return ListView(
-              padding: const EdgeInsets.all(16),
+              padding: avecMargeBasse(context, const EdgeInsets.all(16)),
               children: [
                 // ── En-tête contrat ─────────────────────────────────
                 Container(

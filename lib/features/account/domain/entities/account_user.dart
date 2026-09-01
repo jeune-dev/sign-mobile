@@ -25,6 +25,10 @@ class AccountUser extends Equatable {
   final String? telephoneEntreprise;
   final String? emailEntreprise;
   final String? statut;
+  /// Vrai une fois l'identite controlee par un administrateur. C'est ce
+  /// drapeau — et non `statut` — qui leve la limite de documents : les deux
+  /// sont independants, un compte verifie peut ensuite etre desactive.
+  final bool compteVerifie;
 
   const AccountUser({
     required this.id,
@@ -48,6 +52,7 @@ class AccountUser extends Equatable {
     this.telephoneEntreprise,
     this.emailEntreprise,
     this.statut,
+    this.compteVerifie = false,
   });
 
   String get fullName {

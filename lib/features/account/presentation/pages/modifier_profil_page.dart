@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/utils/marge_systeme.dart';
+import 'package:sign_application/core/utils/normalisation_nom.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/core/config/user_role.dart';
@@ -152,7 +154,7 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
             // sections visibles, et un TextFormField demonte n est plus rattache au
             // Form — validate() laissait alors passer des champs obligatoires vides.
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
+              padding: avecMargeBasse(context, const EdgeInsets.fromLTRB(16, 24, 16, 32)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -161,8 +163,18 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
                     title: 'Informations personnelles',
                     icon: Icons.person_outline,
                     children: [
-                      _field(controller: _prenom, label: 'Prénom', icon: Icons.badge_outlined),
-                      _field(controller: _nom, label: 'Nom', icon: Icons.badge_outlined),
+                      _field(
+                        controller: _prenom,
+                        label: 'Prénom',
+                        icon: Icons.badge_outlined,
+                        formateurs: const [FormateurPrenom()],
+                      ),
+                      _field(
+                        controller: _nom,
+                        label: 'Nom',
+                        icon: Icons.badge_outlined,
+                        formateurs: const [FormateurNomFamille()],
+                      ),
                       _field(
                         controller: _email,
                         label: 'Email',
@@ -343,6 +355,7 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
     bool isLast = false,
+    List<TextInputFormatter>? formateurs,
   }) {
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
@@ -351,9 +364,10 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
         keyboardType: keyboardType,
         validator: validator,
         textInputAction: isLast ? TextInputAction.done : TextInputAction.next,
-        inputFormatters: keyboardType == TextInputType.number
-            ? [FilteringTextInputFormatter.digitsOnly]
-            : null,
+        inputFormatters: formateurs ??
+            (keyboardType == TextInputType.number
+                ? [FilteringTextInputFormatter.digitsOnly]
+                : null),
         style: const TextStyle(
             fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
         decoration: InputDecoration(

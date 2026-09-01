@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -668,7 +669,7 @@ class _CreationContratTravailPageState extends State<CreationContratTravailPage>
           // sections visibles, et un TextFormField demonte n est plus rattache au
           // Form — validate() laissait alors passer des champs obligatoires vides.
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: avecMargeBasse(context, const EdgeInsets.all(20)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

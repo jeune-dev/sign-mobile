@@ -26,6 +26,7 @@ import 'features/account/presentation/bloc/account_bloc.dart';
 // Parcours progressif (nouveau parcours utilisateur)
 import 'features/parcours/data/datasources/parcours_remote_datasource.dart';
 import 'features/parcours/data/dernieres_informations_saisies.dart';
+import 'features/parcours/data/suivi_profil_service.dart';
 
 // Auth
 import 'features/auth/data/datasources/auth_remote_datasource.dart';
@@ -412,6 +413,10 @@ Future<void> init() async {
   // Retient la derniere saisie d'un formulaire, pour pouvoir proposer de
   // l'enregistrer une fois le document genere.
   sl.registerLazySingleton(() => DernieresInformationsSaisies());
+  // Etat d'avancement du profil (champs et pieces encore attendus), partage
+  // par la pastille du bouton de reglage et les compteurs des deux ecrans de
+  // completion — un seul calcul, donc un seul chiffre affiche partout.
+  sl.registerLazySingleton(() => SuiviProfilService(source: sl()));
 
   //================================================
   // FEATURE — NOTIFICATIONS (cloche)

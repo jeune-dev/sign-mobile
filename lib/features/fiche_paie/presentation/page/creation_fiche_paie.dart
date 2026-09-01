@@ -1,6 +1,7 @@
 ﻿// 📁 lib/features/fiche_paie/presentation/page/creation_fiche_paie.dart
 
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
@@ -1054,7 +1055,7 @@ class _FichePaieFormPageState extends State<_FichePaieFormView>
               // sections visibles, et un TextFormField demonte n est plus rattache au
               // Form — validate() laissait alors passer des champs obligatoires vides.
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
+                padding: avecMargeBasse(context, const EdgeInsets.fromLTRB(16, 12, 16, 40)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [

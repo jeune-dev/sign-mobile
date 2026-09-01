@@ -16,6 +16,9 @@ import 'package:sign_application/features/notifications/presentation/cloche_noti
 import 'package:flutter/services.dart';
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/widgets/barre_navigation_flottante.dart';
+import 'package:sign_application/features/parcours/data/suivi_profil_service.dart';
+import 'package:sign_application/features/parcours/presentation/widgets/pastille_profil.dart';
+import 'package:sign_application/injection_container.dart';
 
 class ProfessionnelPage extends StatefulWidget {
   final User? user;
@@ -35,7 +38,10 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
     _currentIndex = widget.initialTabIndex;
     context.read<AccountBloc>().add(LoadMe());
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      FcmService.init(context);
+      FcmService.init();
+      // Alimente la pastille du bouton de reglage : ce qui reste a saisir ou
+      // a deposer pour que le compte soit complet.
+      sl<SuiviProfilService>().rafraichir();
     });
   }
 
@@ -142,15 +148,20 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
               const ClocheNotifications(couleur: AppColor.kTexte),
               IconButton(
                 tooltip: 'Mon profil',
-                icon: const Icon(Icons.settings_outlined,
-                    color: AppColor.kTexte, size: 24),
-                onPressed: () {
+                // Le point rouge dit que le profil attend encore quelque
+                // chose : c'est ici, et nulle part ailleurs, que cela se
+                // regle.
+                icon: const PastilleProfil(
+                  child: Icon(Icons.settings_outlined,
+                      color: AppColor.kTexte, size: 24),
+                ),
+                onPressed: () async {
                   final user = state is AccountLoaded
                       ? state.user
                       : state is AccountSuccess
                           ? state.user
                           : null;
-                  Navigator.push(
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => BlocProvider.value(
@@ -159,6 +170,9 @@ class _ProfessionnelPageState extends State<ProfessionnelPage> {
                       ),
                     ),
                   );
+                  // Au retour du profil, l'utilisateur a pu completer ou
+                  // deposer : la pastille doit refleter l'etat reel.
+                  await sl<SuiviProfilService>().rafraichir();
                 },
               ),
               const SizedBox(width: 4),

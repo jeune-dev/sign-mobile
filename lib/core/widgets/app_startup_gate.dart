@@ -22,7 +22,6 @@ class AppStartupGate extends StatefulWidget {
 }
 
 class _AppStartupGateState extends State<AppStartupGate> {
-  bool _checking = true;
   AppVersionCheckResult _result = const AppVersionCheckResult(AppUpdateStatus.upToDate, null);
 
   @override
@@ -45,10 +44,7 @@ class _AppStartupGateState extends State<AppStartupGate> {
     );
 
     if (!mounted) return;
-    setState(() {
-      _result = result;
-      _checking = false;
-    });
+    setState(() => _result = result);
 
     if (result.status == AppUpdateStatus.optional && result.config != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -77,15 +73,16 @@ class _AppStartupGateState extends State<AppStartupGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (_checking) {
-      // Écran de chargement minimal — la vérification prend généralement
-      // quelques centaines de ms, jamais plus de 5s (timeout).
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
+    // Plus d'écran d'attente ici. La vérification de version bloquait le
+    // démarrage derrière un simple indicateur de chargement : jusqu'à 5 s
+    // (le timeout) AVANT même que le premier écran de marque n'apparaisse,
+    // puis encore la durée des deux écrans. Sur un réseau lent, l'ouverture
+    // dépassait les dix secondes.
+    //
+    // L'écran de marque s'affiche désormais tout de suite et la vérification
+    // se poursuit derrière — elle prend quelques centaines de ms, largement
+    // couvertes par l'animation d'ouverture. Seule une mise à jour OBLIGATOIRE
+    // reprend la main, en remplaçant l'écran en cours.
     if (_result.status == AppUpdateStatus.forced && _result.config != null) {
       return ForceUpdateScreen(config: _result.config!);
     }

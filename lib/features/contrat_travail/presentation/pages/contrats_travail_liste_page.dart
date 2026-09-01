@@ -1,4 +1,5 @@
 ﻿import 'dart:io';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -243,7 +244,7 @@ class _ContratsTravailListePageState extends State<ContratsTravailListePage> {
                                   ? _buildEmpty()
                                   : ListView.separated(
                                       controller: _scrollController,
-                                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                                      padding: avecMargeBasse(context, const EdgeInsets.fromLTRB(16, 12, 16, 16)),
                                       itemCount: affiches.length + 1,
                                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                                       itemBuilder: (context, index) {

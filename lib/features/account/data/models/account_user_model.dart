@@ -23,6 +23,7 @@ class AccountUserModel extends AccountUser {
     super.telephoneEntreprise,
     super.emailEntreprise,
     super.statut,
+    super.compteVerifie,
   });
 
   factory AccountUserModel.fromJson(Map<String, dynamic> json) {
@@ -48,6 +49,7 @@ class AccountUserModel extends AccountUser {
       telephoneEntreprise: json['telephoneEntreprise'],
       emailEntreprise: json['emailEntreprise'],
       statut: json['statut'],
+      compteVerifie: json['compte_verifie'] == true,
     );
   }
 }

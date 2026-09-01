@@ -13,6 +13,8 @@ import 'package:sign_application/features/notifications/presentation/cloche_noti
 import 'package:sign_application/core/widgets/barre_navigation_flottante.dart';
 import 'package:flutter/services.dart';
 import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/parcours/data/suivi_profil_service.dart';
+import 'package:sign_application/injection_container.dart';
 
 class ClientPage extends StatefulWidget {
   final User? user;
@@ -32,7 +34,11 @@ class _ClientPageState extends State<ClientPage> {
     super.initState();
     _currentIndex = widget.initialTabIndex;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      FcmService.init(context);
+      FcmService.init();
+      // Ce qu'il reste a completer conditionne la pastille de l'onglet
+      // Profil : on le demande a l'ouverture, pas au moment ou l'utilisateur
+      // arrive sur le profil — il faut precisement l'y amener.
+      sl<SuiviProfilService>().rafraichir();
     });
   }
 
@@ -101,15 +107,33 @@ class _ClientPageState extends State<ClientPage> {
                 children: pages,
               ),
             ),
-            bottomNavigationBar: BarreNavigationFlottante(
-              indexCourant: _currentIndex,
-              onChange: (i) => setState(() => _currentIndex = i),
-              onglets: const [
-                OngletNavigation(Icons.home_outlined, Icons.home_rounded, 'Accueil'),
-                OngletNavigation(Icons.receipt_long_outlined, Icons.receipt_long_rounded, 'Factures'),
-                OngletNavigation(Icons.description_outlined, Icons.description_rounded, 'Contrats'),
-                OngletNavigation(Icons.person_outline, Icons.person_rounded, 'Profil'),
-              ],
+            // La pastille de l'onglet Profil suit l'etat du dossier : elle
+            // s'allume tant qu'une information ou une piece manque, et
+            // s'eteint d'elle-meme des que tout est depose.
+            bottomNavigationBar: AnimatedBuilder(
+              animation: sl<SuiviProfilService>(),
+              builder: (context, _) {
+                final aCompleter =
+                    sl<SuiviProfilService>().etat?.aQuelqueChoseACompleter ?? false;
+                return BarreNavigationFlottante(
+                  indexCourant: _currentIndex,
+                  onChange: (i) => setState(() => _currentIndex = i),
+                  onglets: [
+                    const OngletNavigation(
+                        Icons.home_outlined, Icons.home_rounded, 'Accueil'),
+                    const OngletNavigation(Icons.receipt_long_outlined,
+                        Icons.receipt_long_rounded, 'Factures'),
+                    const OngletNavigation(Icons.description_outlined,
+                        Icons.description_rounded, 'Contrats'),
+                    OngletNavigation(
+                      Icons.person_outline,
+                      Icons.person_rounded,
+                      'Profil',
+                      pastille: aCompleter,
+                    ),
+                  ],
+                );
+              },
             ),
           );
         },

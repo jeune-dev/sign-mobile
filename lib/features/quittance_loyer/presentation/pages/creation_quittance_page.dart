@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -350,7 +351,7 @@ class _CreationQuittancePageState extends State<CreationQuittancePage> {
           // sections visibles, et un TextFormField demonte n est plus rattache au
           // Form — validate() laissait alors passer des champs obligatoires vides.
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+            padding: avecMargeBasse(context, const EdgeInsets.fromLTRB(16, 20, 16, 40)),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
@@ -33,7 +34,7 @@ class DetailContratClientPage extends StatelessWidget {
           }
         },
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: avecMargeBasse(context, const EdgeInsets.all(16)),
           children: [
             // ── Statut ────────────────────────────────────────────
             _StatusHeader(contrat: contrat),

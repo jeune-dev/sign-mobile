@@ -11,7 +11,17 @@ class OngletNavigation {
 
   final String libelle;
 
-  const OngletNavigation(this.icone, this.iconeActive, this.libelle);
+  /// Point rouge posé sur l'icône : quelque chose attend l'utilisateur de ce
+  /// côté-là. Utilisé pour signaler un profil encore incomplet, sur l'onglet
+  /// qui y mène.
+  final bool pastille;
+
+  const OngletNavigation(
+    this.icone,
+    this.iconeActive,
+    this.libelle, {
+    this.pastille = false,
+  });
 }
 
 /// barre_navigation_flottante.dart — La barre du bas.
@@ -76,8 +86,27 @@ class BarreNavigationFlottante extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(actif ? onglet.iconeActive : onglet.icone,
-                color: couleur, size: 23),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(actif ? onglet.iconeActive : onglet.icone,
+                    color: couleur, size: 23),
+                if (onglet.pastille)
+                  Positioned(
+                    top: -1,
+                    right: -2,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: AppColor.kDanger,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColor.kSurface, width: 1.5),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 3),
             Text(
               onglet.libelle,

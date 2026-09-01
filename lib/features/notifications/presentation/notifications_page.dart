@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/theme/app_dimensions.dart';
@@ -147,8 +148,10 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Widget _liste() {
     return ListView.separated(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(
-          AppEspace.l, AppEspace.l, AppEspace.l, AppEspace.xxl),
+      padding: avecMargeBasse(
+          context,
+          const EdgeInsets.fromLTRB(
+              AppEspace.l, AppEspace.l, AppEspace.l, AppEspace.xxl)),
       itemCount: _notifications.length + (_nonLues > 0 ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: AppEspace.m),
       itemBuilder: (context, index) {

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:toastification/toastification.dart';
 
 import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/utils/normalisation_nom.dart';
 import 'package:sign_application/core/validation/identifiant_validator.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/injection_container.dart';
 
 import '../../data/datasources/parcours_remote_datasource.dart';
+import '../../data/suivi_profil_service.dart';
+import '../../domain/etat_profil.dart';
 import 'package:sign_application/core/theme/app_typo.dart';
 
 /// compte_complet_page.dart — Création du compte complet (§ 11).
@@ -23,6 +27,11 @@ import 'package:sign_application/core/theme/app_typo.dart';
 /// Le formulaire est prérempli avec tout ce que SIGNS connaît déjà
 /// (`GET /profil/prereemplissage`), pour que l'utilisateur n'ait à compléter
 /// que ce qui manque réellement.
+///
+/// Il n'est pas obligatoire de tout remplir d'un coup : « Enregistrer et
+/// continuer plus tard » écrit ce qui est saisi et rend la main. Le compte
+/// n'est marqué complet qu'au bouton principal, mais rien n'est perdu entre
+/// deux passages — ce qui a été enregistré revient prérempli.
 class CompteCompletPage extends StatefulWidget {
   const CompteCompletPage({super.key});
 
@@ -50,18 +59,69 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
   bool _estProfessionnel = false;
   bool _chargement = true;
   bool _envoi = false;
+  /// Enregistrement partiel en cours — distinct de [_envoi] pour que seul le
+  /// bouton concerné passe en attente.
+  bool _enregistrementPartiel = false;
+  /// Au moins un champ a été touché depuis le dernier enregistrement : c'est
+  /// ce qui justifie de prévenir avant de quitter l'écran.
+  bool _modifie = false;
   String? _erreur;
 
   bool get _estPasseport => _typePiece == 'passeport';
 
+  /// Les champs dont dépend le décompte affiché en tête d'écran.
+  List<TextEditingController> get _controleursSuivis => [
+        _nomCtrl, _prenomCtrl, _villeCtrl, _telephoneCtrl, _emailCtrl,
+        _numeroPieceCtrl, _rccmCtrl, _nineaCtrl, _nomEntrepriseCtrl,
+      ];
+
   @override
   void initState() {
     super.initState();
+    // Le compteur doit suivre la saisie : sans ces écoutes, il resterait figé
+    // sur son état d'ouverture et annoncerait des champs déjà remplis.
+    for (final controleur in _controleursSuivis) {
+      controleur.addListener(_surSaisie);
+    }
     _chargerPreremplissage();
+  }
+
+  void _surSaisie() {
+    if (!mounted) return;
+    setState(() => _modifie = true);
+  }
+
+  /// Ce qu'il reste à renseigner, calculé sur la saisie en cours — donc à
+  /// jour à chaque frappe, sans aller-retour avec le serveur.
+  ///
+  /// Les règles sont celles d'[EtatProfil], les mêmes que celles appliquées
+  /// par le backend au moment de finaliser : le nombre annoncé ici est
+  /// exactement ce qui sera réclamé.
+  List<ElementManquant> get _champsRestants {
+    final saisie = <String, dynamic>{
+      'role': _estProfessionnel ? 'Professionnel' : 'Particulier',
+      'nom': _nomCtrl.text,
+      'prenom': _prenomCtrl.text,
+      'ville': _villeCtrl.text,
+      'telephone': _telephoneCtrl.text,
+      'email': _emailCtrl.text,
+      'type_document_identite': _typePiece,
+      'carte_identite_national_num': _numeroPieceCtrl.text,
+      'nomEntreprise': _nomEntrepriseCtrl.text,
+      'rc': _rccmCtrl.text,
+      'ninea': _nineaCtrl.text,
+    };
+    // Les justificatifs se comptent sur l'autre écran : ici on ne parle que
+    // des informations à saisir.
+    return EtatProfil.analyser(profil: saisie, justificatifs: const [])
+        .champsManquants;
   }
 
   @override
   void dispose() {
+    for (final controleur in _controleursSuivis) {
+      controleur.removeListener(_surSaisie);
+    }
     for (final c in [
       _nomCtrl, _prenomCtrl, _villeCtrl, _adresseCtrl, _telephoneCtrl,
       _emailCtrl, _numeroPieceCtrl, _ninCtrl, _rccmCtrl, _nineaCtrl,
@@ -94,18 +154,168 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
         final type = donnees['type_document_identite']?.toString();
         if (type == 'passeport') _typePiece = 'passeport';
 
-        // Un compte disposant d'informations d'entreprise est un compte
-        // professionnel : c'est le critère le plus fiable côté client.
-        _estProfessionnel = (donnees['nomEntreprise']?.toString().isNotEmpty ?? false) ||
-            (donnees['rc']?.toString().isNotEmpty ?? false) ||
-            (donnees['ninea']?.toString().isNotEmpty ?? false);
+        // Le rôle fait foi quand le backend le transmet. Le repli — la
+        // présence d'informations d'entreprise — reste là pour les serveurs
+        // pas encore à jour, mais il se trompait sur un professionnel qui
+        // n'avait encore rien saisi.
+        final role = donnees['role']?.toString();
+        _estProfessionnel = (role != null && role.isNotEmpty)
+            ? role != 'Particulier'
+            : (donnees['nomEntreprise']?.toString().isNotEmpty ?? false) ||
+                (donnees['rc']?.toString().isNotEmpty ?? false) ||
+                (donnees['ninea']?.toString().isNotEmpty ?? false);
 
+        // Le préremplissage n'est pas une modification de l'utilisateur.
+        _modifie = false;
         _chargement = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _chargement = false);
     }
+  }
+
+  /// Rassemble ce qui est saisi, sans exiger que tout le soit.
+  ///
+  /// Les champs laissés vides ne sont pas envoyés : sur cette route, une
+  /// valeur vide EFFACE la donnée en base. Un enregistrement partiel ne doit
+  /// jamais faire disparaître ce qui a été saisi lors d'un passage précédent.
+  Map<String, dynamic> _saisieNonVide() {
+    final donnees = <String, dynamic>{'type_document_identite': _typePiece};
+
+    void ajouter(String cle, TextEditingController controleur) {
+      final valeur = controleur.text.trim();
+      if (valeur.isNotEmpty) donnees[cle] = valeur;
+    }
+
+    ajouter('nom', _nomCtrl);
+    ajouter('prenom', _prenomCtrl);
+    ajouter('ville', _villeCtrl);
+    ajouter('adresse', _adresseCtrl);
+    ajouter('telephone', _telephoneCtrl);
+    ajouter('email', _emailCtrl);
+    ajouter('carte_identite_national_num', _numeroPieceCtrl);
+    ajouter('nin', _ninCtrl);
+
+    if (_estProfessionnel) {
+      ajouter('rc', _rccmCtrl);
+      ajouter('ninea', _nineaCtrl);
+      ajouter('nomEntreprise', _nomEntrepriseCtrl);
+      ajouter('adresseEntreprise', _adresseEntrepriseCtrl);
+    }
+
+    return donnees;
+  }
+
+  /// « Enregistrer et continuer plus tard » (§ 11).
+  ///
+  /// Le compte n'est pas marqué complet — c'est le bouton principal qui s'en
+  /// charge, une fois tout réuni. Ici on ne fait que garder ce qui est déjà
+  /// saisi, pour que l'utilisateur retrouve son dossier là où il l'a laissé.
+  ///
+  /// Aucune validation de formulaire : réclamer les champs obligatoires
+  /// reviendrait à refuser précisément ce que ce bouton propose. Le format de
+  /// ce qui EST saisi reste contrôlé par le backend, dont les messages sont
+  /// affichés tels quels.
+  Future<void> _enregistrerPartiellement() async {
+    setState(() {
+      _erreur = null;
+      _enregistrementPartiel = true;
+    });
+
+    try {
+      await sl<ParcoursRemoteDataSource>().enregistrerInformations(_saisieNonVide());
+      await sl<SuiviProfilService>().rafraichir();
+      if (!mounted) return;
+
+      final restants = _champsRestants.length;
+      setState(() {
+        _enregistrementPartiel = false;
+        _modifie = false;
+      });
+      showToast(
+        context,
+        'Informations enregistrées',
+        restants == 0
+            ? 'Il ne reste plus qu’à déposer vos justificatifs.'
+            : 'Vous pourrez reprendre plus tard : il reste '
+                '$restants information${restants > 1 ? 's' : ''} à renseigner.',
+        ToastificationType.success,
+      );
+      if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+    } on ParcoursException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _enregistrementPartiel = false;
+        _erreur = e.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _enregistrementPartiel = false;
+        _erreur = 'Enregistrement impossible. Vérifiez votre connexion.';
+      });
+    }
+  }
+
+  /// Sortie de l'écran avec des saisies non enregistrées.
+  ///
+  /// Trois issues, parce que les trois intentions existent : garder ce qui est
+  /// saisi, partir sans rien garder, ou revenir au formulaire.
+  Future<bool> _confirmerSortie() async {
+    if (!_modifie || _envoi || _enregistrementPartiel) return true;
+
+    final choix = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Enregistrer avant de quitter ?',
+          style: AppTypo.jakarta(
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            color: AppColor.kGrayscaleDark100,
+          ),
+        ),
+        content: Text(
+          'Vos informations seront conservées et vous pourrez reprendre là où '
+          'vous vous êtes arrêté.',
+          style: AppTypo.jakarta(
+            fontSize: 14,
+            color: AppColor.kGrayscale40,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('annuler'),
+            child: Text('Continuer la saisie',
+                style: AppTypo.jakarta(color: AppColor.kGrayscale40)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('quitter'),
+            child: Text('Quitter',
+                style: AppTypo.jakarta(color: AppColor.kDanger)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop('enregistrer'),
+            child: Text('Enregistrer',
+                style: AppTypo.jakarta(
+                    color: AppColor.kGrayscaleDark100,
+                    fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+
+    if (choix == 'enregistrer') {
+      // L'enregistrement referme l'écran lui-même en cas de succès ; en cas
+      // d'échec, le message d'erreur doit rester visible.
+      await _enregistrerPartiellement();
+      return false;
+    }
+    return choix == 'quitter';
   }
 
   Future<void> _enregistrer() async {
@@ -143,7 +353,9 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
     setState(() => _envoi = true);
     try {
       await sl<ParcoursRemoteDataSource>().completerProfil(donnees);
+      await sl<SuiviProfilService>().rafraichir();
       if (!mounted) return;
+      _modifie = false;
       showToast(
         context,
         'Profil complété',
@@ -169,6 +381,24 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Quitter en cours de saisie ne doit pas coûter ce qui a déjà été tapé :
+    // le geste de retour propose d'abord de l'enregistrer.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (dejaFerme, _) async {
+        if (dejaFerme) return;
+        final peutSortir = await _confirmerSortie();
+        if (peutSortir && context.mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: _formulaire(),
+    );
+  }
+
+  /// Le formulaire lui-meme, sorti de [build] pour que le garde-fou de sortie
+  /// n'ajoute pas un niveau d'indentation a tout l'ecran.
+  Widget _formulaire() {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -198,10 +428,16 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             _introduction(),
-                            const SizedBox(height: 26),
+                            const SizedBox(height: 18),
+                            _compteurChampsRestants(),
+                            const SizedBox(height: 22),
                             _section('Identité'),
-                            _champ('Nom', _nomCtrl, obligatoire: true),
-                            _champ('Prénom', _prenomCtrl, obligatoire: true),
+                            _champ('Nom', _nomCtrl,
+                                obligatoire: true,
+                                formateurs: const [FormateurNomFamille()]),
+                            _champ('Prénom', _prenomCtrl,
+                                obligatoire: true,
+                                formateurs: const [FormateurPrenom()]),
                             _champ('Ville', _villeCtrl, obligatoire: true),
                             _champ('Adresse complète', _adresseCtrl),
                             _champ(
@@ -306,6 +542,91 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
     );
   }
 
+  /// Le nombre d'informations encore attendues, en tête de formulaire.
+  ///
+  /// Un formulaire de douze champs ne dit pas de lui-même où l'on en est :
+  /// ce bandeau répond à la seule question que se pose l'utilisateur — combien
+  /// de fois encore. Il se met à jour à chaque frappe, et énumère les deux
+  /// premiers champs restants pour éviter la chasse au champ vide.
+  Widget _compteurChampsRestants() {
+    final restants = _champsRestants;
+
+    if (restants.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE8F5EE),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFBFE3CE)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.check_circle_outline_rounded,
+                size: 18, color: Color(0xFF1B7F4B)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Toutes les informations sont renseignées.',
+                style: AppTypo.jakarta(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF14603A),
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final apercu = restants.take(2).map((c) => c.libelle).join(', ');
+    final reste = restants.length - 2;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6E5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF3DCB0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.edit_note_rounded, size: 19, color: AppColor.kAlerte),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${restants.length} information${restants.length > 1 ? 's' : ''} '
+                  'restante${restants.length > 1 ? 's' : ''} à renseigner',
+                  style: AppTypo.jakarta(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF7A4E00),
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  reste > 0 ? '$apercu et $reste autre${reste > 1 ? 's' : ''}.' : '$apercu.',
+                  style: AppTypo.jakarta(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF7A4E00),
+                    height: 1.45,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _section(String titre) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -372,6 +693,7 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
     TextInputType typeClavier = TextInputType.text,
     bool majuscules = false,
     String? instruction,
+    List<TextInputFormatter>? formateurs,
   }) {
     OutlineInputBorder bordure(Color couleur, double epaisseur) => OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -419,6 +741,7 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
             keyboardType: typeClavier,
             textCapitalization:
                 majuscules ? TextCapitalization.characters : TextCapitalization.none,
+            inputFormatters: formateurs,
             style: AppTypo.jakarta(
               fontSize: 15,
               fontWeight: FontWeight.w500,
@@ -500,41 +823,80 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
         color: Colors.white,
         border: Border(top: BorderSide(color: AppColor.kLine)),
       ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 54,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _envoi ? null : _enregistrer,
-            borderRadius: BorderRadius.circular(14),
-            child: Ink(
-              decoration: BoxDecoration(
-                color: _envoi ? AppColor.kGrayscale40 : AppColor.kPrimary,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: (_envoi || _enregistrementPartiel) ? null : _enregistrer,
                 borderRadius: BorderRadius.circular(14),
-              ),
-              child: Center(
-                child: _envoi
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.4,
-                          valueColor: AlwaysStoppedAnimation(Colors.white),
-                        ),
-                      )
-                    : Text(
-                        'Enregistrer mon compte',
-                        style: AppTypo.jakarta(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    color: _envoi ? AppColor.kGrayscale40 : AppColor.kPrimary,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: _envoi
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.4,
+                              valueColor: AlwaysStoppedAnimation(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Enregistrer mon compte',
+                            style: AppTypo.jakarta(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                          ),
+                  ),
+                ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 10),
+          // Sortie assumée : ce qui est saisi est conservé, le compte n'est
+          // simplement pas encore déclaré complet. Un formulaire de cette
+          // longueur se remplit rarement en une fois, surtout quand il faut
+          // aller chercher une pièce d'identité dans un tiroir.
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: TextButton(
+              onPressed: (_envoi || _enregistrementPartiel)
+                  ? null
+                  : _enregistrerPartiellement,
+              style: TextButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: BorderSide(color: AppColor.kLine, width: 1.3),
+                ),
+              ),
+              child: _enregistrementPartiel
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2.2),
+                    )
+                  : Text(
+                      'Enregistrer et continuer plus tard',
+                      style: AppTypo.jakarta(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColor.kGrayscaleDark100,
+                      ),
+                    ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -2,4 +2,10 @@
 <resources>
     <color name="ic_launcher_background">#FFFFFF</color>
     <color name="notification_color">#000000</color>
+    <!-- Ivoire de l'écran d'ouverture. Doit rester aligné sur _kIvoire
+         (onboarding_page.dart) : c'est la couleur que la fenêtre native
+         affiche avant que Flutter ne dessine sa première image. Elle était
+         auparavant liée à ?android:colorBackground, qui vire au noir quand le
+         téléphone est en mode sombre. -->
+    <color name="ivoire_ouverture">#FAF9F7</color>
 </resources>

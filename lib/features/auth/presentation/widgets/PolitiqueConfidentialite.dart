@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'package:sign_application/core/theme/app_typo.dart';
 
 class PolitiqueConfidentialite extends StatelessWidget {
@@ -22,7 +23,7 @@ class PolitiqueConfidentialite extends StatelessWidget {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: avecMargeBasse(context, const EdgeInsets.all(20)),
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(

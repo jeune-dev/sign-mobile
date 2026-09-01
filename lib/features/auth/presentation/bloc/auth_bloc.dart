@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/services/premier_lancement_service.dart';
 import '../../../../core/services/token_service.dart';
+import '../../../../features/parcours/data/suivi_profil_service.dart';
 import '../../../../injection_container.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/login_user.dart';
@@ -139,6 +140,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // recevoir la proposition de compte complet (§ 10), même si le
       // précédent l'avait refusée.
       await sl<PremierLancementService>().reinitialiserPropositionCompte();
+      // L'avancement du profil qui vient d'etre quitte ne doit pas allumer la
+      // pastille du compte suivant.
+      sl<SuiviProfilService>().vider();
       await storage.delete(key: 'user_id');
       await storage.delete(key: 'user_role'); // Évite navigation FCM incorrecte si 2 users partagent le device
 

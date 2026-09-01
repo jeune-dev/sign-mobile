@@ -10,6 +10,8 @@ import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_
 import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:sign_application/features/facture/presentation/pages/historique_factures_page.dart';
 import 'package:sign_application/features/facture/presentation/pages/cree_facture_page.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:sign_application/features/facture/presentation/bloc/facture_bloc.dart';
 import 'package:sign_application/features/contrat/presentation/widgets/contract_type_modal.dart';
 import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
@@ -471,18 +473,24 @@ class _HomeProfessionnelPageState extends State<HomeProfessionnelPage>
   }
 
   // ── Actions boutons rapides ─────────────────────────────────────────────────
-  void _ouvrirCreationFacture() {
-    Navigator.push(
+  /// Le raccourci de l'accueil poussait `CreeFacture` directement, sans passer
+  /// par `ParcoursDocument.ouvrir`. Il contournait donc le contrôle de quota
+  /// que la page Factures applique : un compte non vérifié pouvait continuer à
+  /// créer des factures au-delà de sa limite en partant de l'accueil.
+  ///
+  /// Les deux entrées empruntent désormais la même garde — c'est elle qui
+  /// vérifie le quota, réclame les informations manquantes et annonce les
+  /// documents restants.
+  Future<void> _ouvrirCreationFacture() async {
+    await ParcoursDocument.ouvrir(
       context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: di.sl<FactureBloc>(),
-          child: const CreeFacture(),
-        ),
+      typeDocument: TypeDocumentSigns.facture,
+      page: (_) => BlocProvider.value(
+        value: di.sl<FactureBloc>(),
+        child: const CreeFacture(),
       ),
-    ).then((_) {
-      if (mounted) context.read<DashboardBloc>().add(LoadDashboard());
-    });
+    );
+    if (mounted) context.read<DashboardBloc>().add(LoadDashboard());
   }
 
   void _ouvrirModalContrat() {

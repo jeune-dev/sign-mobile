@@ -196,7 +196,9 @@ class _VerificationEmailPageState extends State<VerificationEmailPage> {
                           height: 1.55,
                         ),
                       ),
-                      const SizedBox(height: AppEspace.xxl),
+                      const SizedBox(height: AppEspace.l),
+                      _rappelIndesirables(),
+                      const SizedBox(height: AppEspace.xl),
                       _champCode(),
                       if (_erreur != null) _bandeauErreur(),
                       const SizedBox(height: AppEspace.l),
@@ -217,6 +219,42 @@ class _VerificationEmailPageState extends State<VerificationEmailPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Rappel permanent : l'e-mail atterrit souvent dans les indésirables.
+  ///
+  /// Le message ne s'affichait qu'après un renvoi de code, c'est-à-dire une
+  /// fois que l'utilisateur avait déjà attendu, cherché, et conclu que rien
+  /// n'était arrivé. Il a sa place dès le premier affichage de l'écran.
+  Widget _rappelIndesirables() {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppEspace.m, vertical: AppEspace.m),
+      decoration: BoxDecoration(
+        color: AppColor.kChamp,
+        borderRadius: BorderRadius.circular(AppRayon.champ),
+        border: Border.all(color: AppColor.kBordure),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, size: 18, color: AppColor.kTexteMoyen),
+          const SizedBox(width: AppEspace.s + 2),
+          Expanded(
+            child: Text(
+              'Vous ne voyez pas l’e-mail ? Regardez dans vos courriers '
+              'indésirables (spams) : il s’y range parfois.',
+              style: AppTypo.jakarta(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: AppColor.kTexteMoyen,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

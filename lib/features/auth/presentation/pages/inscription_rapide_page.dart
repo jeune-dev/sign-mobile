@@ -9,7 +9,9 @@ import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/theme/app_dimensions.dart';
 import 'package:sign_application/core/widgets/app_bouton.dart';
 import 'package:sign_application/core/widgets/app_champ_texte.dart';
+import 'package:sign_application/core/utils/normalisation_nom.dart';
 import 'package:sign_application/core/validation/identifiant_validator.dart';
+import 'package:sign_application/core/validation/pays_telephone_ui.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 
 import '../bloc/auth_bloc.dart';
@@ -87,6 +89,19 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
       _role = role;
       _etape = 1;
     });
+  }
+
+  /// « J'ai déjà un compte ».
+  ///
+  /// À la première ouverture, l'application dépose l'utilisateur directement
+  /// sur cet écran : quelqu'un qui réinstalle l'application, ou qui change de
+  /// téléphone, n'avait aucun moyen de rejoindre la connexion sans repasser
+  /// par le bouton retour, qui ressemble à un abandon.
+  void _allerVersConnexion() {
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRouter.loginRoute,
+      (route) => false,
+    );
   }
 
   void _etapePrecedente() {
@@ -183,7 +198,8 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
             showToast(
               context,
               'Vérifiez votre e-mail',
-              'Un code vient d’être envoyé à ${state.user.email}.',
+              'Un code vient d’être envoyé à ${state.user.email}. '
+              'Pensez à regarder dans vos spams.',
               ToastificationType.info,
             );
             context.read<AuthBloc>().add(ResetAuthState());
@@ -218,7 +234,7 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
                 if (_etape > 0)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
-                      AppEspace.xl, 0, AppEspace.xl, AppEspace.l + 4),
+                      AppEspace.xl, 0, AppEspace.xl, AppEspace.s),
                     child: AppBouton(
                       libelle: _etape == _nombreEtapes - 1
                           ? 'Créer mon profil'
@@ -227,10 +243,53 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
                       onPressed: _continuer,
                     ),
                   ),
+                _lienConnexion(enCours),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  /// Passerelle vers la connexion, en bas de chaque étape.
+  ///
+  /// Un lien plutôt qu'un second bouton plein : la création de compte reste
+  /// l'action de cet écran, la connexion n'est qu'une sortie pour ceux qui
+  /// n'avaient rien à y faire.
+  Widget _lienConnexion(bool enCours) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+          AppEspace.xl, 0, AppEspace.xl, AppEspace.l),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Vous avez déjà un compte ?',
+            style: AppTypo.jakarta(
+              fontSize: 13.5,
+              fontWeight: FontWeight.w400,
+              color: AppColor.kGrayscale40,
+            ),
+          ),
+          TextButton(
+            onPressed: enCours ? null : _allerVersConnexion,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              minimumSize: const Size(0, 36),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              'Se connecter',
+              style: AppTypo.jakarta(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w800,
+                color: AppColor.kGrayscaleDark100,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -438,6 +497,10 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
             libelle: 'Nom',
             controleur: _nomCtrl,
             indication: 'Votre nom',
+            // Le serveur normalise de toute façon à l'enregistrement : la
+            // mise en forme pendant la frappe évite que l'utilisateur
+            // découvre après coup que son nom s'écrit autrement.
+            formateurs: const [FormateurNomFamille()],
             validateur: (valeur) => (valeur == null || valeur.trim().length < 2)
                 ? 'Indiquez votre nom'
                 : null,
@@ -446,6 +509,7 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
             libelle: 'Prénom',
             controleur: _prenomCtrl,
             indication: 'Votre prénom',
+            formateurs: const [FormateurPrenom()],
             validateur: (valeur) => (valeur == null || valeur.trim().length < 2)
                 ? 'Indiquez votre prénom'
                 : null,
@@ -637,7 +701,10 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
         ),
         const SizedBox(height: 8),
         IntlPhoneField(
-          initialCountryCode: 'SN',
+          // Seuls les pays dont SIGNS connaît les règles sont proposés :
+          // ailleurs, le numéro saisi aurait été refusé juste après.
+          countries: paysTelephoneAutorises(),
+          initialCountryCode: paysTelephoneInitial(),
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           style: AppTypo.jakarta(
             fontSize: 15,

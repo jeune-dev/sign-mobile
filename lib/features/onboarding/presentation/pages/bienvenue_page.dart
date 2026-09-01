@@ -131,6 +131,20 @@ class _BienvenuePageState extends State<BienvenuePage>
     super.dispose();
   }
 
+  /// « J'ai déjà un compte » — même sortie que depuis l'inscription.
+  ///
+  /// La page de bienvenue ne s'affiche qu'une fois, mais elle s'affiche aussi
+  /// à celui qui réinstalle l'application : l'envoyer créer un second compte
+  /// serait la mauvaise réponse.
+  Future<void> _seConnecter() async {
+    await sl<PremierLancementService>().marquerBienvenueVue();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      AppRouter.loginRoute,
+      (route) => false,
+    );
+  }
+
   Future<void> _commencer() async {
     // Le drapeau est posé avant la navigation : la page ne revient pas, même
     // si l'utilisateur abandonne l'inscription en route (il retomberait alors
@@ -261,7 +275,20 @@ class _BienvenuePageState extends State<BienvenuePage>
                           iconeFin: Icons.arrow_forward_rounded,
                           onPressed: _commencer,
                         ),
-                        const SizedBox(height: AppEspace.m),
+                        const SizedBox(height: AppEspace.s),
+                        TextButton(
+                          onPressed: _seConnecter,
+                          child: Text(
+                            'J’ai déjà un compte',
+                            style: AppTypo.jakarta(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColor.kTexte,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: AppEspace.s),
                         // Dernière ligne de l'écran, et première réponse à la
                         // question que se pose quiconque s'apprête à confier des
                         // documents officiels à une application.

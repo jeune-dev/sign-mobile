@@ -76,7 +76,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final _navigatorKey = GlobalKey<NavigatorState>();
+  // La clé vit désormais dans AppRouter : le service de notifications en a
+  // besoin pour naviguer sans BuildContext, y compris quand l'app est relancée
+  // depuis une notification et qu'aucun écran n'a encore été construit.
+  final _navigatorKey = AppRouter.navigatorKey;
 
   @override
   void initState() {

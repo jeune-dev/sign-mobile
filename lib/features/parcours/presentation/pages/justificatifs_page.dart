@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -6,10 +7,13 @@ import 'package:toastification/toastification.dart';
 
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/services/securite_ecran.dart';
 import 'package:sign_application/injection_container.dart';
 
 import '../../data/datasources/parcours_remote_datasource.dart';
 import '../../data/models/exigences_document.dart';
+import '../../data/suivi_profil_service.dart';
+import '../../domain/etat_profil.dart';
 import 'package:sign_application/core/theme/app_typo.dart';
 
 /// justificatifs_page.dart — Vérification de l'identité et des informations
@@ -18,6 +22,11 @@ import 'package:sign_application/core/theme/app_typo.dart';
 ///
 /// Les justificatifs partent vers un espace privé chiffré, jamais vers une
 /// boîte mail : voir `justificatif.service.js` côté backend.
+///
+/// Chaque pièce est transmise dès qu'elle est choisie : il n'y a rien à
+/// « valider » en fin d'écran, et l'utilisateur peut quitter puis revenir
+/// déposer la suivante sans rien reperdre. Le compteur en tête dit ce qu'il
+/// reste à fournir.
 ///
 /// ⚠️ Seules les photos sont proposées ici (appareil photo ou galerie). Le
 /// backend accepte aussi le PDF, mais l'application n'embarque pas de
@@ -97,19 +106,82 @@ class _JustificatifsPageState extends State<JustificatifsPage> {
   bool _chargement = true;
   String? _envoiEnCours;
 
+  /// Pièce d'identité choisie dans le profil : elle décide des deux faces
+  /// réellement exigées parmi les quatre proposées.
+  String? _typePiece;
+
+  /// La pièce à retenir pour le décompte.
+  ///
+  /// Le profil fait foi. Tant qu'il ne dit rien, on suit ce qui a déjà été
+  /// déposé : quelqu'un qui a envoyé une page de passeport n'a pas à se voir
+  /// réclamer une CNI.
+  String? get _typePieceEffectif {
+    if (_typePiece != null && _typePiece!.isNotEmpty) return _typePiece;
+    final aPasseport =
+        _justificatifs.any((j) => j.type.startsWith('passeport'));
+    return aPasseport ? 'passeport' : null;
+  }
+
+  /// Les faces attendues pour cette pièce.
+  List<ElementManquant> get _facesAttendues =>
+      EtatProfil.facesAttendues(_typePieceEffectif);
+
+  /// Ce qu'il reste à transmettre. Une pièce refusée y revient : elle doit
+  /// être redéposée, l'ignorer laisserait l'utilisateur attendre une
+  /// validation qui ne viendrait jamais.
+  List<ElementManquant> get _documentsRestants {
+    final utilisables = <String>{
+      for (final j in _justificatifs)
+        if (!j.estRejete) j.type,
+    };
+    return _facesAttendues
+        .where((face) => !utilisables.contains(face.cle))
+        .toList();
+  }
+
+  bool _estObligatoire(String cle) =>
+      _facesAttendues.any((face) => face.cle == cle);
+
   @override
   void initState() {
     super.initState();
+    // Cet écran manipule des pièces d'identité : on interdit la capture et,
+    // surtout, la vignette du gestionnaire de tâches qui survivrait à la
+    // fermeture de l'application.
+    SecuriteEcran.activer();
     _charger();
+  }
+
+  @override
+  void dispose() {
+    // Levée impérativement symétrique — sans elle, la capture resterait
+    // bloquée sur tous les écrans suivants de la session.
+    SecuriteEcran.desactiver();
+    super.dispose();
   }
 
   Future<void> _charger() async {
     try {
-      final resultat = await sl<ParcoursRemoteDataSource>().listerJustificatifs();
+      final source = sl<ParcoursRemoteDataSource>();
+      final resultat = await source.listerJustificatifs();
+      // Le profil dit quelle pièce a été choisie — sans lui, impossible de
+      // savoir si ce sont les faces de la CNI ou celles du passeport qui
+      // manquent.
+      final profil = await source.prereemplissage();
+
+      // L'état est calculé ici puis poussé au service : cet écran vient de
+      // charger les deux moitiés de l'information, le refaire ailleurs serait
+      // deux appels pour rien.
+      sl<SuiviProfilService>().appliquer(EtatProfil.analyser(
+        profil: profil,
+        justificatifs: resultat.justificatifs,
+      ));
+
       if (!mounted) return;
       setState(() {
         _justificatifs = resultat.justificatifs;
         _mentions = resultat.mentions;
+        _typePiece = profil['type_document_identite']?.toString();
         _chargement = false;
       });
     } catch (_) {
@@ -117,6 +189,14 @@ class _JustificatifsPageState extends State<JustificatifsPage> {
       setState(() => _chargement = false);
     }
   }
+
+  /// Une pièce d'identité n'est vérifiable que si ses DEUX faces sont
+  /// déposées. L'utilisateur choisit CNI ou passeport, jamais les deux : le
+  /// dossier est donc complet dès qu'une paire l'est.
+  ///
+  /// Une face refusée ne compte pas : annoncer « profil complet » alors qu'une
+  /// pièce est à redéposer ferait attendre une validation qui ne viendra pas.
+  bool get _identiteComplete => _documentsRestants.isEmpty;
 
   Justificatif? _justificatifPour(String type) {
     for (final j in _justificatifs) {
@@ -147,13 +227,22 @@ class _JustificatifsPageState extends State<JustificatifsPage> {
         fichier: File(fichier.path),
       );
       if (!mounted) return;
+      await _charger();
+      if (!mounted) return;
+      // Le message dit où l'on en est : ce qui vient d'être déposé est acquis,
+      // et l'utilisateur peut s'arrêter là s'il ne peut pas continuer tout de
+      // suite.
+      final restants = _documentsRestants.length;
       showToast(
         context,
-        'Justificatif transmis',
-        'Il sera vérifié par notre équipe.',
+        _identiteComplete ? 'Pièce d’identité complète' : 'Justificatif transmis',
+        _identiteComplete
+            ? 'Votre dossier part en examen. Vous serez prévenu par e-mail.'
+            : 'Il est enregistré. Il reste $restants document'
+                '${restants > 1 ? 's' : ''} à transmettre — vous pouvez y '
+                'revenir plus tard.',
         ToastificationType.success,
       );
-      await _charger();
     } on ParcoursException catch (e) {
       if (!mounted) return;
       showToast(context, 'Envoi impossible', e.message, ToastificationType.error);
@@ -275,9 +364,14 @@ class _JustificatifsPageState extends State<JustificatifsPage> {
           : RefreshIndicator(
               onRefresh: _charger,
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+                padding: avecMargeBasse(context, const EdgeInsets.fromLTRB(24, 8, 24, 32)),
                 children: [
                   _introduction(),
+                  const SizedBox(height: 20),
+                  if (_identiteComplete)
+                    _bandeauComplet()
+                  else
+                    _compteurDocumentsRestants(),
                   const SizedBox(height: 24),
                   ..._types.map(_carteType),
                   const SizedBox(height: 8),
@@ -317,6 +411,131 @@ class _JustificatifsPageState extends State<JustificatifsPage> {
     );
   }
 
+  /// Confirme que le dossier est constitué et annonce la suite. Sans ce
+  /// retour, l'utilisateur ne sait pas s'il doit encore faire quelque chose :
+  /// il a déposé ses pièces et l'écran ne dit rien de plus qu'avant.
+  Widget _bandeauComplet() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5EE),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFBFE3CE)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.verified_outlined, size: 20, color: Color(0xFF1B7F4B)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Profil complet',
+                  style: AppTypo.jakarta(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF14603A),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Vos justificatifs vont être examinés par notre équipe. '
+                  'Vous serez prévenu par e-mail dès que votre compte sera vérifié.',
+                  style: AppTypo.jakarta(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF14603A),
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Combien de pièces manquent encore, et lesquelles.
+  ///
+  /// Six cartes sont proposées mais deux seulement sont exigées — celles de la
+  /// pièce choisie dans le profil. Sans ce décompte, l'utilisateur ne peut pas
+  /// savoir quand il a fini.
+  Widget _compteurDocumentsRestants() {
+    final restants = _documentsRestants;
+    if (restants.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF6E5),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF3DCB0)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.file_upload_outlined, size: 20, color: AppColor.kAlerte),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${restants.length} document${restants.length > 1 ? 's' : ''} '
+                  'restant${restants.length > 1 ? 's' : ''} à transmettre',
+                  style: AppTypo.jakarta(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF7A4E00),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${restants.map((d) => d.libelle).join(' · ')}.\n'
+                  'Chaque pièce est enregistrée dès son envoi : vous pouvez '
+                  'revenir déposer les suivantes plus tard.',
+                  style: AppTypo.jakarta(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF7A4E00),
+                    height: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Distingue les deux pièces réellement exigées des quatre autres.
+  ///
+  /// La liste propose CNI et passeport côte à côte : sans repère, on ne sait
+  /// pas laquelle des deux séries l'application attend.
+  Widget _etiquetteExigence(bool obligatoire) {
+    final couleur = obligatoire ? AppColor.kAlerte : AppColor.kGrayscale40;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: couleur.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Text(
+        obligatoire ? 'Requis' : 'Facultatif',
+        style: AppTypo.jakarta(
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+          color: couleur,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
   Widget _carteType(_TypeJustificatif type) {
     final existant = _justificatifPour(type.cle);
     final envoi = _envoiEnCours == type.cle;
@@ -340,13 +559,21 @@ class _JustificatifsPageState extends State<JustificatifsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      type.titre,
-                      style: AppTypo.jakarta(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColor.kGrayscaleDark100,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            type.titre,
+                            style: AppTypo.jakarta(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColor.kGrayscaleDark100,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _etiquetteExigence(_estObligatoire(type.cle)),
+                      ],
                     ),
                     const SizedBox(height: 3),
                     Text(

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/utils/marge_systeme.dart';
+import 'package:sign_application/core/utils/normalisation_nom.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sign_application/features/client/domain/entities/client.dart';
@@ -345,7 +347,7 @@ class _CreeFactureState extends State<CreeFacture> {
             builder: (context, factureState) {
               final isLoading = factureState is FactureLoading;
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: avecMargeBasse(context, const EdgeInsets.all(16)),
                 child: Form(
                   key: _formKey,
                   child: Column(
@@ -404,6 +406,7 @@ class _CreeFactureState extends State<CreeFacture> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _clientManuelPrenomController,
+                                      inputFormatters: const [FormateurPrenom()],
                                       decoration: const InputDecoration(labelText: 'Prénom *', isDense: true, border: OutlineInputBorder()),
                                       validator: (v) => _modeClientManuel && (v == null || v.trim().isEmpty) ? 'Requis' : null,
                                     ),
@@ -412,6 +415,7 @@ class _CreeFactureState extends State<CreeFacture> {
                                   Expanded(
                                     child: TextFormField(
                                       controller: _clientManuelNomController,
+                                      inputFormatters: const [FormateurNomFamille()],
                                       decoration: const InputDecoration(labelText: 'Nom *', isDense: true, border: OutlineInputBorder()),
                                       validator: (v) => _modeClientManuel && (v == null || v.trim().isEmpty) ? 'Requis' : null,
                                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_color.dart';
 import '../theme/app_dimensions.dart';
@@ -37,6 +38,10 @@ class AppChampTexte extends StatelessWidget {
   final int maxLignes;
   final ValueChanged<String>? surChangement;
 
+  /// Mise en forme appliquee pendant la frappe — la casse des noms, par
+  /// exemple (voir core/utils/normalisation_nom.dart).
+  final List<TextInputFormatter>? formateurs;
+
   const AppChampTexte({
     super.key,
     required this.libelle,
@@ -51,6 +56,7 @@ class AppChampTexte extends StatelessWidget {
     this.icone,
     this.maxLignes = 1,
     this.surChangement,
+    this.formateurs,
   });
 
   /// Décoration partagée, exposée pour les champs qui ne peuvent pas utiliser
@@ -139,6 +145,7 @@ class AppChampTexte extends StatelessWidget {
                 ? TextCapitalization.characters
                 : TextCapitalization.none,
             maxLines: maxLignes,
+            inputFormatters: formateurs,
             onChanged: surChangement,
             style: AppTypo.jakarta(
               fontSize: 15,

@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sign_application/core/config/user_role.dart';
@@ -6,6 +7,7 @@ import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/core/services/premier_lancement_service.dart';
 import 'package:sign_application/core/services/token_service.dart';
 import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 import 'package:sign_application/injection_container.dart';
 
 // Première page d'onboarding (logo 1)
@@ -129,6 +131,25 @@ class _OnboardingPage1State extends State<OnboardingPage1>
                   },
                 ),
               ],
+            ),
+          ),
+
+          // Signature de conception — première page uniquement.
+          // Posée en bas, petite et grise : elle se lit comme une mention
+          // d'auteur et ne dispute rien au logo.
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: avecMargeBasse(context, const EdgeInsets.only(bottom: 44)),
+              child: Text(
+                'By Africodex Digital',
+                style: AppTypo.jakarta(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFFA8A29E),
+                  letterSpacing: 0.6,
+                ),
+              ),
             ),
           ),
         ],

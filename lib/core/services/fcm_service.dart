@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -34,7 +35,7 @@ class FcmService {
   ///   2. Demande de permission
   ///   3. Upload du token FCM au backend
   ///   4. Handlers (foreground / background tap / terminated tap)
-  static Future<void> init(BuildContext context) async {
+  static Future<void> init() async {
     // ── 1. Initialiser le plugin local notifications ──────────────────────────
     await _initLocalNotifications();
 
@@ -63,22 +64,25 @@ class FcmService {
       final notif = message.notification;
       if (notif == null) return;
       _showLocalNotification(
-        title: notif.title ?? 'Sign',
-        body:  notif.body  ?? '',
-        data:  message.data,
+        title: notif.title ?? 'SIGNS',
+        body: notif.body ?? '',
+        data: message.data,
       );
     });
 
     // ── 6. Handler tap sur notif quand l'app était en ARRIÈRE-PLAN ────────────
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      if (context.mounted) _handleNotificationTap(context, message.data);
+      _ouvrirDepuisNotification(message.data);
     });
 
     // ── 7. Handler tap sur notif quand l'app était TERMINÉE ───────────────────
+    // L'app a été lancée DEPUIS une notification : le Navigator n'existe pas
+    // encore au moment où l'on lit le message, d'où le report après la
+    // première frame.
     final initial = await _messaging.getInitialMessage();
-    if (initial != null && context.mounted) {
+    if (initial != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _handleNotificationTap(context, initial.data);
+        _ouvrirDepuisNotification(initial.data);
       });
     }
   }
@@ -91,8 +95,19 @@ class FcmService {
     await _localNotif.initialize(
       settings: const InitializationSettings(android: androidInit, iOS: darwinInit),
       onDidReceiveNotificationResponse: (response) {
-        // Tap sur une notification locale en foreground : on ignore la navigation
-        // car on n'a plus le context ici — l'utilisateur verra le contenu en ouvrant l'app
+        // Tap sur une notification affichée alors que l'app était ouverte.
+        // Elle ne menait nulle part auparavant, faute de BuildContext ici :
+        // la navigation passe désormais par la clé globale, et les données du
+        // message voyagent dans le `payload`.
+        final charge = response.payload;
+        if (charge == null || charge.isEmpty) return;
+        try {
+          final donnees = jsonDecode(charge) as Map<String, dynamic>;
+          _ouvrirDepuisNotification(donnees);
+        } catch (_) {
+          // Charge illisible : on ouvre l'app sans redirection plutôt que
+          // de planter sur un tap.
+        }
       },
     );
 
@@ -141,6 +156,9 @@ class FcmService {
       title: title,
       body: body,
       notificationDetails: notifDetails,
+      // Sans cette charge, le tap sur la notification n'aurait aucune donnée
+      // pour savoir vers quelle page rediriger.
+      payload: jsonEncode(data),
     );
   }
 
@@ -167,30 +185,35 @@ class FcmService {
   /// pour les cas où init() n'a pas encore été appelé (rare).
   static Future<void> uploadToken() => _uploadToken();
 
-  /// Navigation basée sur le type reçu dans la notification
-  static Future<void> _handleNotificationTap(
-    BuildContext context,
+  /// Redirige vers la rubrique concernée par la notification.
+  ///
+  /// Appelée dans les trois situations : app ouverte, app en arrière-plan,
+  /// app relancée depuis la notification. Elle passe par la clé de Navigator
+  /// globale plutôt que par un `BuildContext` : celui qui avait servi à
+  /// initialiser le service peut être démonté, et dans le cas d'un lancement
+  /// depuis une notification, aucun écran n'existe encore.
+  static Future<void> _ouvrirDepuisNotification(
     Map<String, dynamic> data,
   ) async {
     final type = data['type'] as String?;
-    if (type == null || !context.mounted) return;
+    if (type == null) return;
+
+    final navigateur = AppRouter.navigatorKey.currentState;
+    if (navigateur == null) return;
 
     final role = await _getUserRole();
-    if (!context.mounted) return;
 
-    if (role == 'Particulier') {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRouter.clientRoute,
-        (route) => false,
-        arguments: NotificationNavArgs(initialTabIndex: 2, contractType: type),
-      );
-    } else {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        AppRouter.professionnelRoute,
-        (route) => false,
-        arguments: NotificationNavArgs(initialTabIndex: 3, contractType: type),
-      );
-    }
+    // L'onglet « Documents » ne porte pas le même index selon l'espace :
+    // 2 chez le particulier, 3 chez le professionnel.
+    final estClient = role == 'Particulier';
+    navigateur.pushNamedAndRemoveUntil(
+      estClient ? AppRouter.clientRoute : AppRouter.professionnelRoute,
+      (route) => false,
+      arguments: NotificationNavArgs(
+        initialTabIndex: estClient ? 2 : 3,
+        contractType: type,
+      ),
+    );
   }
 
   static Future<String?> _getUserRole() async {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -280,7 +281,7 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
                   }
                   return ListView.separated(
                     controller: scrollController,
-                    padding: const EdgeInsets.all(16),
+                    padding: avecMargeBasse(context, const EdgeInsets.all(16)),
                     itemCount: bails.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (_, i) {

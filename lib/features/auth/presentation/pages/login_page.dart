@@ -12,6 +12,7 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import 'package:sign_application/core/theme/app_typo.dart';
+import 'package:sign_application/core/validation/pays_telephone_ui.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -458,7 +459,10 @@ class _LoginPageState extends State<LoginPage> {
         _fieldLabel('Téléphone'),
         const SizedBox(height: 8),
         IntlPhoneField(
-          initialCountryCode: 'SN',
+          // Même liste qu'à l'inscription : un compte ne peut exister que sur
+          // l'un de ces pays, le sélecteur n'a pas à en proposer d'autres.
+          countries: paysTelephoneAutorises(),
+          initialCountryCode: paysTelephoneInitial(),
           style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,

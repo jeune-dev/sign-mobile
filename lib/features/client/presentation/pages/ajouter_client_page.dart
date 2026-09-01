@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/utils/marge_systeme.dart';
+import 'package:sign_application/core/utils/normalisation_nom.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
@@ -172,7 +174,7 @@ class _AjouterClientPageState extends State<AjouterClientPage> {
               // sections visibles, et un TextFormField demonte n est plus rattache au
               // Form — validate() laissait alors passer des champs obligatoires vides.
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                padding: avecMargeBasse(context, const EdgeInsets.fromLTRB(16, 20, 16, 40)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -189,6 +191,10 @@ class _AjouterClientPageState extends State<AjouterClientPage> {
                                 TextFormField(
                                   controller: _prenomController,
                                   textCapitalization: TextCapitalization.words,
+                                  // Un client saisi par un professionnel figure
+                                  // sur les mêmes documents qu'un client
+                                  // inscrit : son nom suit la même règle.
+                                  inputFormatters: const [FormateurPrenom()],
                                   decoration: _dec('Prénom', Icons.person_outline_rounded),
                                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Requis' : null,
                                 ),
@@ -203,7 +209,8 @@ class _AjouterClientPageState extends State<AjouterClientPage> {
                                 _label('Nom', required: true),
                                 TextFormField(
                                   controller: _nomController,
-                                  textCapitalization: TextCapitalization.words,
+                                  textCapitalization: TextCapitalization.characters,
+                                  inputFormatters: const [FormateurNomFamille()],
                                   decoration: _dec('Nom', Icons.badge_outlined),
                                   validator: (v) => (v == null || v.trim().isEmpty) ? 'Requis' : null,
                                 ),

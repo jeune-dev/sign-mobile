@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sign_application/core/utils/normalisation_nom.dart';
 
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/theme/app_dimensions.dart';
@@ -200,10 +201,14 @@ class SectionEmetteur extends StatelessWidget {
             AppChampTexte(
               libelle: 'Nom',
               controleur: controleur.controleurDe('nom'),
+              // Ce bloc est recopié tel quel sur le document : le nom y suit la
+              // même règle d'écriture que partout ailleurs.
+              formateurs: const [FormateurNomFamille()],
             ),
             AppChampTexte(
               libelle: 'Prénom',
               controleur: controleur.controleurDe('prenom'),
+              formateurs: const [FormateurPrenom()],
             ),
             AppChampTexte(
               libelle: 'Téléphone',

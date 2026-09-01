@@ -30,6 +30,8 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 import 'package:sign_application/core/theme/app_typo.dart';
+import 'package:sign_application/core/validation/pays_telephone_ui.dart';
+import 'package:sign_application/core/utils/normalisation_nom.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -597,6 +599,7 @@ class _RegisterPageState extends State<RegisterPage> {
           controller: _firstNameController,
           icon: Icons.person_outline,
           isRequired: true,
+          formateurs: const [FormateurPrenom()],
           validator: (v) {
             if (v == null || v.isEmpty) return 'Ce champ est obligatoire';
             if (!RegExp(r"^[a-zA-ZÀ-ÿ\s\-']+$").hasMatch(v)) {
@@ -613,6 +616,7 @@ class _RegisterPageState extends State<RegisterPage> {
           controller: _lastNameController,
           icon: Icons.person_outline,
           isRequired: true,
+          formateurs: const [FormateurNomFamille()],
           validator: (v) {
             if (v == null || v.isEmpty) return 'Ce champ est obligatoire';
             if (!RegExp(r"^[a-zA-ZÀ-ÿ\s\-']+$").hasMatch(v)) {
@@ -920,6 +924,7 @@ class _RegisterPageState extends State<RegisterPage> {
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
     bool isRequired = false,
+    List<TextInputFormatter>? formateurs,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -929,6 +934,7 @@ class _RegisterPageState extends State<RegisterPage> {
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: formateurs,
           style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
@@ -1144,7 +1150,8 @@ class _RegisterPageState extends State<RegisterPage> {
         const SizedBox(height: 8),
         IntlPhoneField(
           controller: controller,
-          initialCountryCode: 'SN',
+          countries: paysTelephoneAutorises(),
+          initialCountryCode: paysTelephoneInitial(),
           style: AppTypo.jakarta(
             fontSize: 15,
             fontWeight: FontWeight.w500,
