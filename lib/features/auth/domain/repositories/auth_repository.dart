@@ -34,6 +34,7 @@ abstract class AuthRepository {
     XFile? signature,
 
     // Champs entreprise ajoutés
+    String? poste,
     String? nomEntreprise,
     String? adresseEntreprise,
     String? telephoneEntreprise,

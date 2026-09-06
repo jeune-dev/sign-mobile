@@ -56,6 +56,7 @@ class RegisterRequested extends AuthEvent {
   final XFile? signature;
 
   // Champs entreprise ajoutés
+  final String? poste;
   final String? nomEntreprise;
   final String? adresseEntreprise;
   final String? telephoneEntreprise;
@@ -78,6 +79,7 @@ class RegisterRequested extends AuthEvent {
     this.rc,
     this.ninea,
     this.signature,
+    this.poste,
     this.nomEntreprise,
     this.adresseEntreprise,
     this.telephoneEntreprise,
@@ -102,6 +104,7 @@ class RegisterRequested extends AuthEvent {
     rc,
     ninea,
     signature,
+    poste,
     nomEntreprise,
     adresseEntreprise,
     telephoneEntreprise,

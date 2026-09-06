@@ -55,6 +55,7 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
 
   // ── Étape 3 : informations professionnelles ─────────────────────────────
   final _nomEntrepriseCtrl = TextEditingController();
+  final _posteCtrl = TextEditingController();
   final _villeEntrepriseCtrl = TextEditingController();
   final _emailEntrepriseCtrl = TextEditingController();
   String? _telephoneEntreprise;
@@ -77,6 +78,7 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
     _motDePasseCtrl.dispose();
     _confirmationCtrl.dispose();
     _nomEntrepriseCtrl.dispose();
+    _posteCtrl.dispose();
     _villeEntrepriseCtrl.dispose();
     _emailEntrepriseCtrl.dispose();
     super.dispose();
@@ -162,6 +164,9 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
                 _estProfessionnel && _nomEntrepriseCtrl.text.trim().isNotEmpty
                     ? _nomEntrepriseCtrl.text.trim()
                     : null,
+            poste: _estProfessionnel && _posteCtrl.text.trim().isNotEmpty
+                ? _posteCtrl.text.trim()
+                : null,
             adresseEntreprise:
                 _estProfessionnel && _villeEntrepriseCtrl.text.trim().isNotEmpty
                     ? _villeEntrepriseCtrl.text.trim()
@@ -578,6 +583,12 @@ class _InscriptionRapidePageState extends State<InscriptionRapidePage> {
             validateur: (valeur) => (valeur == null || valeur.trim().length < 2)
                 ? "Indiquez le nom de l'entreprise"
                 : null,
+          ),
+          AppChampTexte(
+            libelle: 'Poste',
+            obligatoire: false,
+            controleur: _posteCtrl,
+            indication: 'Ex. Gérant, Directeur commercial…',
           ),
           AppChampTexte(
             libelle: 'Ville',

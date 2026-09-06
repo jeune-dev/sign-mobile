@@ -30,6 +30,7 @@ class RegisterUser {
     XFile? signature,
 
     // Champs entreprise ajoutés
+    String? poste,
     String? nomEntreprise,
     String? adresseEntreprise,
     String? telephoneEntreprise,
@@ -53,6 +54,7 @@ class RegisterUser {
       rc: rc,
       ninea: ninea,
       signature: signature,
+      poste: poste,
       nomEntreprise: nomEntreprise,
       adresseEntreprise: adresseEntreprise,
       telephoneEntreprise: telephoneEntreprise,
