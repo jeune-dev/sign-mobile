@@ -35,6 +35,9 @@ class User extends Equatable {
   final String? token;
 
   // Champs entreprise
+  /// Poste occupé par le professionnel au sein de son entreprise (ex: Gérant,
+  /// Directeur commercial). Facultatif, comme [adresseEntreprise].
+  final String? poste;
   final String? nomEntreprise;
   final String? adresseEntreprise;
   final String? telephoneEntreprise;
@@ -60,6 +63,7 @@ class User extends Equatable {
     this.rc,
     this.ninea,
     this.signature,
+    this.poste,
     this.nomEntreprise,
     this.adresseEntreprise,
     this.telephoneEntreprise,
@@ -88,6 +92,7 @@ class User extends Equatable {
     'ninea': ninea,
     // VULN-C03 : signature non exposée dans les logs
     'signature': signature != null ? '[PRÉSENT]' : null,
+    'poste': poste,
     'nomEntreprise': nomEntreprise,
     'adresseEntreprise': adresseEntreprise,
     'telephoneEntreprise': telephoneEntreprise,
@@ -114,6 +119,7 @@ class User extends Equatable {
     logo,
     rc,
     ninea,
+    poste,
     nomEntreprise,
     adresseEntreprise,
     telephoneEntreprise,

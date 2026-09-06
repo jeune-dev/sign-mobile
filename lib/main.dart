@@ -61,7 +61,7 @@ void main() async {
   // Requis par media_store_plus — initialiser une seule fois avant tout
   if (Platform.isAndroid) {
     await MediaStore.ensureInitialized();
-    MediaStore.appFolder = 'Sign';
+    MediaStore.appFolder = 'Signs';
   }
 
   await di.init();
@@ -117,7 +117,7 @@ class _MyAppState extends State<MyApp> {
       child: MaterialApp(
         navigatorKey: _navigatorKey,
         debugShowCheckedModeBanner: false,
-        title: 'Sign',
+        title: 'Signs',
         theme: AppTheme.light(),
         locale: const Locale('fr', 'FR'),
         localizationsDelegates: const [

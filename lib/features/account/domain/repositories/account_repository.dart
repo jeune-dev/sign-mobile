@@ -14,6 +14,7 @@ abstract class AccountRepository {
     String? carteIdentiteNationalNum,
     String? rc,
     String? ninea,
+    String? poste,
     String? nomEntreprise,
     String? adresseEntreprise,
     String? telephoneEntreprise,

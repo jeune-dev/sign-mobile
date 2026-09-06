@@ -13,7 +13,7 @@ import 'token_service.dart';
 
 // ─── Canal Android ────────────────────────────────────────────────────────────
 const _kChannelId   = 'sign_push_channel';
-const _kChannelName = 'Notifications Sign';
+const _kChannelName = 'Notifications Signs';
 const _kChannelDesc = 'Contrats, factures et documents à signer';
 
 // ─── Plugin local notifications ───────────────────────────────────────────────

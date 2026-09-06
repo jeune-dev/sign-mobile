@@ -52,6 +52,7 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
   final _ninCtrl = TextEditingController();
   final _rccmCtrl = TextEditingController();
   final _nineaCtrl = TextEditingController();
+  final _posteCtrl = TextEditingController();
   final _nomEntrepriseCtrl = TextEditingController();
   final _adresseEntrepriseCtrl = TextEditingController();
 
@@ -72,7 +73,7 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
   /// Les champs dont dépend le décompte affiché en tête d'écran.
   List<TextEditingController> get _controleursSuivis => [
         _nomCtrl, _prenomCtrl, _villeCtrl, _telephoneCtrl, _emailCtrl,
-        _numeroPieceCtrl, _rccmCtrl, _nineaCtrl, _nomEntrepriseCtrl,
+        _numeroPieceCtrl, _rccmCtrl, _nineaCtrl, _posteCtrl, _nomEntrepriseCtrl,
       ];
 
   @override
@@ -125,7 +126,7 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
     for (final c in [
       _nomCtrl, _prenomCtrl, _villeCtrl, _adresseCtrl, _telephoneCtrl,
       _emailCtrl, _numeroPieceCtrl, _ninCtrl, _rccmCtrl, _nineaCtrl,
-      _nomEntrepriseCtrl, _adresseEntrepriseCtrl,
+      _posteCtrl, _nomEntrepriseCtrl, _adresseEntrepriseCtrl,
     ]) {
       c.dispose();
     }
@@ -148,6 +149,7 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
         _ninCtrl.text = donnees['nin']?.toString() ?? '';
         _rccmCtrl.text = donnees['rc']?.toString() ?? '';
         _nineaCtrl.text = donnees['ninea']?.toString() ?? '';
+        _posteCtrl.text = donnees['poste']?.toString() ?? '';
         _nomEntrepriseCtrl.text = donnees['nomEntreprise']?.toString() ?? '';
         _adresseEntrepriseCtrl.text = donnees['adresseEntreprise']?.toString() ?? '';
 
@@ -200,6 +202,7 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
     if (_estProfessionnel) {
       ajouter('rc', _rccmCtrl);
       ajouter('ninea', _nineaCtrl);
+      ajouter('poste', _posteCtrl);
       ajouter('nomEntreprise', _nomEntrepriseCtrl);
       ajouter('adresseEntreprise', _adresseEntrepriseCtrl);
     }
@@ -343,6 +346,7 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
       if (_estProfessionnel) ...{
         if (_rccmCtrl.text.trim().isNotEmpty) 'rc': _rccmCtrl.text.trim(),
         if (_nineaCtrl.text.trim().isNotEmpty) 'ninea': _nineaCtrl.text.trim(),
+        if (_posteCtrl.text.trim().isNotEmpty) 'poste': _posteCtrl.text.trim(),
         if (_nomEntrepriseCtrl.text.trim().isNotEmpty)
           'nomEntreprise': _nomEntrepriseCtrl.text.trim(),
         if (_adresseEntrepriseCtrl.text.trim().isNotEmpty)
@@ -484,6 +488,8 @@ class _CompteCompletPageState extends State<CompteCompletPage> {
                               _section('Activité professionnelle'),
                               _champ("Nom de l'entreprise", _nomEntrepriseCtrl,
                                   obligatoire: true),
+                              _champ('Poste', _posteCtrl,
+                                  instruction: 'Ex. Gérant, Directeur commercial…'),
                               _champ("Adresse de l'entreprise", _adresseEntrepriseCtrl),
                               _champ(
                                 'RCCM / Registre du Commerce',

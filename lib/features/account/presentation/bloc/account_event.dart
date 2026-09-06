@@ -11,6 +11,7 @@ class ModifierInfoPersonnellesEvent extends AccountEvent {
   final String? carteIdentiteNationalNum;
   final String? rc;
   final String? ninea;
+  final String? poste;
   final String? nomEntreprise;
   final String? adresseEntreprise;
   final String? telephoneEntreprise;
@@ -28,6 +29,7 @@ class ModifierInfoPersonnellesEvent extends AccountEvent {
     this.carteIdentiteNationalNum,
     this.rc,
     this.ninea,
+    this.poste,
     this.nomEntreprise,
     this.adresseEntreprise,
     this.telephoneEntreprise,

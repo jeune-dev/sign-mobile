@@ -218,6 +218,7 @@ class _ProfilPageState extends State<ProfilPage> {
                     children: [
                       _buildInfoRow(
                           Icons.store_outlined, 'Raison sociale', user.nomEntreprise),
+                      _buildInfoRow(Icons.work_outline, 'Poste', user.poste),
                       _buildInfoRow(
                           Icons.location_city_outlined,
                           'Adresse pro',

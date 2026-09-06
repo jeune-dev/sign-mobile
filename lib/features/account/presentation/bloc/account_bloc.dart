@@ -48,6 +48,7 @@ class AccountBloc extends Bloc<AccountEvent, AccountState> {
       carteIdentiteNationalNum: event.carteIdentiteNationalNum,
       rc: event.rc,
       ninea: event.ninea,
+      poste: event.poste,
       nomEntreprise: event.nomEntreprise,
       adresseEntreprise: event.adresseEntreprise,
       telephoneEntreprise: event.telephoneEntreprise,
