@@ -84,6 +84,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       rc: event.rc,
       ninea: event.ninea,
       signature: event.signature,
+      poste: event.poste,
       nomEntreprise: event.nomEntreprise,
       adresseEntreprise: event.adresseEntreprise,
       telephoneEntreprise: event.telephoneEntreprise,
