@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:sign_application/core/errors/failure.dart';
 import '../../domain/entities/client.dart';
+import '../../domain/entities/dossier_client.dart';
 import '../../domain/repositories/client_repository.dart';
 import '../datasources/client_remote_datasource.dart';
 
@@ -57,6 +58,18 @@ class ClientRepositoryImpl implements ClientRepository {
       };
       await remoteDataSource.ajouterClient(data);
       return const Right(null);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _handleDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, DossierClient>> getDossierClient(String clientId) async {
+    try {
+      final dossier = await remoteDataSource.getDossierClient(clientId);
+      return Right(dossier);
     } on DioException catch (e) {
       return Left(ServerFailure(errorMessage: _handleDioError(e)));
     } catch (e) {

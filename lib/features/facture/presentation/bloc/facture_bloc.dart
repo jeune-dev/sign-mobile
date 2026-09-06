@@ -5,6 +5,7 @@ import '../../domain/usecases/creer_facture_client_manuel.dart';
 import '../../domain/usecases/ouvrir_document.dart';
 import '../../domain/usecases/mettre_a_jour_facture.dart';
 import '../../domain/usecases/renvoyer_facture.dart';
+import '../../domain/usecases/enregistrer_versement.dart';
 import '../../domain/entities/facture.dart';
 import 'facture_event.dart';
 import 'facture_state.dart';
@@ -16,6 +17,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
   final OuvrirDocument ouvrirDocument;
   final MettreAJourFacture mettreAJourFacture;
   final RenvoyerFacture renvoyerFacture;
+  final EnregistrerVersement enregistrerVersement;
 
   List<Facture> _factures = [];
   int _currentPage = 1;
@@ -27,6 +29,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
     required this.ouvrirDocument,
     required this.mettreAJourFacture,
     required this.renvoyerFacture,
+    required this.enregistrerVersement,
   }) : super(FactureInitial()) {
     on<LoadFactures>(_onLoadFactures);
     on<LoadMoreFactures>(_onLoadMoreFactures);
@@ -39,6 +42,7 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
     on<ResetFactureState>((_, emit) => emit(FactureInitial()));
     on<MettreAJourFactureEvent>(_onMettreAJourFacture);
     on<RenvoyerFactureEvent>(_onRenvoyerFacture);
+    on<EnregistrerVersementEvent>(_onEnregistrerVersement);
   }
 
   Future<void> _onLoadFactures(
@@ -135,6 +139,27 @@ class FactureBloc extends Bloc<FactureEvent, FactureState> {
     result.fold(
       (failure) => emit(FactureError(failure.errorMessage)),
       (data) => emit(FactureMiseAJourSuccess(data)),
+    );
+  }
+
+  Future<void> _onEnregistrerVersement(
+    EnregistrerVersementEvent event,
+    Emitter<FactureState> emit,
+  ) async {
+    emit(FactureLoading());
+    final result = await enregistrerVersement(
+      documentId: event.documentId,
+      montant: event.montant,
+      moyenPaiement: event.moyenPaiement,
+    );
+    result.fold(
+      (failure) => emit(FactureError(failure.errorMessage)),
+      (data) => emit(VersementEnregistreSuccess(
+        data,
+        message: data['statut'] == 'payee'
+            ? 'Versement enregistré — la facture est soldée'
+            : 'Versement enregistré — une nouvelle facture a été envoyée',
+      )),
     );
   }
 

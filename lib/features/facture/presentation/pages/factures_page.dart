@@ -115,12 +115,40 @@ class _FacturesPageState extends State<FacturesPage> {
       builder: (ctx) => _FactureMiseAJourSheet(
         doc: doc,
         formatMontant: _formatMontant,
-        onConfirm: (avance, statut) {
-          context.read<FactureBloc>().add(MettreAJourFactureEvent(
-            documentId: doc.id,
-            avance: avance,
-            statut: statut,
-          ));
+        // `versement` est le montant qu'on vient d'encaisser, pas le cumul :
+        // le backend en tire une facture de plus, envoyée aux deux parties.
+        // Sans montant, on ne fait que changer l'état de la facture.
+        onConfirm: (versement, statut) {
+          if (versement != null && versement > 0) {
+            context.read<FactureBloc>().add(EnregistrerVersementEvent(
+              documentId: doc.id,
+              montant: versement,
+              moyenPaiement: doc.moyenPaiement,
+            ));
+          } else {
+            context.read<FactureBloc>().add(MettreAJourFactureEvent(
+              documentId: doc.id,
+              statut: statut,
+            ));
+          }
+        },
+      ),
+    );
+  }
+
+  /// Ouvre le dossier d'une facture réglée en plusieurs fois : la facture
+  /// d'origine et chacune des factures émises à chaque versement.
+  void _ouvrirDossier(Facture doc) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _DossierFactureSheet(
+        doc: doc,
+        formatMontant: _formatMontant,
+        onOuvrirPiece: (id, titre) {
+          Navigator.pop(ctx);
+          context.read<FactureBloc>().add(OuvrirDocumentEvent(id, titre: titre));
         },
       ),
     );
@@ -347,6 +375,11 @@ class _FacturesPageState extends State<FacturesPage> {
         }
         if (state is FactureMiseAJourSuccess) {
           showToast(context, 'Mise à jour', 'Facture mise à jour avec succès', ToastificationType.success);
+          context.read<FactureBloc>().add(LoadFactures());
+        }
+        if (state is VersementEnregistreSuccess) {
+          if (Navigator.canPop(context)) Navigator.pop(context);
+          showToast(context, 'Règlement enregistré', state.message, ToastificationType.success);
           context.read<FactureBloc>().add(LoadFactures());
         }
         if (state is FactureRenvoyeeSuccess) {
@@ -943,7 +976,92 @@ class _FacturesPageState extends State<FacturesPage> {
               ],
             ),
           ),
+          // ── Dossier de règlement ─────────────────────────────────────
+          // Une facture réglée en plusieurs fois rassemble toutes ses pièces :
+          // on n'affiche ce bandeau que dans ce cas, une facture réglée en une
+          // fois n'ayant rien à regrouper.
+          if (doc.dossier.estDossier)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              child: GestureDetector(
+                onTap: () => _ouvrirDossier(doc),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF6C63FF).withValues(alpha: 0.22)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.folder_copy_outlined,
+                          color: Color(0xFF6C63FF), size: 17),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('${doc.dossier.nombreFactures} factures — paiement échelonné',
+                                style: const TextStyle(
+                                    color: Color(0xFF6C63FF),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 2),
+                            Text(
+                              doc.resteAPayer > 0
+                                  ? 'Réglé ${_formatMontant(doc.montantRegle)} · reste ${_formatMontant(doc.resteAPayer)}'
+                                  : 'Soldée — ${_formatMontant(doc.montantRegle)}',
+                              style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           // ── Bouton action selon statut ───────────────────────────────
+          // Le règlement d'une facture n'appartient qu'à celui qui l'a émise.
+          // Le destinataire consulte et télécharge, sans jamais pouvoir en
+          // changer le statut — le backend refuse d'ailleurs la requête, et
+          // proposer le bouton ne ferait que promettre une action impossible.
+          if (!doc.peutModifier)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.lock_outline_rounded, size: 15, color: Colors.grey[500]),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Seul l\'émetteur peut modifier le règlement',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: doc.statut == 'payee'
@@ -1193,13 +1311,23 @@ class _FactureMiseAJourSheet extends StatefulWidget {
 class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
   late final TextEditingController _avanceCtrl;
   late String _statut;
-  // 0 = totalité, 1 = moitié, 2 = personnalisé
+  // 0 = solde, 1 = moitié du reste, 2 = personnalisé
   int _quickChip = 2;
+  String? _erreur;
 
   double get _montantHT => widget.doc.montant;
-  double get _montant => _montantHT * (1 + (widget.doc.tva ?? 0) / 100);
-  double get _dejaPaye => widget.doc.avance;
-  double get _reste => _montant - _dejaPaye;
+
+  /// Total, réglé et reste viennent du serveur : lui seul connaît tous les
+  /// versements déjà encaissés, et recalculer ici à partir de `avance`
+  /// ignorerait les factures émises depuis. Le calcul local ne sert que de
+  /// repli pour un backend qui ne renverrait pas encore le dossier.
+  double get _montant => widget.doc.dossier.totalTtc > 0
+      ? widget.doc.dossier.totalTtc
+      : _montantHT * (1 + (widget.doc.tva ?? 0) / 100);
+  double get _dejaPaye => widget.doc.montantRegle;
+  double get _reste => widget.doc.dossier.totalTtc > 0
+      ? widget.doc.resteAPayer
+      : (_montant - _dejaPaye).clamp(0.0, double.infinity);
   double get _pourcent => _montant > 0 ? (_dejaPaye / _montant).clamp(0.0, 1.0) : 0.0;
 
   Color get _progressColor {
@@ -1223,14 +1351,18 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
     super.dispose();
   }
 
+  /// Les raccourcis portent sur ce qu'il RESTE à payer, pas sur le total :
+  /// après un premier acompte, « la moitié » désigne la moitié du solde, et
+  /// « le solde » ne peut pas redemander une somme déjà encaissée.
   void _setQuick(int chip) {
     setState(() {
       _quickChip = chip;
       if (chip == 0) {
-        _avanceCtrl.text = _montant.toStringAsFixed(0);
+        _avanceCtrl.text = _reste.toStringAsFixed(0);
         _statut = 'payee';
       } else if (chip == 1) {
-        _avanceCtrl.text = (_montant / 2).toStringAsFixed(0);
+        _avanceCtrl.text = (_reste / 2).toStringAsFixed(0);
+        _statut = 'partiel';
       }
     });
   }
@@ -1345,14 +1477,19 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Chips rapides
-                  Text('Montant reçu',
+                  Text('Montant reçu maintenant',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.grey[700])),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Une facture est émise pour ce règlement et envoyée aux deux parties.',
+                    style: TextStyle(fontSize: 11.5, height: 1.35, color: Colors.grey[500]),
+                  ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      _quickBtn(0, 'Totalité', Icons.check_circle_outline),
+                      _quickBtn(0, 'Solde', Icons.check_circle_outline),
                       const SizedBox(width: 8),
-                      _quickBtn(1, '50 %', Icons.percent_rounded),
+                      _quickBtn(1, 'Moitié', Icons.percent_rounded),
                       const SizedBox(width: 8),
                       _quickBtn(2, 'Autre', Icons.edit_outlined),
                     ],
@@ -1362,7 +1499,10 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
                   TextField(
                     controller: _avanceCtrl,
                     keyboardType: TextInputType.number,
-                    onTap: () => setState(() => _quickChip = 2),
+                    onTap: () => setState(() {
+                      _quickChip = 2;
+                      _erreur = null;
+                    }),
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.black87),
                     decoration: InputDecoration(
                       hintText: '0',
@@ -1389,6 +1529,23 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
                       ),
                     ),
                   ),
+                  if (_erreur != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded,
+                            size: 15, color: Color(0xFFEF4444)),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(_erreur!,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFFEF4444),
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 20),
 
                   // Statut
@@ -1409,8 +1566,16 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
                   // Bouton confirmer
                   GestureDetector(
                     onTap: () {
-                      Navigator.pop(context);
                       final v = double.tryParse(_avanceCtrl.text.trim());
+                      // Le serveur refuse un versement supérieur au solde ;
+                      // le dire ici évite un aller-retour pour une erreur que
+                      // l'écran connaît déjà.
+                      if (v != null && v > _reste + 1) {
+                        setState(() => _erreur =
+                            'Le montant dépasse le reste à payer (${_formatNum(_reste)})');
+                        return;
+                      }
+                      Navigator.pop(context);
                       widget.onConfirm(v, _statut);
                     },
                     child: Container(
@@ -1520,3 +1685,238 @@ class _FactureMiseAJourSheetState extends State<_FactureMiseAJourSheet> {
   }
 }
 
+
+/// Le dossier d'une facture réglée en plusieurs fois.
+///
+/// Chaque versement a produit une facture, envoyée aux deux parties. Elles
+/// sont rangées ici de la plus ancienne à la plus récente, avec ce qui a été
+/// réglé à chaque étape — c'est ce que l'utilisateur cherche quand il veut
+/// retrouver « la facture du deuxième acompte ».
+class _DossierFactureSheet extends StatelessWidget {
+  final Facture doc;
+  final String Function(double) formatMontant;
+  final void Function(String documentId, String titre) onOuvrirPiece;
+
+  const _DossierFactureSheet({
+    required this.doc,
+    required this.formatMontant,
+    required this.onOuvrirPiece,
+  });
+
+  /// Les pièces du dossier : la facture d'origine puis chaque versement.
+  ///
+  /// `versements` vient du backend sous sa forme brute — on n'en retient que
+  /// l'identifiant, le numéro et le montant, seuls champs affichés ici.
+  List<Map<String, dynamic>> get _pieces {
+    final pieces = <Map<String, dynamic>>[
+      {
+        'id': doc.id,
+        'numero': doc.numeroFacture ?? '—',
+        'montant': doc.historiqueVersements.isNotEmpty
+            ? doc.historiqueVersements.first.montant
+            : 0.0,
+        'date': doc.historiqueVersements.isNotEmpty
+            ? doc.historiqueVersements.first.date
+            : doc.dateGeneration,
+        'statut': doc.statut,
+      },
+    ];
+
+    for (final v in doc.versements) {
+      pieces.add({
+        'id': v['id']?.toString() ?? '',
+        'numero': v['numero_facture']?.toString() ?? '—',
+        'montant': (v['montant_versement'] ?? 0).toDouble(),
+        'date': (v['date_generation'] ?? v['createdAt'])?.toString(),
+        'statut': v['statut']?.toString(),
+      });
+    }
+    return pieces;
+  }
+
+  String _formatDate(String? iso) {
+    if (iso == null || iso.isEmpty) return '—';
+    final d = DateTime.tryParse(iso);
+    if (d == null) return '—';
+    return '${d.day.toString().padLeft(2, '0')}/'
+        '${d.month.toString().padLeft(2, '0')}/${d.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pieces = _pieces;
+    final soldee = doc.resteAPayer <= 0;
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.8,
+      ),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+
+          // ── En-tête : où en est le règlement ──────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6C63FF).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.folder_copy_outlined,
+                      color: Color(0xFF6C63FF), size: 22),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(doc.numeroFacture ?? 'Dossier',
+                          style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.black87)),
+                      const SizedBox(height: 3),
+                      Text(
+                        soldee
+                            ? 'Soldée · ${formatMontant(doc.montantRegle)}'
+                            : 'Réglé ${formatMontant(doc.montantRegle)} · reste ${formatMontant(doc.resteAPayer)}',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: soldee ? const Color(0xFF22C55E) : Colors.grey[600],
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                        color: Colors.grey[200], shape: BoxShape.circle),
+                    child: const Icon(Icons.close_rounded,
+                        size: 17, color: Colors.black54),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Divider(color: Colors.grey[100], height: 1),
+
+          // ── Les pièces du dossier ─────────────────────────────────────
+          Flexible(
+            child: ListView.separated(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              itemCount: pieces.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final piece = pieces[index];
+                final estOrigine = index == 0;
+                final id = piece['id'] as String;
+
+                return GestureDetector(
+                  onTap: id.isEmpty
+                      ? null
+                      : () => onOuvrirPiece(id, piece['numero'] as String),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 13),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[50],
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.grey[200]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text('${index + 1}',
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.black87)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(piece['numero'] as String,
+                                  style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.black87)),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${estOrigine ? 'Facture initiale' : 'Versement'} · ${_formatDate(piece['date'] as String?)}',
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey[500],
+                                    fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(formatMontant((piece['montant'] as num).toDouble()),
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.black87)),
+                            const SizedBox(height: 2),
+                            Row(
+                              children: [
+                                Icon(Icons.open_in_new_rounded,
+                                    size: 12, color: Colors.grey[400]),
+                                const SizedBox(width: 3),
+                                Text('Ouvrir',
+                                    style: TextStyle(
+                                        fontSize: 10.5,
+                                        color: Colors.grey[400],
+                                        fontWeight: FontWeight.w600)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

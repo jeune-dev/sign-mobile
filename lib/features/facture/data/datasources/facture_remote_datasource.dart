@@ -31,6 +31,14 @@ abstract class FactureRemoteDataSource {
     String? statut,
   });
   Future<void> renvoyerFacture(String documentId);
+
+  /// Encaisse un règlement : le backend émet une facture de plus, rattachée à
+  /// la première, et l'envoie par courriel aux deux parties.
+  Future<Map<String, dynamic>> enregistrerVersement({
+    required String documentId,
+    required double montant,
+    String? moyenPaiement,
+  });
 }
 
 class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
@@ -103,5 +111,20 @@ class FactureRemoteDataSourceImpl implements FactureRemoteDataSource {
   @override
   Future<void> renvoyerFacture(String documentId) async {
     await dio.post(Env.documentRenvoyerFacture(documentId));
+  }
+
+  @override
+  Future<Map<String, dynamic>> enregistrerVersement({
+    required String documentId,
+    required double montant,
+    String? moyenPaiement,
+  }) async {
+    final body = <String, dynamic>{'montant': montant};
+    if (moyenPaiement != null && moyenPaiement.isNotEmpty) {
+      body['moyen_paiement'] = moyenPaiement;
+    }
+
+    final response = await dio.post(Env.documentVersement(documentId), data: body);
+    return Map<String, dynamic>.from(response.data['data'] ?? {});
   }
 }

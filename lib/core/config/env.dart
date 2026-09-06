@@ -193,6 +193,10 @@ class Env {
   static String get clientRecherche =>
       _get('CLIENT_RECHERCHE_PATH', fallback: '/v1/professionnel/client/recherche-client');
 
+  /// Fiche d'un client : ses factures (groupées par dossier) et ses contrats
+  /// (groupés par type).
+  static String clientDossier(String clientId) => '/v1/professionnel/client/$clientId/dossier';
+
   // ─── Facture / Document ───────────────────────────────────────────────────────
   static String get documentMesDocuments =>
       _get('DOCUMENT_MES_DOCUMENTS_PATH', fallback: '/v1/professionnel/document/mes-documents');
@@ -206,6 +210,13 @@ class Env {
       _get('DOCUMENT_TELECHARGER_PATH', fallback: '/v1/professionnel/document/telecharger-document');
   static String documentMettreAJour(String id) => '/v1/professionnel/document/$id/mettre-a-jour';
   static String documentRenvoyerFacture(String id) => '/v1/professionnel/document/$id/renvoyer-facture';
+
+  /// Encaissement d'un règlement : le backend émet une facture de plus,
+  /// rattachée à la première, et l'envoie aux deux parties.
+  static String documentVersement(String id) => '/v1/professionnel/document/$id/versement';
+
+  /// Dossier complet d'une facture réglée en plusieurs fois.
+  static String documentDossier(String id) => '/v1/professionnel/document/$id/dossier';
 
   // ─── Contrat Bail ─────────────────────────────────────────────────────────────
   static String get contratBailListe =>

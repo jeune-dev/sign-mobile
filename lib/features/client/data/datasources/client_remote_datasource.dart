@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_application/core/config/env.dart';
 import '../models/client_model.dart';
+import '../models/dossier_client_model.dart';
 
 // Fonction top-level (requis par compute()) : parse le JSON brut en isolate
 // séparé pour ne pas bloquer le thread UI sur un portefeuille client volumineux.
@@ -13,6 +14,10 @@ abstract class ClientRemoteDataSource {
   Future<List<ClientModel>> getClients();
   Future<List<ClientModel>> rechercherClients(String query);
   Future<void> ajouterClient(Map<String, dynamic> data);
+
+  /// Fiche d'un client : ses factures (groupées par dossier) et ses contrats
+  /// (groupés par type).
+  Future<DossierClientModel> getDossierClient(String clientId);
 }
 
 class ClientRemoteDataSourceImpl implements ClientRemoteDataSource {
@@ -74,5 +79,12 @@ class ClientRemoteDataSourceImpl implements ClientRemoteDataSource {
   Future<void> ajouterClient(Map<String, dynamic> data) async {
     // Création via l'endpoint auth register (role Particulier)
     await dio.post(Env.register, data: data);
+  }
+
+  @override
+  Future<DossierClientModel> getDossierClient(String clientId) async {
+    final response = await dio.get(Env.clientDossier(clientId));
+    final data = response.data['data'] as Map<String, dynamic>? ?? {};
+    return DossierClientModel.fromJson(data);
   }
 }

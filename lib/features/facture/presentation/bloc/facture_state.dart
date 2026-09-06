@@ -49,6 +49,14 @@ class FactureMiseAJourSuccess extends FactureState {
   FactureMiseAJourSuccess(this.data);
 }
 
+/// Un versement vient d'être encaissé : une facture de plus a été émise et
+/// envoyée aux deux parties. `data` porte son numéro et le solde restant.
+class VersementEnregistreSuccess extends FactureState {
+  final Map<String, dynamic> data;
+  final String message;
+  VersementEnregistreSuccess(this.data, {this.message = 'Versement enregistré'});
+}
+
 class FactureRenvoyeeSuccess extends FactureState {}
 
 class FactureRenvoyeeLoading extends FactureState {}

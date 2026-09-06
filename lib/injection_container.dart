@@ -51,6 +51,8 @@ import 'features/client/domain/repositories/client_repository.dart';
 import 'features/client/domain/usecases/get_clients.dart';
 import 'features/client/domain/usecases/rechercher_clients.dart';
 import 'features/client/domain/usecases/ajouter_client.dart';
+import 'features/client/domain/usecases/get_dossier_client.dart';
+import 'features/client/presentation/bloc/dossier_client_bloc.dart';
 import 'features/client/presentation/bloc/client_bloc.dart';
 
 // Facture
@@ -63,6 +65,7 @@ import 'features/facture/domain/usecases/creer_facture_client_manuel.dart';
 import 'features/facture/domain/usecases/ouvrir_document.dart';
 import 'features/facture/domain/usecases/mettre_a_jour_facture.dart';
 import 'features/facture/domain/usecases/renvoyer_facture.dart';
+import 'features/facture/domain/usecases/enregistrer_versement.dart';
 import 'features/facture/presentation/bloc/facture_bloc.dart';
 
 // Contrat
@@ -465,6 +468,10 @@ Future<void> init() async {
   sl.registerLazySingleton(() => GetClients(sl()));
   sl.registerLazySingleton(() => RechercherClients(sl()));
   sl.registerLazySingleton(() => AjouterClient(sl()));
+  sl.registerLazySingleton(() => GetDossierClient(sl()));
+  // Bloc dedie a la fiche client : le charger dans ClientBloc viderait la
+  // liste des clients a chaque ouverture d'une fiche.
+  sl.registerFactory(() => DossierClientBloc(getDossierClient: sl()));
   sl.registerFactory(() => ClientBloc(
         getClients: sl(),
         rechercherClients: sl(),
@@ -485,6 +492,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => OuvrirDocument(sl()));
   sl.registerLazySingleton(() => MettreAJourFacture(sl()));
   sl.registerLazySingleton(() => RenvoyerFacture(sl()));
+  sl.registerLazySingleton(() => EnregistrerVersement(sl()));
   sl.registerFactory(() => FactureBloc(
         getFactures: sl(),
         creerFacture: sl(),
@@ -492,6 +500,7 @@ Future<void> init() async {
         ouvrirDocument: sl(),
         mettreAJourFacture: sl(),
         renvoyerFacture: sl(),
+        enregistrerVersement: sl(),
       ));
 
   //================================================

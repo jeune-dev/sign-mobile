@@ -95,6 +95,26 @@ class FactureRepositoryImpl implements FactureRepository {
     }
   }
 
+  @override
+  Future<Either<Failure, Map<String, dynamic>>> enregistrerVersement({
+    required String documentId,
+    required double montant,
+    String? moyenPaiement,
+  }) async {
+    try {
+      final data = await remoteDataSource.enregistrerVersement(
+        documentId: documentId,
+        montant: montant,
+        moyenPaiement: moyenPaiement,
+      );
+      return Right(data);
+    } on DioException catch (e) {
+      return Left(ServerFailure(errorMessage: _handleDioError(e)));
+    } catch (e) {
+      return Left(ServerFailure(errorMessage: e.toString()));
+    }
+  }
+
   String _handleDioError(DioException e) {
     final data = e.response?.data;
     if (data is Map) {

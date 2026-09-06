@@ -9,6 +9,7 @@ import 'package:sign_application/features/client/presentation/bloc/client_bloc.d
 import 'package:sign_application/features/client/presentation/bloc/client_event.dart';
 import 'package:sign_application/features/client/presentation/bloc/client_state.dart';
 import 'package:sign_application/core/theme/app_color.dart';
+import 'package:sign_application/features/client/presentation/pages/client_dossier_page.dart';
 
 class ClientsPage extends StatefulWidget {
   final User? user;
@@ -270,7 +271,14 @@ class _ClientsPageState extends State<ClientsPage> {
         client.photoProfil != null && client.photoProfil!.isNotEmpty;
 
     return GestureDetector(
-      onTap: () => _showClientDetails(context, client, index),
+      // Ouvre la fiche du client : ses factures et ses contrats. La carte de
+      // visite (coordonnees seules) reste accessible par l'icone d'info —
+      // c'est ce que la liste montrait jusqu'ici, et cela reste utile pour
+      // recopier un numero sans quitter la liste.
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ClientDossierPage(client: client)),
+      ),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -343,23 +351,41 @@ class _ClientsPageState extends State<ClientsPage> {
                 ),
               ),
 
-              // ── Bouton Voir ──────────────────────────────────────────
+              // ── Coordonnees (carte de visite) ────────────────────────
+              GestureDetector(
+                onTap: () => _showClientDetails(context, client, index),
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                  child: Icon(Icons.info_outline_rounded,
+                      size: 19, color: Colors.grey[400]),
+                ),
+              ),
+
+              // ── Ouvrir la fiche ──────────────────────────────────────
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border:
                       Border.all(color: color.withValues(alpha: 0.25)),
                 ),
-                child: Text(
-                  'Voir',
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Dossier',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(Icons.chevron_right_rounded, size: 16, color: color),
+                  ],
                 ),
               ),
             ],

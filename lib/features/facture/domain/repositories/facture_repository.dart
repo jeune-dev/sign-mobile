@@ -30,4 +30,11 @@ abstract class FactureRepository {
     String? statut,
   });
   Future<Either<Failure, void>> renvoyerFacture(String documentId);
+
+  /// Encaisse un règlement sur une facture. Réservé à son émetteur.
+  Future<Either<Failure, Map<String, dynamic>>> enregistrerVersement({
+    required String documentId,
+    required double montant,
+    String? moyenPaiement,
+  });
 }

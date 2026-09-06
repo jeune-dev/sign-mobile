@@ -44,6 +44,21 @@ class MettreAJourFactureEvent extends FactureEvent {
   });
 }
 
+/// Encaisser un règlement sur une facture non soldée.
+///
+/// `montant` est le montant reçu, jamais le cumul : le backend en tire une
+/// nouvelle facture, qu'il envoie aux deux parties.
+class EnregistrerVersementEvent extends FactureEvent {
+  final String documentId;
+  final double montant;
+  final String? moyenPaiement;
+  EnregistrerVersementEvent({
+    required this.documentId,
+    required this.montant,
+    this.moyenPaiement,
+  });
+}
+
 class RenvoyerFactureEvent extends FactureEvent {
   final String documentId;
   RenvoyerFactureEvent(this.documentId);
