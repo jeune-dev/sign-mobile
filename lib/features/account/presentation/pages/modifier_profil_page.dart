@@ -33,6 +33,7 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
   late final TextEditingController _cin;
 
   // Informations professionnelles / entreprise
+  late final TextEditingController _poste;
   late final TextEditingController _nomEntreprise;
   late final TextEditingController _adresseEntreprise;
   late final TextEditingController _telephoneEntreprise;
@@ -50,6 +51,7 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
     _telephone = TextEditingController(text: u.telephone ?? '');
     _adresse = TextEditingController(text: u.adresse ?? '');
     _cin = TextEditingController(text: u.carteIdentiteNationalNum ?? '');
+    _poste = TextEditingController(text: u.poste ?? '');
     _nomEntreprise = TextEditingController(text: u.nomEntreprise ?? '');
     _adresseEntreprise = TextEditingController(text: u.adresseEntreprise ?? '');
     _telephoneEntreprise = TextEditingController(text: u.telephoneEntreprise ?? '');
@@ -66,6 +68,7 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
     _telephone.dispose();
     _adresse.dispose();
     _cin.dispose();
+    _poste.dispose();
     _nomEntreprise.dispose();
     _adresseEntreprise.dispose();
     _telephoneEntreprise.dispose();
@@ -99,6 +102,7 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
             adresse: _val(_adresse),
             carteIdentiteNationalNum: _val(_cin),
             // Champs pro uniquement si le rôle le justifie
+            poste: isPro ? _val(_poste) : null,
             nomEntreprise: isPro ? _val(_nomEntreprise) : null,
             adresseEntreprise: isPro ? _val(_adresseEntreprise) : null,
             telephoneEntreprise: isPro ? _val(_telephoneEntreprise) : null,
@@ -213,6 +217,10 @@ class _ModifierProfilPageState extends State<ModifierProfilPage> {
                             controller: _nomEntreprise,
                             label: 'Raison sociale',
                             icon: Icons.store_outlined),
+                        _field(
+                            controller: _poste,
+                            label: 'Poste',
+                            icon: Icons.work_outline),
                         _field(
                             controller: _adresseEntreprise,
                             label: 'Adresse pro',

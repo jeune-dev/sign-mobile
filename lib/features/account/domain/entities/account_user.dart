@@ -20,6 +20,9 @@ class AccountUser extends Equatable {
   final bool profilComplet;
   final String? rc;
   final String? ninea;
+  /// Poste occupé par le professionnel au sein de son entreprise. Facultatif,
+  /// comme [adresseEntreprise].
+  final String? poste;
   final String? nomEntreprise;
   final String? adresseEntreprise;
   final String? telephoneEntreprise;
@@ -47,6 +50,7 @@ class AccountUser extends Equatable {
     this.profilComplet = false,
     this.rc,
     this.ninea,
+    this.poste,
     this.nomEntreprise,
     this.adresseEntreprise,
     this.telephoneEntreprise,
