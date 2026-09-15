@@ -122,7 +122,6 @@ flutter:
     # Variables injectées via --dart-define à la compilation
     - assets/icons/
     - assets/fonts/
-    - assets/certs/
   # IMP-06 : ACTION MANUELLE REQUISE pour bundler les polices localement :
   # 1. Télécharger depuis https://fonts.google.com/specimen/Plus+Jakarta+Sans
   #    → Télécharger → Extraire les .ttf dans assets/fonts/

@@ -1,8 +1,5 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -208,18 +205,6 @@ Future<void> init() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
 
-  // Certificate pinning — chargement du CA cert en mémoire une seule fois.
-  // Si le cert change côté backend (renouvellement), le chargement échoue gracieusement
-  // et l'app tombe sur la validation système (pas de crash au démarrage).
-  Uint8List? pinnedCertBytes;
-  try {
-    final certByteData = await rootBundle.load('assets/certs/backend_ca.pem');
-    pinnedCertBytes = certByteData.buffer.asUint8List();
-  } catch (_) {
-    // Cert introuvable ou corrompu — on désactive le pinning plutôt que de crasher
-    pinnedCertBytes = null;
-  }
-
   sl.registerLazySingleton(() => const FlutterSecureStorage(
         aOptions: AndroidOptions(encryptedSharedPreferences: true),
         iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -247,23 +232,12 @@ Future<void> init() async {
       ),
     );
 
-    // Certificate pinning (production uniquement + cert disponible)
-    // Fallback automatique vers la validation système si le cert a changé
-    if (!kDebugMode && pinnedCertBytes != null) {
-      final certBytes = pinnedCertBytes;
-      dio.httpClientAdapter = IOHttpClientAdapter(
-        createHttpClient: () {
-          try {
-            final sc = SecurityContext(withTrustedRoots: false);
-            sc.setTrustedCertificatesBytes(certBytes);
-            return HttpClient(context: sc);
-          } catch (_) {
-            // Cert invalide ou expiré → validation système standard
-            return HttpClient();
-          }
-        },
-      );
-    }
+    // Pas de certificate pinning : l'API est servie derrière Let's Encrypt,
+    // qui renouvelle tous les 90 jours en signant avec un intermédiaire
+    // choisi parmi plusieurs (YE1, YE2…). Épingler l'un d'eux garantit une
+    // panne totale à la rotation suivante — c'est arrivé en Release iOS le
+    // 2026-09-02 (pin YE2, serveur passé sur YE1). La validation TLS
+    // système (chaîne, nom d'hôte, expiration) reste active.
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
