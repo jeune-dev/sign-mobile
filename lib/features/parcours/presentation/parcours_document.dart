@@ -9,6 +9,7 @@ import '../data/datasources/parcours_remote_datasource.dart';
 import '../data/models/exigences_document.dart';
 import 'widgets/informations_manquantes_sheet.dart';
 import 'widgets/proposition_compte_complet_dialog.dart';
+import 'widgets/proposition_enregistrement_dialog.dart';
 import 'package:sign_application/core/theme/app_typo.dart';
 import 'widgets/quota_atteint_dialog.dart';
 import 'package:sign_application/core/routes/app_router.dart';
@@ -21,7 +22,8 @@ import '../data/dernieres_informations_saisies.dart';
 ///   § 4  — demander à SIGNS ce qu'il manque pour ce document, et le réclamer
 ///          à l'utilisateur avant d'ouvrir le formulaire ;
 ///   § 7  — ouvrir le formulaire de création ;
-///   § 10 — au retour, si un document a bien été créé, proposer la création
+///   § 10 — au retour, si un document a bien été créé, demander l'accord
+///          pour enregistrer ce qui a été saisi, puis proposer la création
 ///          du compte complet.
 ///
 /// Les pages de création n'ont donc rien à savoir de ce parcours : il suffit
@@ -36,7 +38,11 @@ class ParcoursDocument {
   /// [page] construit l'écran de création.
   /// [profilComplet] évite de reproposer le compte complet à quelqu'un qui
   /// l'a déjà créé.
-  static Future<void> ouvrir(
+  ///
+  /// Renvoie `true` si un document a été créé — pour les documents qui ont
+  /// une suite propre, comme l'état des lieux après un bail, à proposer une
+  /// fois le parcours commun terminé et jamais à sa place.
+  static Future<bool> ouvrir(
     BuildContext context, {
     required String typeDocument,
     required WidgetBuilder page,
@@ -54,27 +60,27 @@ class ParcoursDocument {
     // Le quota passe avant tout le reste : inutile de réclamer des
     // informations pour un document que l'utilisateur ne pourra pas créer.
     if (exigences != null && !exigences.quota.autorise) {
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
       await QuotaAtteintDialog.afficher(context, exigences.quota);
-      return;
+      return false;
     }
 
-    if (!context.mounted) return;
+    if (!context.mounted) return false;
     final peutContinuer = await _reclamerInformationsManquantes(context, exigences);
-    if (!peutContinuer || !context.mounted) return;
+    if (!peutContinuer || !context.mounted) return false;
 
     // § 9 / § 15 : les identifiants déjà enregistrés sont contrôlés AVANT
     // d'ouvrir le formulaire. Signaler un numéro incohérent maintenant vaut
     // mieux que de le faire après vingt champs remplis.
     final generationAutorisee = await autoriserGeneration(context, typeDocument);
-    if (!generationAutorisee || !context.mounted) return;
+    if (!generationAutorisee || !context.mounted) return false;
 
     // Les pages de création renvoient `true` quand un document a été généré.
     final documentCree = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: page),
     );
 
-    if (documentCree != true || !context.mounted) return;
+    if (documentCree != true || !context.mounted) return false;
 
     // Compteur relu apres la creation : c est la seule valeur juste. Le quota
     // charge plus haut ignore le document qui vient d etre produit, et un
@@ -86,20 +92,36 @@ class ParcoursDocument {
             ? (exigences.quota.restants - 1).clamp(0, exigences.quota.plafond)
             : null);
 
-    if (!context.mounted) return;
+    // Le document existe : quoi qu'il arrive ensuite, l'appelant doit le
+    // savoir.
+    if (!context.mounted) return true;
 
     // L utilisateur doit savoir ou il en est apres CHAQUE document : la
     // suspension du compte au-dela de la limite ne doit jamais le surprendre.
+    var compteSuspendu = false;
     if (restants != null) {
-      await _annoncerDocumentsRestants(context, restants, quotaApres);
-      if (!context.mounted) return;
+      compteSuspendu = await _annoncerDocumentsRestants(context, restants, quotaApres);
+      if (!context.mounted) return true;
     }
+
+    // L'accord d'enregistrement vient en premier et s'adresse à tout le
+    // monde : il porte sur ce qui vient d'être saisi, pas sur l'état du
+    // compte. La proposition de compte complet, elle, ne concerne que les
+    // profils incomplets et se préremplit avec ce qui vient d'être accepté.
+    await PropositionEnregistrementDialog.afficherSiNecessaire(context);
+    if (!context.mounted) return true;
+
+    // La fenêtre de quota vient de dire à l'utilisateur que son compte doit
+    // être validé et l'a envoyé vers ses justificatifs : lui reposer « créer
+    // votre compte complet ? » juste derrière, c'est la même chose deux fois.
+    if (compteSuspendu) return true;
 
     await PropositionCompteCompletDialog.afficherSiNecessaire(
       context,
       profilDejaComplet: profilComplet,
       documentsRestants: restants,
     );
+    return true;
   }
 
   /// Annonce ce qu il reste apres une creation.
@@ -107,14 +129,18 @@ class ParcoursDocument {
   /// Zero restant : la fenetre complete, celle-la meme qui accueillera la
   /// prochaine tentative — mieux vaut l apprendre maintenant qu au moment de
   /// commencer un document qu on ne pourra pas finir. Sinon un simple rappel.
-  static Future<void> _annoncerDocumentsRestants(
+  ///
+  /// Renvoie `true` quand la fenêtre de blocage a été montrée : l'appelant
+  /// sait alors que l'utilisateur a déjà été orienté vers la validation.
+  static Future<bool> _annoncerDocumentsRestants(
     BuildContext context,
     int restants,
     QuotaDocument? quota,
   ) async {
     if (restants <= 0) {
-      if (quota != null) await QuotaAtteintDialog.afficher(context, quota);
-      return;
+      if (quota == null) return false;
+      await QuotaAtteintDialog.afficher(context, quota);
+      return true;
     }
 
     showToast(
@@ -125,6 +151,7 @@ class ParcoursDocument {
           : "Il vous reste $restants documents avant la vérification de votre compte.",
       restants == 1 ? ToastificationType.warning : ToastificationType.info,
     );
+    return false;
   }
 
   /// Interroge le backend. Renvoie null si l'appel échoue — on n'empêche

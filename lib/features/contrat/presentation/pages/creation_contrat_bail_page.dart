@@ -17,11 +17,10 @@ import 'package:toastification/toastification.dart';
 import 'package:sign_application/core/widgets/toastNotif.dart';
 import 'package:sign_application/core/widgets/confirmation_dialog.dart';
 import 'package:sign_application/core/services/form_draft_service.dart';
-import 'package:sign_application/features/etat_logement/presentation/pages/etats_logement_liste_page.dart';
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/models/document_cree.dart';
 import 'package:sign_application/features/contrat/domain/usecases/telecharger_contrat.dart';
-import 'package:sign_application/features/parcours/presentation/pages/document_genere_page.dart';
+import 'package:sign_application/features/parcours/presentation/afficher_document_genere.dart';
 import 'package:sign_application/injection_container.dart';
 import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 import 'package:sign_application/core/widgets/app_champ_texte.dart';
@@ -485,54 +484,23 @@ class _CreationContratPageState extends State<CreationContratPage>
     }));
   }
 
-  Future<void> _showSuccess(DocumentCree? documentCree) async {
-    // Le bail est d'abord montre a l'utilisateur (§ 9). L'ecran de
-    // confirmation se referme sur « Terminé », et la proposition d'etat des
-    // lieux prend le relais.
-    if (documentCree != null && documentCree.exploitable) {
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => DocumentGenerePage(
-          libelle: 'contrat de bail',
-          reference: documentCree.reference,
-          telecharger: () async {
-            final resultat = await sl<TelechargerContrat>()(documentCree.id!);
-            return resultat.fold(
-              (echec) => throw Exception(echec.errorMessage),
-              (octets) => octets,
-            );
-          },
-        ),
-      ));
-      if (!mounted) return;
-    } else {
-      showToast(context, 'Contrat créé', 'Le contrat de bail a été créé avec succès.', ToastificationType.success);
-    }
-
-    // On propose directement de créer l'état des lieux du logement.
-    final creerEtat = await showConfirmationDialog(
+  void _showSuccess(DocumentCree? documentCree) {
+    showToast(context, 'Contrat créé', 'Le contrat de bail a été créé avec succès.', ToastificationType.success);
+    // Le bail est montre a l'utilisateur avant tout retour a la liste (§ 9),
+    // puis le parcours reprend la main (§ 10). La proposition d'etat des
+    // lieux, propre au bail, vient apres lui : voir `ParcoursBail`.
+    afficherDocumentGenere(
       context,
-      title: 'Contrat de bail créé',
-      message: 'Voulez-vous créer l\'état des lieux de ce logement maintenant ?',
-      confirmLabel: 'État des lieux',
-      cancelLabel: 'Plus tard',
-      confirmColor: AppColor.kTexte,
-      icon: Icons.fact_check_outlined,
+      libelle: 'contrat de bail',
+      document: documentCree,
+      telecharger: (id) async {
+        final resultat = await sl<TelechargerContrat>()(id);
+        return resultat.fold(
+          (echec) => throw Exception(echec.errorMessage),
+          (octets) => octets,
+        );
+      },
     );
-
-    if (!mounted) return;
-
-    if (creerEtat) {
-      // Ouvre le module état des lieux avec sélection du bail (le bail
-      // tout juste créé y apparaît) — remplace la page de création.
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const EtatsLogementListePage(autoSelectBail: true),
-        ),
-      );
-    } else {
-      Navigator.pop(context, true);
-    }
   }
 
   void _showError(String msg) => showToast(context, 'Erreur', msg, ToastificationType.error);

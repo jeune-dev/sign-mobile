@@ -2,20 +2,23 @@ import 'package:flutter/material.dart';
 
 import 'package:sign_application/core/routes/app_router.dart';
 import 'package:sign_application/core/theme/app_color.dart';
-import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/core/theme/app_typo.dart';
 import 'package:sign_application/injection_container.dart';
-import 'package:toastification/toastification.dart';
 
 import '../../data/datasources/parcours_remote_datasource.dart';
-import '../../data/dernieres_informations_saisies.dart';
-import 'package:sign_application/core/theme/app_typo.dart';
 
-/// proposition_compte_complet_dialog.dart — « Enregistrer mes informations »
+/// proposition_compte_complet_dialog.dart — « Créer votre compte complet ? »
 /// après génération (§ 10 du cahier des charges).
 ///
 /// S'affiche APRÈS la génération et le partage d'un document, jamais avant :
 /// l'utilisateur a alors constaté ce que l'application lui apporte, et
-/// l'argument « ne les ressaisissez plus » prend tout son sens.
+/// l'argument « complétez votre inscription » prend tout son sens.
+///
+/// Cette fenêtre ne porte QUE sur le compte complet. L'accord pour enregistrer
+/// la saisie du document est demandé à part, par
+/// `PropositionEnregistrementDialog`, à tout le monde — profil complet ou non.
+/// Les deux étaient auparavant confondus : la question d'enregistrement
+/// disparaissait avec celle-ci dès que le profil était complet.
 ///
 /// ⚠️ Compléter son inscription n'est PAS optionnel : au-delà du quota de
 /// documents, le compte est suspendu jusqu'à validation par un
@@ -64,40 +67,9 @@ class PropositionCompteCompletDialog extends StatelessWidget {
 
     if (accepte != true || !context.mounted) return;
 
-    // « Oui » enregistre vraiment ce que l'utilisateur vient de saisir : sans
-    // cela, la proposition n'aurait aucun effet et il devrait tout retaper
-    // dans le parcours de compte complet.
-    await _enregistrerLaSaisie(context);
-
-    if (!context.mounted) return;
-    // Compléter son inscription reste obligatoire : on enchaîne sur le
-    // parcours complet, désormais prérempli avec ce qui vient d'être saisi.
+    // Le parcours de compte complet se préremplit depuis le profil : ce que
+    // l'utilisateur vient d'accepter d'enregistrer s'y retrouve donc déjà.
     Navigator.of(context).pushNamed(AppRouter.compteCompletRoute);
-  }
-
-  /// Pousse la dernière saisie vers le profil.
-  ///
-  /// Échec silencieux, volontairement : le document est déjà créé et
-  /// l'utilisateur va de toute façon arriver sur le parcours de compte
-  /// complet, où il pourra reprendre la main. Afficher une erreur ici
-  /// n'apporterait rien qu'une inquiétude.
-  static Future<void> _enregistrerLaSaisie(BuildContext context) async {
-    final depot = sl<DernieresInformationsSaisies>();
-    if (!depot.disponible) return;
-
-    try {
-      await sl<ParcoursRemoteDataSource>().enregistrerInformations(depot.valeurs!);
-      depot.vider();
-      if (!context.mounted) return;
-      showToast(
-        context,
-        'Informations enregistrées',
-        'Elles seront préremplies dans vos prochains documents.',
-        ToastificationType.success,
-      );
-    } catch (_) {
-      // Le parcours de compte complet prendra le relais.
-    }
   }
 
   @override
@@ -119,14 +91,14 @@ class PropositionCompteCompletDialog extends StatelessWidget {
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                Icons.bookmark_added_outlined,
+                Icons.verified_user_outlined,
                 size: 30,
                 color: AppColor.kGrayscaleDark100,
               ),
             ),
             const SizedBox(height: 22),
             Text(
-              'Enregistrer vos informations ?',
+              'Créer votre compte complet ?',
               textAlign: TextAlign.center,
               style: AppTypo.jakarta(
                 fontSize: 18,
@@ -137,9 +109,9 @@ class PropositionCompteCompletDialog extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             Text(
-              'Conservez les informations saisies dans ce document : elles '
-              'seront préremplies automatiquement la prochaine fois, vous '
-              'n’aurez plus à les écrire.',
+              'Au-delà d’un certain nombre de documents, votre compte doit '
+              'être validé pour continuer. Complétez votre inscription dès '
+              'maintenant : ce que vous avez déjà enregistré y sera prérempli.',
               textAlign: TextAlign.center,
               style: AppTypo.jakarta(
                 fontSize: 14,

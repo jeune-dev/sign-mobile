@@ -18,6 +18,7 @@ import 'package:sign_application/features/autres_contrats/presentation/pages/cre
 import 'package:sign_application/features/autres_contrats/presentation/pages/creation_procuration_page.dart';
 import 'package:sign_application/features/autres_contrats/presentation/pages/creation_reconnaissance_dette_page.dart';
 import 'package:sign_application/features/contrat/presentation/pages/creation_contrat_bail_page.dart';
+import 'package:sign_application/features/contrat/presentation/parcours_bail.dart';
 import 'package:sign_application/features/contrat/presentation/pages/contrat_bail_liste_page.dart';
 import 'package:sign_application/features/etat_logement/presentation/pages/etats_logement_liste_page.dart';
 import 'package:sign_application/features/contrat_travail/presentation/bloc/contrat_travail_bloc.dart';
@@ -126,9 +127,20 @@ class _ContratsPageState extends State<ContratsPage> {
 
   Future<void> _navigateToCreation(_ContratType type) async {
     Navigator.pop(context);
+
+    // Le bail a une suite propre (l'état des lieux) : elle est proposée par
+    // `ParcoursBail`, une fois le parcours commun terminé.
+    if (type.id == 'bail') {
+      await ParcoursBail.ouvrir(
+        context,
+        page: (_) => CreationContratPage(user: widget.user),
+      );
+      if (mounted) _loadAllStats();
+      return;
+    }
+
     Widget? page;
     switch (type.id) {
-      case 'bail':                      page = CreationContratPage(user: widget.user); break;
       case 'travail':                   page = const CreationContratTravailPage(); break;
       default:
         if (type.id == ContratType.prestation.apiValue)              { page = const CreationContratPrestationPage(); }

@@ -23,6 +23,8 @@ import 'package:sign_application/features/etat_logement/presentation/bloc/etat_l
 import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_event.dart';
 import 'package:sign_application/features/etat_logement/presentation/bloc/etat_logement_state.dart';
 import 'package:sign_application/features/etat_logement/presentation/pages/creation_etat_logement_page.dart';
+import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
+import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/widgets/barre_filtre_direction.dart';
 
@@ -194,17 +196,22 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
   }
 
   /// Lance la création d'un état des lieux pour un bail donné.
+  ///
+  /// L'état des lieux est un document comme les autres : la page était
+  /// poussée directement, sans quota, sans informations manquantes et sans
+  /// proposition après création — alors que sa page de création annonçait
+  /// déjà rendre la main au parcours.
   Future<void> _creationPour(ContratBail bail) async {
-    final created = await Navigator.push<bool>(
+    final bloc = context.read<EtatLogementBloc>();
+    final created = await ParcoursDocument.ouvrir(
       context,
-      MaterialPageRoute(
-        builder: (_) => BlocProvider.value(
-          value: context.read<EtatLogementBloc>(),
-          child: CreationEtatLogementPage(contrat: bail),
-        ),
+      typeDocument: TypeDocumentSigns.etatLogement,
+      page: (_) => BlocProvider.value(
+        value: bloc,
+        child: CreationEtatLogementPage(contrat: bail),
       ),
     );
-    if (created == true && mounted) _reload();
+    if (created && mounted) _reload();
   }
 
   /// Bouton « Nouvel état » : scoped → bail courant ; module → choix du bail.

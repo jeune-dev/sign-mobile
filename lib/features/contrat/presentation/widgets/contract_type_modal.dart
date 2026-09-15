@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sign_application/features/contrat/presentation/parcours_bail.dart';
 import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
 import 'package:sign_application/features/parcours/type_document_signs.dart';
 import 'package:sign_application/core/config/contrat_type.dart';
@@ -51,10 +52,18 @@ Future<void> navigateToContractCreation(
   ContratTypeItem type, {
   User? user,
 }) async {
-  Widget? page;
+  // Le bail a une suite propre (l'état des lieux) : elle est proposée par
+  // `ParcoursBail`, une fois le parcours commun terminé.
   if (type.id == 'bail') {
-    page = CreationContratPage(user: user);
-  } else if (type.id == 'travail') {
+    await ParcoursBail.ouvrir(
+      context,
+      page: (_) => CreationContratPage(user: user),
+    );
+    return;
+  }
+
+  Widget? page;
+  if (type.id == 'travail') {
     page = const CreationContratTravailPage();
   } else if (type.id == ContratType.prestation.apiValue) {
     page = const CreationContratPrestationPage();

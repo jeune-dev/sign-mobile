@@ -2,8 +2,7 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:sign_application/features/parcours/presentation/parcours_document.dart';
-import 'package:sign_application/features/parcours/type_document_signs.dart';
+import 'package:sign_application/features/contrat/presentation/parcours_bail.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -209,9 +208,10 @@ class _ContratBailListePageState extends State<ContratBailListePage> {
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         onPressed: () async {
-          await ParcoursDocument.ouvrir(
+          // Le bail a une suite propre (l'état des lieux) : elle est proposée
+          // par `ParcoursBail`, une fois le parcours commun terminé.
+          await ParcoursBail.ouvrir(
             context,
-            typeDocument: TypeDocumentSigns.contratBail,
             page: (_) => const CreationContratPage(),
           );
           if (!context.mounted) return;
