@@ -1,11 +1,22 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sign_application/core/utils/marge_systeme.dart';
 
 import 'package:sign_application/core/theme/app_color.dart';
 import 'package:sign_application/core/theme/app_dimensions.dart';
 import 'package:sign_application/core/theme/app_typo.dart';
 import 'package:sign_application/core/widgets/app_entete_formulaire.dart';
+import 'package:sign_application/core/widgets/pdf_loading_dialog.dart';
+import 'package:sign_application/core/widgets/pdf_viewer_page.dart';
+import 'package:sign_application/core/widgets/toastNotif.dart';
+import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_bloc.dart';
+import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_event.dart';
+import 'package:sign_application/features/dashboard/presentation/bloc/dashboard_state.dart';
 import 'package:sign_application/injection_container.dart';
+import 'package:toastification/toastification.dart';
 
 import '../data/notification_signs.dart';
 import '../data/notifications_remote_datasource.dart';
@@ -50,11 +61,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
   }
 
-  Future<void> _ouvrir(NotificationSigns notification) async {
-    setState(() {
-      if (!_depliees.remove(notification.id)) _depliees.add(notification.id);
-    });
-
+  Future<void> _marquerLue(NotificationSigns notification) async {
     if (!notification.nonLue) return;
 
     final restantes =
@@ -80,6 +87,44 @@ class _NotificationsPageState extends State<NotificationsPage> {
     });
   }
 
+  /// Ouvre le document visé par la notification, ou déplie son message si
+  /// elle n'en désigne aucun (message général — validation de compte, etc.).
+  Future<void> _ouvrir(NotificationSigns notification) async {
+    final cibleId = notification.cibleId;
+    if (cibleId != null && cibleId.isNotEmpty) {
+      await _marquerLue(notification);
+      if (!mounted) return;
+      context
+          .read<DashboardBloc>()
+          .add(OuvrirDocumentDashboardEvent(cibleId, titre: notification.titre));
+      return;
+    }
+
+    setState(() {
+      if (!_depliees.remove(notification.id)) _depliees.add(notification.id);
+    });
+    await _marquerLue(notification);
+  }
+
+  Future<void> _afficherPdf(List<int> bytes, String documentId) async {
+    try {
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/doc_$documentId.pdf');
+      await file.writeAsBytes(bytes);
+      if (!mounted) return;
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PdfViewerPage(filePath: file.path, titre: documentId),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        showToast(context, 'Erreur', 'Impossible d’ouvrir le document', ToastificationType.error);
+      }
+    }
+  }
+
   Future<void> _toutMarquerLu() async {
     final ok = await sl<NotificationsRemoteDataSource>().toutMarquerLu();
     if (!mounted || !ok) return;
@@ -88,6 +133,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Instance de bloc propre à cet écran : la page qui a ouvert les
+    // notifications (l'accueil, souvent) reste montée sous la pile de
+    // navigation et écoute elle aussi le DashboardBloc global — lui envoyer
+    // OuvrirDocumentDashboardEvent d'ici déclencherait son propre dialogue et
+    // sa propre navigation en double.
+    return BlocProvider<DashboardBloc>(
+      create: (_) => sl<DashboardBloc>(),
+      child: _scaffold(context),
+    );
+  }
+
+  Widget _scaffold(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColor.kFond,
       appBar: AppEnteteFormulaire.barre(
@@ -100,9 +157,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ),
       body: _chargement
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _charger,
-              child: _notifications.isEmpty ? _vide() : _liste(),
+          : BlocListener<DashboardBloc, DashboardState>(
+              listener: (context, state) async {
+                if (state is DashboardLoading) {
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const PdfLoadingDialog(),
+                  );
+                } else if (state is DashboardDocumentBytes) {
+                  if (Navigator.canPop(context)) Navigator.pop(context);
+                  await _afficherPdf(state.bytes, state.titre.isNotEmpty ? state.titre : state.documentId);
+                } else if (state is DashboardError) {
+                  if (Navigator.canPop(context)) Navigator.pop(context);
+                  showToast(context, 'Erreur', state.message, ToastificationType.error);
+                }
+              },
+              child: RefreshIndicator(
+                onRefresh: _charger,
+                child: _notifications.isEmpty ? _vide() : _liste(),
+              ),
             ),
     );
   }

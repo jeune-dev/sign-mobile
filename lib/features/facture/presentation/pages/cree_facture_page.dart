@@ -22,6 +22,7 @@ import 'package:sign_application/injection_container.dart';
 import 'package:sign_application/features/parcours/presentation/widgets/section_emetteur.dart';
 import 'package:sign_application/core/widgets/app_champ_texte.dart';
 import 'package:sign_application/core/widgets/app_entete_formulaire.dart';
+import 'package:sign_application/core/validation/identifiant_validator.dart';
 
 class CreeFacture extends StatefulWidget {
   const CreeFacture({super.key});
@@ -430,8 +431,7 @@ class _CreeFactureState extends State<CreeFacture> {
                                 validator: (v) {
                                   if (!_modeClientManuel) return null;
                                   if (v == null || v.trim().isEmpty) return 'Requis';
-                                  if (!v.contains('@')) return 'Email invalide';
-                                  return null;
+                                  return IdentifiantValidator.email(v, obligatoire: true).erreurFormulaire;
                                 },
                               ),
                               const SizedBox(height: 12),
@@ -439,6 +439,9 @@ class _CreeFactureState extends State<CreeFacture> {
                                 controller: _clientManuelTelephoneController,
                                 keyboardType: TextInputType.phone,
                                 decoration: const InputDecoration(labelText: 'Téléphone', isDense: true, border: OutlineInputBorder()),
+                                validator: (v) => (v == null || v.trim().isEmpty)
+                                    ? null
+                                    : IdentifiantValidator.telephone(v).erreurFormulaire,
                               ),
                               const SizedBox(height: 12),
                               TextFormField(
@@ -578,7 +581,10 @@ class _CreeFactureState extends State<CreeFacture> {
                                           child: TextFormField(
                                             decoration: AppChampTexte.decoration(indication: 'Quantité'),
                                             keyboardType: TextInputType.number,
-                                            initialValue: item['quantite'].toString(),
+                                            // Valeur par defaut (1) laissee vide a l'ecran : l'indication
+                                            // suffit a dire quoi saisir, sans afficher un chiffre qui
+                                            // pourrait passer pour deja renseigne.
+                                            initialValue: item['quantite'] == 1 ? null : item['quantite'].toString(),
                                             onChanged: (v) {
                                               final q = int.tryParse(v);
                                               if (q != null && q > 0) _mettreAJourItem(index, 'quantite', q);
@@ -597,7 +603,7 @@ class _CreeFactureState extends State<CreeFacture> {
                                         child: TextFormField(
                                           decoration: AppChampTexte.decoration(indication: 'Prix unitaire (FCFA)'),
                                           keyboardType: TextInputType.number,
-                                          initialValue: item['prix_unitaire'].toString(),
+                                          initialValue: item['prix_unitaire'] == 0.0 ? null : item['prix_unitaire'].toString(),
                                           onChanged: (v) {
                                             final p = double.tryParse(v);
                                             if (p != null && p >= 0) _mettreAJourItem(index, 'prix_unitaire', p);
