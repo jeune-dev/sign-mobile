@@ -40,7 +40,7 @@ android {
     defaultConfig {
         applicationId = "com.signapp.sign_application"
         minSdk = flutter.minSdkVersion  // Android 6.0 (Marshmallow) — couvre 99%+ des appareils actifs en 2026
-        targetSdk = 35  // Android 15 — obligatoire Play Store à partir d'août 2025
+        targetSdk = 36  // Android 16 — obligatoire Play Store à partir du 31 août 2026
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -70,6 +70,22 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+}
+
+// 16 Ko / NDK : androidx.datastore 1.2.x est publie avec un binaire compile en NDK r20
+// (libdatastore_shared_counter.so), signale par Google Play. La branche 1.1.x est en r25c.
+// On epingle donc 1.1.7 tant que Google n'aura pas republie 1.2.x avec un NDK recent.
+configurations.all {
+    resolutionStrategy {
+        force(
+            "androidx.datastore:datastore:1.1.7",
+            "androidx.datastore:datastore-android:1.1.7",
+            "androidx.datastore:datastore-core-android:1.1.7",
+            "androidx.datastore:datastore-preferences:1.1.7",
+            "androidx.datastore:datastore-preferences-android:1.1.7",
+            "androidx.datastore:datastore-preferences-core-android:1.1.7"
+        )
     }
 }
 

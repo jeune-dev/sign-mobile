@@ -2,7 +2,7 @@
 /// Priorité : 1) --dart-define (production)  2) valeur fallback hardcodée
 ///
 /// En production :
-///   flutter build apk --dart-define=API_BASE_URL=https://sign-back-1.onrender.com/sign ...
+///   flutter build apk --dart-define=API_BASE_URL=https://api.app-signs.com/sign ...
 class Env {
   static String _get(String key, {required String fallback}) {
     final fromDefine = _fromDefine(key);

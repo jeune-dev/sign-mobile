@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/config/env.dart';
+import 'core/network/resilient_pinning_adapter.dart';
 import 'core/services/premier_lancement_service.dart';
 import 'core/services/token_service.dart';
 import 'core/services/auth_event_bus.dart';
@@ -205,6 +206,19 @@ Future<void> init() async {
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
 
+  // Certificate pinning — chargement des trust anchors en mémoire une seule fois.
+  // Le bundle contient les racines auto-signées ISRG Root X1 / X2 (valides
+  // jusqu'en 2035 / 2040). Si l'asset est absent ou corrompu, le pinning est
+  // simplement désactivé (pas de crash au démarrage).
+  Uint8List? pinnedCertBytes;
+  try {
+    final certByteData = await rootBundle.load('assets/certs/backend_ca.pem');
+    pinnedCertBytes = certByteData.buffer.asUint8List();
+  } catch (_) {
+    // Cert introuvable ou corrompu — on désactive le pinning plutôt que de crasher
+    pinnedCertBytes = null;
+  }
+
   sl.registerLazySingleton(() => const FlutterSecureStorage(
         aOptions: AndroidOptions(encryptedSharedPreferences: true),
         iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -232,12 +246,16 @@ Future<void> init() async {
       ),
     );
 
-    // Pas de certificate pinning : l'API est servie derrière Let's Encrypt,
-    // qui renouvelle tous les 90 jours en signant avec un intermédiaire
-    // choisi parmi plusieurs (YE1, YE2…). Épingler l'un d'eux garantit une
-    // panne totale à la rotation suivante — c'est arrivé en Release iOS le
-    // 2026-09-02 (pin YE2, serveur passé sur YE1). La validation TLS
-    // système (chaîne, nom d'hôte, expiration) reste active.
+    // Certificate pinning (production uniquement + cert disponible).
+    // On épingle les RACINES ISRG (cf. assets/certs/backend_ca.pem) et non un
+    // intermédiaire : une rotation d'intermédiaire Let's Encrypt ne casse donc
+    // plus les clients déjà installés. En dernier recours, ResilientPinningAdapter
+    // bascule sur la validation système si le handshake épinglé échoue — l'app ne
+    // peut plus se retrouver totalement coupée du backend.
+    if (!kDebugMode && pinnedCertBytes != null) {
+      dio.httpClientAdapter =
+          ResilientPinningAdapter(trustedCertificates: pinnedCertBytes);
+    }
 
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {

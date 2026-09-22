@@ -825,7 +825,7 @@ def section_build():
     story += code_block([
         '# Build IPA release :',
         'flutter build ipa --release \\',
-        '  --dart-define=API_BASE_URL=https://sign-backend-ha5a.onrender.com/sign',
+        '  --dart-define=API_BASE_URL=https://api.app-signs.com/sign',
         '',
         '# Si succès :',
         'Built build/ios/archive/Runner.xcarchive',

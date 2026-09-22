@@ -938,7 +938,7 @@ def build_pdf2():
     update_data = [['  Commande pour publier une mise a jour :\n\n'
                     '  # Incrementer version: 1.0.0+1 → 1.0.1+2 dans pubspec.yaml\n'
                     '  flutter build appbundle --release \\\n'
-                    '    --dart-define=API_BASE_URL=https://sign-backend-ha5a.onrender.com/sign\n\n'
+                    '    --dart-define=API_BASE_URL=https://api.app-signs.com/sign\n\n'
                     '  # Puis uploader le nouveau AAB dans la console Play']]
     t_up = Table(update_data, colWidths=[W - 4*cm])
     t_up.setStyle(TableStyle([

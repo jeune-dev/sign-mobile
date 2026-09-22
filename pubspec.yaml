@@ -41,7 +41,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.3+10
+version: 1.0.4+16
 # IMP-07 : versionName = 1.0.0, versionCode = 1 (premier upload Play Store)
 # Pour une mise à jour : incrémenter versionCode ET versionName
 # Exemple v1.1.0 : version: 1.1.0+2
@@ -69,7 +69,8 @@ dependencies:
   connectivity_plus: ^6.1.4
   dots_indicator: ^4.0.1
   google_fonts: ^6.3.0
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.5.5
+  shared_preferences_android: ^2.4.28
   flutter_secure_storage: ^9.2.4
   dartz: ^0.10.1
   flutter_svg: ^2.2.0
@@ -102,6 +103,8 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   # VULN-L03 : Tests de sécurité
   mockito: ^5.4.4
+  # Empreintes SHA-256 des racines épinglées (test/security/certificate_pinning_test.dart)
+  crypto: ^3.0.3
   build_runner: ^2.4.9
 
 # For information on the generic Dart part of this file, see the

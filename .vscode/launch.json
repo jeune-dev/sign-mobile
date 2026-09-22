@@ -2,29 +2,29 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "SIGN (debug · sign-back-1)",
+      "name": "SIGN (debug · prod)",
       "request": "launch",
       "type": "dart",
       "args": [
-        "--dart-define=API_BASE_URL=https://sign-back-1.onrender.com/sign"
+        "--dart-define=API_BASE_URL=https://api.app-signs.com/sign"
       ]
     },
     {
-      "name": "SIGN (profile · sign-back-1)",
+      "name": "SIGN (profile · prod)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "profile",
       "args": [
-        "--dart-define=API_BASE_URL=https://sign-back-1.onrender.com/sign"
+        "--dart-define=API_BASE_URL=https://api.app-signs.com/sign"
       ]
     },
     {
-      "name": "SIGN (release · sign-back-1)",
+      "name": "SIGN (release · prod)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release",
       "args": [
-        "--dart-define=API_BASE_URL=https://sign-back-1.onrender.com/sign"
+        "--dart-define=API_BASE_URL=https://api.app-signs.com/sign"
       ]
     }
   ]

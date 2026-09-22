@@ -9,7 +9,11 @@
 
 set -e
 
-API_BASE_URL="https://sign-back-1.onrender.com/sign"
+# URL de production unique. Doit rester alignee sur :
+#   - le fallback de lib/core/config/env.dart
+#   - le domaine de android/app/src/main/res/xml/network_security_config.xml
+#   - les racines epinglees dans assets/certs/backend_ca.pem
+API_BASE_URL="https://api.app-signs.com/sign"
 
 echo "=== Nettoyage ==="
 flutter clean
