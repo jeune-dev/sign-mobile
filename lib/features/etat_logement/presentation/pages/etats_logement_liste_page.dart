@@ -1,12 +1,9 @@
-import 'dart:convert';
 import 'package:sign_application/core/utils/marge_systeme.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:signature/signature.dart';
 import 'package:toastification/toastification.dart';
 
 import 'package:sign_application/core/utils/download_helper.dart';
@@ -99,101 +96,6 @@ class _EtatsLogementListePageState extends State<EtatsLogementListePage> {
         );
   }
 
-  // ─── Signature locataire ─────────────────────────────────────────────────────
-  void _ouvrirSignature(EtatLogement e) {
-    final controller = SignatureController(
-      penStrokeWidth: 2,
-      penColor: Colors.black,
-      exportBackgroundColor: Colors.white,
-    );
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetCtx) => Padding(
-        padding: EdgeInsets.only(
-          left: 20,
-          right: 20,
-          top: 20,
-          bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Signature du locataire',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 4),
-            Text(e.numeroEtatDesLieux ?? '',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            const SizedBox(height: 16),
-            Container(
-              // Column en CrossAxisAlignment.start : sans largeur explicite, le pad
-              // s'effondre à 0 px et reste invisible.
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300, width: 2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Signature(
-                  controller: controller,
-                  width: double.infinity,
-                  height: 180,
-                  backgroundColor: Colors.grey.shade50,
-                ),
-              ),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                icon: const Icon(Icons.clear, size: 16, color: Colors.grey),
-                label: const Text('Effacer', style: TextStyle(color: Colors.grey)),
-                onPressed: () => controller.clear(),
-              ),
-            ),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kAccent,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: () async {
-                  if (controller.isEmpty) {
-                    showToast(sheetCtx, 'Signature manquante',
-                        'Veuillez tracer la signature.',
-                        ToastificationType.warning);
-                    return;
-                  }
-                  final Uint8List? data = await controller.toPngBytes();
-                  if (data == null) return;
-                  final sig = 'data:image/png;base64,${base64Encode(data)}';
-                  if (!sheetCtx.mounted) return;
-                  Navigator.pop(sheetCtx);
-                  if (!mounted) return;
-                  context.read<EtatLogementBloc>().add(
-                        SignerEtatLogementEvent(etatId: e.id, signature: sig),
-                      );
-                },
-                child: const Text('Confirmer et signer',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ).whenComplete(controller.dispose);
-  }
 
   /// Lance la création d'un état des lieux pour un bail donné.
   ///

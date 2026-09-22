@@ -292,7 +292,6 @@ class _ContratSignaturePageState extends State<ContratSignaturePage> {
   }
 
   Widget _buildSignatureSection() {
-    const accent = Colors.black87;
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,

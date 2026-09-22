@@ -54,3 +54,9 @@ android/key.properties
 android/upload-keystore.jks
 *.jks
 *.keystore
+
+# Secrets convertis pour GitHub (docs/DEPLOIEMENT_ANDROID.md)
+*.b64.txt
+# Fastlane
+android/fastlane/report.xml
+android/fastlane/README.md

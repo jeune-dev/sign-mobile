@@ -1,0 +1,21 @@
+# Recherche de secrets (workflow android-release.yml, étape Sécurité).
+# Règles par défaut de Gitleaks, plus les exceptions justifiées ci-dessous.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Configuration Firebase Android/iOS : la clé API Firebase est un identifiant PUBLIC par conception (embarqué dans chaque app), pas un secret. Sa protection passe par les restrictions de clé dans Google Cloud et les règles Firebase."
+paths = ['''(^|/)android/app/google-services\.json$''', '''(^|/)ios/Runner/GoogleService-Info\.plist$''']
+
+[[allowlists]]
+description = "Fichiers de verrouillage des dépendances : ils ne contiennent que des versions et des empreintes de contrôle (SHA-1 des bibliothèques CocoaPods, SHA-256 des paquets Dart), publiques, que la règle generic-api-key prend pour des clés."
+paths = ['''(^|/)ios/Podfile\.lock$''', '''(^|/)macos/Podfile\.lock$''', '''(^|/)pubspec\.lock$''']
+
+[[allowlists]]
+description = "Certificats PUBLICS du backend (épinglage TLS) : un certificat n'est pas une clé privée."
+paths = ['''(^|/)assets/certs/.*\.pem$''', '''(^|/)cert\d+\.pem$''']
+
+[[allowlists]]
+description = "Dossier interne de git (objets, configuration) : pas du code. Le checkout de GitHub Actions y écrit son jeton d'accès temporaire."
+paths = ['''(^|/)\.git/''']
