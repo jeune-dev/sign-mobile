@@ -1,2 +1,7 @@
-- Corrections et améliorations de stabilité
-- Mise en place du déploiement automatique
+Cette version corrige l'anomalie de connexion au serveur signalée par plusieurs utilisateurs.
+
+• Anomalie corrigée : l'application ne parvenait plus à joindre le serveur sur certains appareils
+• Notifications : appuyer sur une notification ouvre directement le document concerné
+• Factures : contrôle de l'adresse e-mail et du numéro de téléphone à la saisie manuelle
+• Documents : confirmation demandée après chaque création
+• Stabilité et sécurité renforcées
