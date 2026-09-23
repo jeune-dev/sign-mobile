@@ -123,7 +123,9 @@ flutter:
     - assets/images/
     # REST-C01 : .env retiré des assets — ne plus bundler dans l'APK
     # Variables injectées via --dart-define à la compilation
-    - assets/icons/
+    # `assets/icons/` retiré : dossier vide, non suivi par git (git ne versionne
+    # pas les dossiers vides) et référencé nulle part dans le code. Il n'existe
+    # donc pas sur la machine de compilation, ce qui faisait échouer l'analyse.
     - assets/fonts/
     # Racines ISRG de l'épinglage TLS (lib/injection_container.dart les charge
     # via rootBundle). Sans cette ligne, le chargement échoue silencieusement
