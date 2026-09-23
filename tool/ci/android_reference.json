@@ -5,6 +5,16 @@
   "target_sdk_recommande": 36,
   "api_attendue": "api.app-signs.com",
   "croissance_taille_alerte_pct": 20,
-  "_permissions": "Permissions ACCEPTÉES. Une permission absente de cette liste déclenche un avertissement (le déploiement continue). Liste vide = référence à établir au premier déploiement.",
-  "permissions": []
+  "_permissions": "Permissions ACCEPTÉES (établies au build 16, 1.0.4). Une permission absente de cette liste déclenche un avertissement (le déploiement continue). Pour en accepter une nouvelle : l'ajouter ici, avec son origine dans le commit.",
+  "permissions": [
+    "android.permission.ACCESS_NETWORK_STATE",
+    "android.permission.INTERNET",
+    "android.permission.POST_NOTIFICATIONS",
+    "android.permission.READ_EXTERNAL_STORAGE",
+    "android.permission.VIBRATE",
+    "android.permission.WAKE_LOCK",
+    "android.permission.WRITE_EXTERNAL_STORAGE",
+    "com.google.android.c2dm.permission.RECEIVE",
+    "com.signapp.sign_application.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+  ]
 }
