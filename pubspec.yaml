@@ -125,6 +125,10 @@ flutter:
     # Variables injectées via --dart-define à la compilation
     - assets/icons/
     - assets/fonts/
+    # Racines ISRG de l'épinglage TLS (lib/injection_container.dart les charge
+    # via rootBundle). Sans cette ligne, le chargement échoue silencieusement
+    # et l'épinglage ne s'active jamais dans l'app compilée.
+    - assets/certs/
   # IMP-06 : ACTION MANUELLE REQUISE pour bundler les polices localement :
   # 1. Télécharger depuis https://fonts.google.com/specimen/Plus+Jakarta+Sans
   #    → Télécharger → Extraire les .ttf dans assets/fonts/

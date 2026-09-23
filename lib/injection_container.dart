@@ -1,5 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+// rootBundle : chargement des racines de confiance de l'épinglage TLS
+// (assets/certs/backend_ca.pem). L'import avait disparu avec le retrait de
+// l'épinglage côté dépôt, alors que le code réintroduit s'en sert.
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
