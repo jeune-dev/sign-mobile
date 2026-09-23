@@ -340,6 +340,19 @@ jobs:
           printf '%s' "$PLAY_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/play-service-account.json"
           echo "SUPPLY_JSON_KEY=$RUNNER_TEMP/play-service-account.json" >> "$GITHUB_ENV"
 
+      # La machine GitHub a plus de RAM que le poste de développement :
+      # android/gradle.properties est réglé pour ce poste (2 Go), ce qui a
+      # provoqué un « Java heap space ». Le fichier du GRADLE_USER_HOME est
+      # prioritaire sur celui du projet : on élève la limite ici seulement.
+      - name: Mémoire Gradle (machine de compilation)
+        run: |
+          mkdir -p ~/.gradle
+          {
+            echo "org.gradle.jvmargs=-Xmx5g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError"
+            echo "org.gradle.workers.max=2"
+            echo "org.gradle.daemon=false"
+          } >> ~/.gradle/gradle.properties
+
       - name: Numéro de build (Google Play)
         id: preparer
         working-directory: android
